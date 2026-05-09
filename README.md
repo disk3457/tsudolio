@@ -48,10 +48,26 @@ Local infrastructure can be started with:
 docker compose up -d
 ```
 
+To initialize the local PostgreSQL schema and seed a working tenant:
+
+```bash
+cp .env.example .env
+npm --workspace apps/web run db:migrate
+npm --workspace apps/web run db:seed
+```
+
+Useful API checks after seeding:
+
+```bash
+curl http://localhost:3000/api/health
+curl http://localhost:3000/api/dashboard
+```
+
 ## Repository Layout
 
 ```text
 apps/web/          Next.js PWA front end
+apps/web/prisma/   PostgreSQL schema, migrations, and seed data
 docs/              architecture, security, roadmap, data model
 .github/           CI and dependency automation
 docker-compose.yml local PostgreSQL, MinIO, and Mailpit
@@ -59,4 +75,4 @@ docker-compose.yml local PostgreSQL, MinIO, and Mailpit
 
 ## Current Status
 
-This repository is at project bootstrap stage. The first milestone is a usable web dashboard with mock operational data, followed by real authentication, persistence, and audit trails.
+This repository is moving from project bootstrap into the persistence layer. The web dashboard exists, and PostgreSQL/Prisma now provide the first database schema, seed tenant, health check, and dashboard data API.

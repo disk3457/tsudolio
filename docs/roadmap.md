@@ -10,10 +10,12 @@
 
 ## Milestone 1: Core Identity and Organization
 
-- User model
 - Tenant model
+- User model
 - Department hierarchy
 - Roles and permissions
+- PostgreSQL migrations and seed data
+- Database health check API
 - OIDC login path
 
 ## Milestone 2: Daily Groupware
@@ -39,4 +41,3 @@
 - Import/export
 - Monitoring
 - Security hardening checklist
-
