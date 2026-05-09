@@ -1,11 +1,11 @@
 {
   "name": "Tsudolio",
   "short_name": "Tsudolio",
-  "description": "Operational groupware for municipalities, hospitals, and private organizations.",
+  "description": "自治体、病院、民間組織向けの業務グループウェア。",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f5f7f4",
-  "theme_color": "#0f766e",
+  "background_color": "#f3f8fc",
+  "theme_color": "#006fe6",
   "icons": [
     {
       "src": "/icon-192.png",
