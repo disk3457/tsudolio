@@ -5,6 +5,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Tsudolio",
   description: "Operational groupware for municipalities, hospitals, and private organizations.",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
   manifest: "/manifest.webmanifest",
 };
 

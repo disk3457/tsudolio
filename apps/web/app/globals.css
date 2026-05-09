@@ -86,11 +86,16 @@ button {
 .brandMark {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  color: #0b5f58;
-  background: #dff6f1;
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+}
+
+.brandLogo {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
 }
 
 .brandName,
@@ -582,4 +587,3 @@ h3 {
     white-space: normal;
   }
 }
-

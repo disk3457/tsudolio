@@ -1,5 +1,11 @@
 const CACHE_NAME = "tsudolio-shell-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/icon.svg"];
+const APP_SHELL = [
+  "/",
+  "/manifest.webmanifest",
+  "/brand/tsudolio-logo-icon.png",
+  "/icon-192.png",
+  "/icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

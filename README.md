@@ -1,5 +1,7 @@
 # Tsudolio（ツドリオ）
 
+![Tsudolio logo](apps/web/public/brand/tsudolio-logo-horizontal.png)
+
 自治体、病院、民間企業で共通利用できることを目指す、公開前提のグループウェア基盤です。最初は Web/PWA として実装し、スマートフォンとデスクトップの両方で使える業務画面から育てます。
 
 ## Goals
