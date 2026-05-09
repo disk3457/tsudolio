@@ -52,6 +52,12 @@ button {
   cursor: pointer;
 }
 
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(0, 111, 230, 0.22);
+  outline-offset: 2px;
+}
+
 .srOnly {
   position: absolute;
   width: 1px;
@@ -140,20 +146,24 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   min-height: 44px;
   padding: 0 12px;
+  border: 0;
   border-radius: 8px;
   color: #52657d;
+  background: transparent;
   font-weight: 700;
+  text-align: left;
 }
 
-.navItem:first-child,
+.navItem.active,
 .navItem:hover {
   color: var(--blue-deep);
   background: linear-gradient(90deg, var(--blue-soft), rgba(228, 251, 248, 0.74));
 }
 
-.navItem:first-child svg,
+.navItem.active svg,
 .navItem:hover svg {
   color: var(--blue);
 }
@@ -192,6 +202,13 @@ h1 {
   color: #0d2f6f;
   font-size: 1.92rem;
   line-height: 1.15;
+}
+
+.topbarLead {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 h2 {
@@ -257,6 +274,13 @@ h3 {
   background: linear-gradient(180deg, #ffffff, #f5fbff);
 }
 
+.textButton.primary {
+  border-color: transparent;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  box-shadow: 0 12px 24px rgba(0, 111, 230, 0.16);
+}
+
 .statusStrip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -302,6 +326,13 @@ h3 {
   min-height: 190px;
   padding: 18px;
   border-top: 3px solid transparent;
+  color: inherit;
+  text-align: left;
+}
+
+button.moduleCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 52px rgba(9, 54, 116, 0.12);
 }
 
 .moduleHeader {
@@ -525,6 +556,294 @@ h3 {
   color: var(--muted);
 }
 
+.viewStack {
+  display: grid;
+  gap: 18px;
+}
+
+.viewToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.segmentedControl {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.segmentedControl button {
+  min-width: 74px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 800;
+}
+
+.segmentedControl button.active,
+.segmentedControl button:hover {
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+}
+
+.scheduleBoard,
+.quickCards,
+.viewGrid,
+.settingsGrid {
+  display: grid;
+  gap: 18px;
+}
+
+.scheduleBoard {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.panelHeader.compact {
+  margin-bottom: 12px;
+}
+
+.timelineItem.compact {
+  grid-template-columns: 82px minmax(0, 1fr);
+  min-height: 68px;
+}
+
+.quickCards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.facilityCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.facilityCard p {
+  margin: 10px 0 0;
+  color: var(--muted);
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.statusPill.open {
+  color: #08786f;
+  background: var(--cyan-soft);
+}
+
+.statusPill.busy {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.statusPill.wait {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.viewGrid {
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  align-items: start;
+}
+
+.widePanel {
+  min-height: 100%;
+}
+
+.orgGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.orgCard {
+  min-height: 230px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.orgCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.orgCardHeader span {
+  color: var(--cyan);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.orgCardHeader strong {
+  color: var(--blue-deep);
+}
+
+.orgCard p,
+.recordItem p,
+.dataRow span,
+.auditItem p,
+.settingCard p {
+  color: var(--muted);
+}
+
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.chipList span {
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.recordList,
+.auditList,
+.settingCard ul {
+  display: grid;
+  gap: 10px;
+}
+
+.recordItem {
+  display: grid;
+  gap: 8px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.recordItem strong {
+  color: var(--blue-deep);
+}
+
+.recordItem span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.tablePanel {
+  overflow-x: auto;
+}
+
+.dataTable {
+  min-width: 860px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.dataRow {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) minmax(90px, 0.8fr) minmax(130px, 1fr) minmax(74px, 0.55fr) minmax(120px, 0.9fr) minmax(96px, 0.75fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 58px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+  background: #ffffff;
+}
+
+.dataRow:last-child {
+  border-bottom: 0;
+}
+
+.dataRow.heading {
+  min-height: 42px;
+  color: var(--muted);
+  background: var(--surface-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.auditItem {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.auditItem time {
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.settingsGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.settingCard {
+  min-height: 244px;
+}
+
+.settingCard ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.settingCard li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.settingCard li svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--cyan);
+}
+
+.actionCard {
+  display: flex;
+  grid-column: span 3;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 166px;
+  background: linear-gradient(135deg, #ffffff 0%, #f1fbff 54%, #edfdfa 100%);
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @media (max-width: 1100px) {
   .appShell {
     grid-template-columns: 86px minmax(0, 1fr);
@@ -547,8 +866,23 @@ h3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .scheduleBoard,
+  .quickCards,
+  .orgGrid,
+  .settingsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .contentGrid {
     grid-template-columns: 1fr;
+  }
+
+  .viewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actionCard {
+    grid-column: span 2;
   }
 
   .approvalPanel,
@@ -607,7 +941,11 @@ h3 {
   }
 
   .statusStrip,
-  .moduleGrid {
+  .moduleGrid,
+  .scheduleBoard,
+  .quickCards,
+  .orgGrid,
+  .settingsGrid {
     grid-template-columns: 1fr;
   }
 
@@ -620,12 +958,38 @@ h3 {
   }
 
   .timelineItem,
-  .approvalItem {
+  .approvalItem,
+  .auditItem {
     grid-template-columns: 1fr;
   }
 
   .approvalMeta {
     justify-items: start;
     white-space: normal;
+  }
+
+  .viewToolbar,
+  .facilityCard,
+  .actionCard {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .segmentedControl {
+    width: 100%;
+  }
+
+  .segmentedControl button {
+    min-width: 0;
+  }
+
+  .actionCard {
+    grid-column: auto;
+  }
+
+  .actionRow,
+  .actionRow .textButton,
+  .viewToolbar .textButton {
+    width: 100%;
   }
 }
