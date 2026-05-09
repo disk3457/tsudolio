@@ -1,6 +1,6 @@
+import Image from "next/image";
 import {
   Bell,
-  Building2,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
@@ -107,7 +107,13 @@ export default function Home() {
       <aside className="sidebar" aria-label="Primary">
         <div className="brand">
           <div className="brandMark">
-            <Building2 aria-hidden="true" size={22} />
+            <Image
+              alt="Tsudolio logo"
+              className="brandLogo"
+              height={44}
+              src="/brand/tsudolio-logo-icon.png"
+              width={44}
+            />
           </div>
           <div>
             <p className="brandName">Tsudolio</p>

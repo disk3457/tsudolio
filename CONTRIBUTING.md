@@ -11,12 +11,27 @@ Thank you for helping build Tsudolio.
 
 ## Branches
 
+All development work should happen on a topic branch, then be pushed and opened as a pull request. Do not commit directly to `main`.
+
 Use short, descriptive branch names:
 
 ```text
 feature/workflow-approvals
 fix/mobile-schedule-layout
 docs/security-baseline
+```
+
+Recommended flow:
+
+```bash
+git switch -c feature/example-change
+npm run lint
+npm run typecheck
+npm run build
+git add .
+git commit -m "Add example change"
+git push -u origin feature/example-change
+gh pr create
 ```
 
 ## Commit Style
