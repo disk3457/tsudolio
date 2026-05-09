@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Tsudolio",
-  description: "Operational groupware for municipalities, hospitals, and private organizations.",
+  description: "自治体、病院、民間組織向けの業務グループウェア。",
   icons: {
     icon: "/favicon.png",
     apple: "/apple-touch-icon.png",
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0f766e",
+  themeColor: "#006fe6",
 };
 
 export default function RootLayout({

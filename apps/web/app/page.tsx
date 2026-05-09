@@ -17,36 +17,36 @@ import {
 
 const modules = [
   {
-    title: "Schedule",
-    label: "予定・施設",
+    title: "予定・施設予約",
+    label: "スケジュール",
     summary: "本日の予定 18 件、会議室予約 7 件",
-    status: "Operational",
+    status: "稼働中",
     icon: CalendarDays,
-    tone: "teal",
+    tone: "blue",
   },
   {
-    title: "Circulars",
-    label: "掲示・回覧",
+    title: "掲示・回覧",
+    label: "お知らせ",
     summary: "未読 4 件、要確認 2 件",
-    status: "Review",
+    status: "確認あり",
     icon: MessageSquareText,
-    tone: "amber",
+    tone: "cyan",
   },
   {
-    title: "Workflow",
-    label: "申請・承認",
+    title: "申請・承認",
+    label: "ワークフロー",
     summary: "承認待ち 11 件、差戻し 1 件",
-    status: "Attention",
+    status: "対応必要",
     icon: ClipboardList,
     tone: "rose",
   },
   {
-    title: "Documents",
-    label: "文書・添付",
+    title: "文書管理",
+    label: "ファイル共有",
     summary: "共有文書 234 件、保管期限確認 6 件",
-    status: "Managed",
+    status: "管理中",
     icon: FileText,
-    tone: "indigo",
+    tone: "sky",
   },
 ];
 
@@ -78,41 +78,44 @@ const approvals = [
     title: "個人情報取扱区域への入室申請",
     owner: "医事課",
     due: "本日 17:00",
-    level: "High",
+    level: "high",
+    levelLabel: "重要",
   },
   {
     title: "庁外会議用端末の持出申請",
     owner: "防災安全課",
     due: "明日 12:00",
-    level: "Medium",
+    level: "medium",
+    levelLabel: "通常",
   },
   {
     title: "新規委託先アカウント発行",
     owner: "情報政策課",
     due: "5月13日",
-    level: "High",
+    level: "high",
+    levelLabel: "重要",
   },
 ];
 
 const securityItems = [
-  "MFA required for administrators",
-  "Tenant-scoped access policy",
-  "Immutable audit event stream",
-  "No secrets in repository",
+  "管理者は多要素認証を必須化",
+  "組織・部署単位でアクセス範囲を制御",
+  "監査ログは改ざん検知を前提に保存",
+  "リポジトリに秘密情報を含めない",
 ];
 
 export default function Home() {
   return (
     <main className="appShell">
-      <aside className="sidebar" aria-label="Primary">
+      <aside className="sidebar" aria-label="主要メニュー">
         <div className="brand">
           <div className="brandMark">
             <Image
-              alt="Tsudolio logo"
+              alt="Tsudolio ロゴ"
               className="brandLogo"
-              height={44}
+              height={48}
               src="/brand/tsudolio-logo-icon.png"
-              width={44}
+              width={48}
             />
           </div>
           <div>
@@ -121,14 +124,14 @@ export default function Home() {
           </div>
         </div>
 
-        <nav className="navList" aria-label="Modules">
+        <nav className="navList" aria-label="機能一覧">
           {[
-            ["Dashboard", CheckCircle2],
-            ["Schedule", CalendarDays],
-            ["Teams", UsersRound],
-            ["Documents", FileText],
-            ["Security", ShieldCheck],
-            ["Settings", Settings],
+            ["ダッシュボード", CheckCircle2],
+            ["予定", CalendarDays],
+            ["組織", UsersRound],
+            ["文書", FileText],
+            ["セキュリティ", ShieldCheck],
+            ["設定", Settings],
           ].map(([item, Icon]) => (
             <a
               aria-label={item as string}
@@ -146,41 +149,41 @@ export default function Home() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Tenant / Demo City General Hospital</p>
-            <h1>Operations Dashboard</h1>
+            <p className="eyebrow">デモ市総合病院 / 業務ポータル</p>
+            <h1>業務ダッシュボード</h1>
           </div>
           <div className="topbarActions">
             <label className="searchBox">
               <Search aria-hidden="true" size={18} />
-              <span className="srOnly">Search</span>
-              <input placeholder="Search" />
+              <span className="srOnly">検索</span>
+              <input placeholder="予定・文書・申請を検索" />
             </label>
-            <button className="iconButton" aria-label="Notifications">
+            <button className="iconButton" aria-label="通知">
               <Bell aria-hidden="true" size={19} />
             </button>
           </div>
         </header>
 
-        <section className="statusStrip" aria-label="System overview">
+        <section className="statusStrip" aria-label="システム概要">
           <div>
-            <p className="metricLabel">Active users</p>
+            <p className="metricLabel">利用中ユーザー</p>
             <strong>1,248</strong>
           </div>
           <div>
-            <p className="metricLabel">Pending approvals</p>
+            <p className="metricLabel">承認待ち</p>
             <strong>11</strong>
           </div>
           <div>
-            <p className="metricLabel">Audit events</p>
+            <p className="metricLabel">監査イベント</p>
             <strong>3,924</strong>
           </div>
           <div>
-            <p className="metricLabel">Mobile sessions</p>
+            <p className="metricLabel">スマホ利用率</p>
             <strong>62%</strong>
           </div>
         </section>
 
-        <section className="moduleGrid" aria-label="Core modules">
+        <section className="moduleGrid" aria-label="主要機能">
           {modules.map((module) => {
             const Icon = module.icon;
 
@@ -204,12 +207,12 @@ export default function Home() {
           <section className="panel schedulePanel" aria-labelledby="schedule-heading">
             <div className="panelHeader">
               <div>
-                <p className="sectionLabel">Today</p>
-                <h2 id="schedule-heading">Schedule</h2>
+                <p className="sectionLabel">本日</p>
+                <h2 id="schedule-heading">予定</h2>
               </div>
               <button className="textButton">
                 <CalendarDays aria-hidden="true" size={17} />
-                New
+                新規予定
               </button>
             </div>
             <div className="timeline">
@@ -228,10 +231,10 @@ export default function Home() {
           <section className="panel approvalPanel" aria-labelledby="approval-heading">
             <div className="panelHeader">
               <div>
-                <p className="sectionLabel">Workflow</p>
-                <h2 id="approval-heading">Approval Queue</h2>
+                <p className="sectionLabel">ワークフロー</p>
+                <h2 id="approval-heading">承認待ち</h2>
               </div>
-              <button className="iconButton" aria-label="Approval settings">
+              <button className="iconButton" aria-label="承認設定">
                 <Settings aria-hidden="true" size={18} />
               </button>
             </div>
@@ -243,8 +246,8 @@ export default function Home() {
                     <p>{approval.owner}</p>
                   </div>
                   <div className="approvalMeta">
-                    <span className={`riskBadge ${approval.level.toLowerCase()}`}>
-                      {approval.level}
+                    <span className={`riskBadge ${approval.level}`}>
+                      {approval.levelLabel}
                     </span>
                     <time>{approval.due}</time>
                   </div>
@@ -256,8 +259,8 @@ export default function Home() {
           <section className="panel securityPanel" aria-labelledby="security-heading">
             <div className="panelHeader">
               <div>
-                <p className="sectionLabel">Security</p>
-                <h2 id="security-heading">Baseline</h2>
+                <p className="sectionLabel">セキュリティ</p>
+                <h2 id="security-heading">基本対策</h2>
               </div>
               <LockKeyhole aria-hidden="true" className="panelIcon" size={21} />
             </div>
@@ -275,18 +278,18 @@ export default function Home() {
             <div className="mobileVisual">
               <Smartphone aria-hidden="true" size={30} />
               <div>
-                <p className="sectionLabel">PWA Ready</p>
-                <h2 id="mobile-heading">Mobile First</h2>
+                <p className="sectionLabel">PWA対応</p>
+                <h2 id="mobile-heading">スマホでも使いやすく</h2>
               </div>
             </div>
             <div className="mobileStats">
               <span>
                 <Clock3 aria-hidden="true" size={16} />
-                Offline shell planned
+                オフライン起動に対応予定
               </span>
               <span>
                 <Bell aria-hidden="true" size={16} />
-                Push-ready design
+                通知連携を前提に設計
               </span>
             </div>
           </section>
