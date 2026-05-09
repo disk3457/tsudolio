@@ -281,6 +281,58 @@ h3 {
   box-shadow: 0 12px 24px rgba(0, 111, 230, 0.16);
 }
 
+.dataNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.dataNotice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.dataNotice h2,
+.dataNotice p {
+  margin: 0;
+}
+
+.dataNotice h2 {
+  margin-top: 2px;
+  font-size: 1rem;
+}
+
+.dataNotice p:last-child {
+  margin-top: 5px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.dataNotice.ready {
+  border-color: #ccefe9;
+  background: linear-gradient(135deg, #ffffff 0%, #f1fffc 100%);
+}
+
+.dataNotice.ready svg,
+.dataNotice.loading svg {
+  color: var(--cyan);
+}
+
+.dataNotice.error {
+  border-color: #ffd1dd;
+  background: linear-gradient(135deg, #ffffff 0%, #fff3f6 100%);
+}
+
+.dataNotice.error svg {
+  color: var(--rose);
+}
+
 .statusStrip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -506,6 +558,31 @@ button.moduleCard:hover {
 .riskBadge.medium {
   color: var(--amber);
   background: var(--amber-soft);
+}
+
+.riskBadge.low {
+  color: #08786f;
+  background: var(--cyan-soft);
+}
+
+.emptyState {
+  display: grid;
+  gap: 5px;
+  min-height: 76px;
+  padding: 14px;
+  border: 1px dashed #cdddeb;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.emptyState h3,
+.emptyState p {
+  margin: 0;
+}
+
+.emptyState p {
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .securityList {
@@ -797,6 +874,38 @@ button.moduleCard:hover {
 .auditItem time {
   color: var(--blue);
   font-weight: 800;
+}
+
+.auditTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.severityBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.severityBadge.critical {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.severityBadge.warning {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.severityBadge.notice {
+  color: #08786f;
+  background: var(--cyan-soft);
 }
 
 .settingsGrid {
