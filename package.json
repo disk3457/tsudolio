@@ -1,0 +1,24 @@
+{
+  "name": "tsudolio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tsudolio is an open groupware foundation for municipalities, hospitals, and private organizations.",
+  "license": "Apache-2.0",
+  "packageManager": "npm@11.11.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "overrides": {
+    "postcss": "8.5.14"
+  },
+  "scripts": {
+    "dev": "npm --workspace apps/web run dev",
+    "build": "npm --workspace apps/web run build",
+    "lint": "npm --workspace apps/web run lint",
+    "typecheck": "npm --workspace apps/web run typecheck"
+  }
+}

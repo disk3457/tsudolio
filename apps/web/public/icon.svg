@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Tsudolio">
+  <rect width="128" height="128" rx="24" fill="#0f766e"/>
+  <path d="M28 58h72v46H28z" fill="#f4fbf8"/>
+  <path d="M20 56 64 24l44 32H20z" fill="#dff6f1"/>
+  <path d="M48 74h32v30H48z" fill="#0f766e"/>
+  <path d="M36 64h12v12H36zm44 0h12v12H80z" fill="#14b8a6"/>
+</svg>

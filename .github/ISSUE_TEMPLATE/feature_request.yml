@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose a product or platform improvement.
+title: "Feature: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What job or operational problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the smallest useful version.
+    validations:
+      required: true
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Domain
+      options:
+        - Common groupware
+        - Municipality
+        - Healthcare operations
+        - Private organization
+        - Security and compliance
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: Security, privacy, workflow, or accessibility constraints.
