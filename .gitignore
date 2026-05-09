@@ -9,6 +9,7 @@ out/
 dist/
 coverage/
 *.tsbuildinfo
+apps/web/generated/prisma/
 
 # local env
 .env

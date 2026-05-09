@@ -1,0 +1,371 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TenantType {
+  MUNICIPALITY
+  HOSPITAL
+  COMPANY
+  HYBRID
+}
+
+enum OrganizationUnitKind {
+  DEPARTMENT
+  WARD
+  BRANCH
+  TEAM
+  EXTERNAL_PARTNER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+  LEFT
+}
+
+enum EventVisibility {
+  PRIVATE
+  ORGANIZATION
+  TENANT
+}
+
+enum FacilityStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  APPROVAL_REQUIRED
+}
+
+enum WorkflowStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  RETURNED
+  CANCELED
+}
+
+enum WorkflowPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum DocumentStatus {
+  DRAFT
+  REVIEW
+  ACTIVE
+  ARCHIVED
+}
+
+enum AuditSeverity {
+  INFO
+  NOTICE
+  WARNING
+  CRITICAL
+}
+
+model Tenant {
+  id                String                @id @default(uuid()) @db.Uuid
+  code              String                @unique @db.VarChar(64)
+  name              String                @db.VarChar(160)
+  displayName       String?               @map("display_name") @db.VarChar(160)
+  type              TenantType            @default(HYBRID)
+  timezone          String                @default("Asia/Tokyo") @db.VarChar(80)
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  organizationUnits OrganizationUnit[]
+  users             User[]
+  memberships       Membership[]
+  roles             Role[]
+  facilities        Facility[]
+  calendarEvents    CalendarEvent[]
+  reservations      FacilityReservation[]
+  notices           Notice[]
+  workflowRequests  WorkflowRequest[]
+  documents         Document[]
+  auditEvents       AuditEvent[]
+  notifications     Notification[]
+
+  @@map("tenants")
+}
+
+model OrganizationUnit {
+  id               String               @id @default(uuid()) @db.Uuid
+  tenantId         String               @map("tenant_id") @db.Uuid
+  parentId         String?              @map("parent_id") @db.Uuid
+  code             String               @db.VarChar(80)
+  name             String               @db.VarChar(160)
+  kind             OrganizationUnitKind @default(DEPARTMENT)
+  path             String               @db.VarChar(500)
+  sortOrder        Int                  @default(0) @map("sort_order")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+  tenant           Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent           OrganizationUnit?    @relation("OrganizationTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children         OrganizationUnit[]   @relation("OrganizationTree")
+  memberships      Membership[]
+  calendarEvents   CalendarEvent[]
+  facilities       Facility[]
+  notices          Notice[]
+  workflowRequests WorkflowRequest[]
+  documents        Document[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, parentId])
+  @@map("organization_units")
+}
+
+model User {
+  id                 String            @id @default(uuid()) @db.Uuid
+  tenantId           String            @map("tenant_id") @db.Uuid
+  email              String            @db.VarChar(254)
+  displayName        String            @map("display_name") @db.VarChar(120)
+  kanaName           String?           @map("kana_name") @db.VarChar(120)
+  title              String?           @db.VarChar(120)
+  locale             String            @default("ja-JP") @db.VarChar(20)
+  isSystemAdmin      Boolean           @default(false) @map("is_system_admin")
+  lastLoginAt        DateTime?         @map("last_login_at")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  memberships        Membership[]
+  createdEvents      CalendarEvent[]   @relation("CalendarEventCreator")
+  requestedWorkflows WorkflowRequest[] @relation("WorkflowRequester")
+  uploadedDocuments  Document[]        @relation("DocumentUploader")
+  auditEvents        AuditEvent[]
+  notifications      Notification[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, displayName])
+  @@map("users")
+}
+
+model Membership {
+  id                 String           @id @default(uuid()) @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  userId             String           @map("user_id") @db.Uuid
+  organizationUnitId String           @map("organization_unit_id") @db.Uuid
+  status             MembershipStatus @default(ACTIVE)
+  joinedAt           DateTime         @default(now()) @map("joined_at")
+  leftAt             DateTime?        @map("left_at")
+  tenant             Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit @relation(fields: [organizationUnitId], references: [id], onDelete: Cascade)
+  roleAssignments    RoleAssignment[]
+
+  @@unique([tenantId, userId, organizationUnitId])
+  @@index([tenantId, organizationUnitId])
+  @@map("memberships")
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @map("tenant_id") @db.Uuid
+  code        String           @db.VarChar(80)
+  name        String           @db.VarChar(120)
+  description String?          @db.VarChar(500)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  permissions RolePermission[]
+  assignments RoleAssignment[]
+
+  @@unique([tenantId, code])
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  code        String           @unique @db.VarChar(120)
+  name        String           @db.VarChar(160)
+  description String?          @db.VarChar(500)
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model RoleAssignment {
+  id           String     @id @default(uuid()) @db.Uuid
+  roleId       String     @map("role_id") @db.Uuid
+  membershipId String     @map("membership_id") @db.Uuid
+  assignedAt   DateTime   @default(now()) @map("assigned_at")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, membershipId])
+  @@map("role_assignments")
+}
+
+model Facility {
+  id                 String                @id @default(uuid()) @db.Uuid
+  tenantId           String                @map("tenant_id") @db.Uuid
+  organizationUnitId String?               @map("organization_unit_id") @db.Uuid
+  code               String                @db.VarChar(80)
+  name               String                @db.VarChar(160)
+  status             FacilityStatus        @default(AVAILABLE)
+  capacity           Int?
+  location           String?               @db.VarChar(200)
+  createdAt          DateTime              @default(now()) @map("created_at")
+  updatedAt          DateTime              @updatedAt @map("updated_at")
+  tenant             Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit?     @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  reservations       FacilityReservation[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@map("facilities")
+}
+
+model CalendarEvent {
+  id                 String               @id @default(uuid()) @db.Uuid
+  tenantId           String               @map("tenant_id") @db.Uuid
+  organizationUnitId String?              @map("organization_unit_id") @db.Uuid
+  createdById        String               @map("created_by_id") @db.Uuid
+  title              String               @db.VarChar(200)
+  description        String?              @db.Text
+  startsAt           DateTime             @map("starts_at")
+  endsAt             DateTime             @map("ends_at")
+  location           String?              @db.VarChar(200)
+  visibility         EventVisibility      @default(ORGANIZATION)
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  tenant             Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit?    @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  createdBy          User                 @relation("CalendarEventCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  reservation        FacilityReservation?
+
+  @@index([tenantId, startsAt])
+  @@index([tenantId, organizationUnitId, startsAt])
+  @@map("calendar_events")
+}
+
+model FacilityReservation {
+  id         String         @id @default(uuid()) @db.Uuid
+  tenantId   String         @map("tenant_id") @db.Uuid
+  facilityId String         @map("facility_id") @db.Uuid
+  eventId    String?        @unique @map("event_id") @db.Uuid
+  startsAt   DateTime       @map("starts_at")
+  endsAt     DateTime       @map("ends_at")
+  purpose    String         @db.VarChar(200)
+  status     WorkflowStatus @default(PENDING)
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  facility   Facility       @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  event      CalendarEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, facilityId, startsAt])
+  @@map("facility_reservations")
+}
+
+model Notice {
+  id                 String            @id @default(uuid()) @db.Uuid
+  tenantId           String            @map("tenant_id") @db.Uuid
+  organizationUnitId String?           @map("organization_unit_id") @db.Uuid
+  title              String            @db.VarChar(200)
+  body               String            @db.Text
+  requiresAck        Boolean           @default(false) @map("requires_ack")
+  publishedAt        DateTime          @default(now()) @map("published_at")
+  expiresAt          DateTime?         @map("expires_at")
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, publishedAt])
+  @@map("notices")
+}
+
+model WorkflowRequest {
+  id                 String            @id @default(uuid()) @db.Uuid
+  tenantId           String            @map("tenant_id") @db.Uuid
+  organizationUnitId String?           @map("organization_unit_id") @db.Uuid
+  requesterId        String            @map("requester_id") @db.Uuid
+  title              String            @db.VarChar(220)
+  category           String            @db.VarChar(120)
+  status             WorkflowStatus    @default(PENDING)
+  priority           WorkflowPriority  @default(NORMAL)
+  dueAt              DateTime?         @map("due_at")
+  submittedAt        DateTime?         @map("submitted_at")
+  decidedAt          DateTime?         @map("decided_at")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  requester          User              @relation("WorkflowRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status, dueAt])
+  @@map("workflow_requests")
+}
+
+model Document {
+  id                 String            @id @default(uuid()) @db.Uuid
+  tenantId           String            @map("tenant_id") @db.Uuid
+  organizationUnitId String?           @map("organization_unit_id") @db.Uuid
+  uploadedById       String            @map("uploaded_by_id") @db.Uuid
+  title              String            @db.VarChar(220)
+  category           String            @db.VarChar(120)
+  version            String            @db.VarChar(40)
+  status             DocumentStatus    @default(DRAFT)
+  storageKey         String            @map("storage_key") @db.VarChar(500)
+  retentionUntil     DateTime?         @map("retention_until")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  uploadedBy         User              @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, category])
+  @@index([tenantId, status])
+  @@map("documents")
+}
+
+model AuditEvent {
+  id         String        @id @default(uuid()) @db.Uuid
+  tenantId   String        @map("tenant_id") @db.Uuid
+  actorId    String?       @map("actor_id") @db.Uuid
+  action     String        @db.VarChar(160)
+  targetType String        @map("target_type") @db.VarChar(120)
+  targetId   String?       @map("target_id") @db.VarChar(120)
+  severity   AuditSeverity @default(INFO)
+  ipAddress  String?       @map("ip_address") @db.VarChar(80)
+  metadata   Json?
+  createdAt  DateTime      @default(now()) @map("created_at")
+  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor      User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, action])
+  @@map("audit_events")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  title     String    @db.VarChar(180)
+  body      String    @db.VarChar(500)
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId, readAt])
+  @@map("notifications")
+}
