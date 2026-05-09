@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
+  AlertCircle,
   Bell,
   Building2,
   CalendarDays,
@@ -26,6 +27,10 @@ import {
   Smartphone,
   UsersRound,
 } from "lucide-react";
+import type {
+  DashboardApiResponse,
+  DashboardSnapshot,
+} from "@/lib/dashboard-types";
 
 type ViewKey =
   | "dashboard"
@@ -41,6 +46,21 @@ type NavItem = {
   description: string;
   label: string;
   icon: LucideIcon;
+};
+
+type DashboardLoadState = {
+  snapshot: DashboardSnapshot | null;
+  source: "database" | "fallback";
+  status: "loading" | "ready" | "error";
+  message: string | null;
+  updatedAt: string | null;
+};
+
+type ModulePresentation = {
+  icon: LucideIcon;
+  label: string;
+  target: ViewKey;
+  tone: "blue" | "cyan" | "rose" | "sky";
 };
 
 const navItems: NavItem[] = [
@@ -88,89 +108,64 @@ const navItems: NavItem[] = [
   },
 ];
 
-const modules = [
-  {
-    title: "予定・施設予約",
-    label: "スケジュール",
-    summary: "本日の予定 18 件、会議室予約 7 件",
-    status: "稼働中",
+const modulePresentation: Record<string, ModulePresentation> = {
+  schedule: {
     icon: CalendarDays,
+    label: "スケジュール",
+    target: "schedule",
     tone: "blue",
-    target: "schedule" as const,
   },
-  {
-    title: "掲示・回覧",
-    label: "お知らせ",
-    summary: "未読 4 件、要確認 2 件",
-    status: "確認あり",
+  notices: {
     icon: MessageSquareText,
+    label: "お知らせ",
+    target: "dashboard",
     tone: "cyan",
-    target: "dashboard" as const,
   },
-  {
-    title: "申請・承認",
-    label: "ワークフロー",
-    summary: "承認待ち 11 件、差戻し 1 件",
-    status: "対応必要",
+  workflow: {
     icon: ClipboardList,
+    label: "ワークフロー",
+    target: "dashboard",
     tone: "rose",
-    target: "dashboard" as const,
   },
-  {
-    title: "文書管理",
-    label: "ファイル共有",
-    summary: "共有文書 234 件、保管期限確認 6 件",
-    status: "管理中",
+  documents: {
     icon: FileText,
+    label: "ファイル共有",
+    target: "documents",
     tone: "sky",
-    target: "documents" as const,
   },
-];
+};
 
-const timeline = [
-  {
-    time: "09:00",
-    title: "災害対策連絡会",
-    meta: "第2会議室 / 総務課",
-  },
-  {
-    time: "10:30",
-    title: "院内設備点検",
-    meta: "施設管理 / 立会 2 名",
-  },
-  {
-    time: "13:00",
-    title: "稟議レビュー",
-    meta: "電子決裁 / 承認者 3 名",
-  },
-  {
-    time: "15:30",
-    title: "情報セキュリティ確認",
-    meta: "管理者 / 監査ログ確認",
-  },
-];
+const defaultModulePresentation: ModulePresentation = {
+  icon: Database,
+  label: "機能",
+  target: "dashboard",
+  tone: "blue",
+};
 
-const approvals = [
+const fallbackModules = [
   {
-    title: "個人情報取扱区域への入室申請",
-    owner: "医事課",
-    due: "本日 17:00",
-    level: "high",
-    levelLabel: "重要",
+    key: "schedule",
+    title: "予定・施設予約",
+    summary: "DB接続後に予定と施設予約を表示します",
+    status: "取得待ち",
   },
   {
-    title: "庁外会議用端末の持出申請",
-    owner: "防災安全課",
-    due: "明日 12:00",
-    level: "medium",
-    levelLabel: "通常",
+    key: "notices",
+    title: "掲示・回覧",
+    summary: "DB接続後に有効な掲示と未読通知を表示します",
+    status: "取得待ち",
   },
   {
-    title: "新規委託先アカウント発行",
-    owner: "情報政策課",
-    due: "5月13日",
-    level: "high",
-    levelLabel: "重要",
+    key: "workflow",
+    title: "申請・承認",
+    summary: "DB接続後に承認待ちと緊急申請を表示します",
+    status: "取得待ち",
+  },
+  {
+    key: "documents",
+    title: "文書管理",
+    summary: "DB接続後に文書台帳の件数を表示します",
+    status: "取得待ち",
   },
 ];
 
@@ -296,13 +291,6 @@ const documentRows = [
   },
 ];
 
-const auditEvents = [
-  ["08:52", "多要素認証設定を更新", "システム管理者 / 192.0.2.24"],
-  ["09:18", "共有文書の閲覧権限を変更", "情報政策課 / 文書ID DOC-1042"],
-  ["10:04", "庁外端末持出申請を承認", "防災安全課 / ワークフロー WF-982"],
-  ["11:22", "休職者アカウントを停止", "人事 / 利用者ID U-4401"],
-];
-
 const settingGroups = [
   {
     title: "組織プロファイル",
@@ -323,7 +311,66 @@ const settingGroups = [
 
 export default function Home() {
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
+  const [dashboardState, setDashboardState] = useState<DashboardLoadState>({
+    snapshot: null,
+    source: "fallback",
+    status: "loading",
+    message: null,
+    updatedAt: null,
+  });
   const activeItem = navItems.find((item) => item.key === activeView) ?? navItems[0];
+  const tenantName = dashboardState.snapshot?.tenant.name ?? "デモ市総合病院";
+
+  useEffect(() => {
+    let shouldIgnore = false;
+
+    async function loadDashboard() {
+      try {
+        const response = await fetch("/api/dashboard", {
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        const body = (await response.json()) as DashboardApiResponse;
+
+        if (!response.ok || !("data" in body)) {
+          throw new Error(
+            "message" in body ? body.message : "ダッシュボードデータを取得できませんでした",
+          );
+        }
+
+        if (!shouldIgnore) {
+          setDashboardState({
+            snapshot: body.data,
+            source: body.source,
+            status: "ready",
+            message: null,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      } catch (error) {
+        if (!shouldIgnore) {
+          setDashboardState({
+            snapshot: null,
+            source: "fallback",
+            status: "error",
+            message:
+              error instanceof Error
+                ? error.message
+                : "ダッシュボードデータを取得できませんでした",
+            updatedAt: null,
+          });
+        }
+      }
+    }
+
+    void loadDashboard();
+
+    return () => {
+      shouldIgnore = true;
+    };
+  }, []);
 
   return (
     <main className="appShell">
@@ -368,7 +415,7 @@ export default function Home() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">デモ市総合病院 / 業務ポータル</p>
+            <p className="eyebrow">{tenantName} / 業務ポータル</p>
             <h1>{activeItem.title}</h1>
             <p className="topbarLead">{activeItem.description}</p>
           </div>
@@ -384,49 +431,97 @@ export default function Home() {
           </div>
         </header>
 
-        {activeView === "dashboard" && <DashboardView setActiveView={setActiveView} />}
+        {activeView === "dashboard" && (
+          <DashboardView dashboardState={dashboardState} setActiveView={setActiveView} />
+        )}
         {activeView === "schedule" && <ScheduleView />}
         {activeView === "organization" && <OrganizationView />}
         {activeView === "documents" && <DocumentsView />}
-        {activeView === "security" && <SecurityView />}
+        {activeView === "security" && (
+          <SecurityView dashboardState={dashboardState} />
+        )}
         {activeView === "settings" && <SettingsView />}
       </section>
     </main>
   );
 }
 
-function DashboardView({ setActiveView }: { setActiveView: (view: ViewKey) => void }) {
+function DashboardView({
+  dashboardState,
+  setActiveView,
+}: {
+  dashboardState: DashboardLoadState;
+  setActiveView: (view: ViewKey) => void;
+}) {
+  const snapshot = dashboardState.snapshot;
+  const timezone = snapshot?.tenant.timezone ?? "Asia/Tokyo";
+  const metricCards = [
+    {
+      label: "利用中ユーザー",
+      value:
+        snapshot === null
+          ? dashboardState.status === "loading"
+            ? "取得中"
+            : "未取得"
+          : formatNumber(snapshot.metrics.activeUsers),
+    },
+    {
+      label: "承認待ち",
+      value:
+        snapshot === null
+          ? dashboardState.status === "loading"
+            ? "取得中"
+            : "未取得"
+          : formatNumber(snapshot.metrics.pendingApprovals),
+    },
+    {
+      label: "監査イベント",
+      value:
+        snapshot === null
+          ? dashboardState.status === "loading"
+            ? "取得中"
+            : "未取得"
+          : formatNumber(snapshot.metrics.auditEvents),
+    },
+    {
+      label: "未読通知",
+      value:
+        snapshot === null
+          ? dashboardState.status === "loading"
+            ? "取得中"
+            : "未取得"
+          : formatNumber(snapshot.metrics.unreadNotifications),
+    },
+  ];
+  const moduleRows = snapshot?.modules ?? fallbackModules;
+  const timelineRows = snapshot?.timeline ?? [];
+  const approvalRows = snapshot?.approvals ?? [];
+  const securityRows = snapshot?.securityEvents ?? [];
+
   return (
     <>
+      <DataStatusNotice dashboardState={dashboardState} />
+
       <section className="statusStrip" aria-label="システム概要">
-        <div>
-          <p className="metricLabel">利用中ユーザー</p>
-          <strong>1,248</strong>
-        </div>
-        <div>
-          <p className="metricLabel">承認待ち</p>
-          <strong>11</strong>
-        </div>
-        <div>
-          <p className="metricLabel">監査イベント</p>
-          <strong>3,924</strong>
-        </div>
-        <div>
-          <p className="metricLabel">スマホ利用率</p>
-          <strong>62%</strong>
-        </div>
+        {metricCards.map((metric) => (
+          <div key={metric.label}>
+            <p className="metricLabel">{metric.label}</p>
+            <strong>{metric.value}</strong>
+          </div>
+        ))}
       </section>
 
       <section className="moduleGrid" aria-label="主要機能">
-        {modules.map((module) => {
-          const Icon = module.icon;
+        {moduleRows.map((module) => {
+          const presentation = modulePresentation[module.key] ?? defaultModulePresentation;
+          const Icon = presentation.icon;
 
           return (
             <button
               aria-label={`${module.title}を開く`}
-              className={`moduleCard ${module.tone}`}
-              key={module.title}
-              onClick={() => setActiveView(module.target)}
+              className={`moduleCard ${presentation.tone}`}
+              key={module.key}
+              onClick={() => setActiveView(presentation.target)}
               type="button"
             >
               <div className="moduleHeader">
@@ -435,7 +530,7 @@ function DashboardView({ setActiveView }: { setActiveView: (view: ViewKey) => vo
                 </div>
                 <span>{module.status}</span>
               </div>
-              <p className="moduleTitle">{module.label}</p>
+              <p className="moduleTitle">{presentation.label}</p>
               <h2>{module.title}</h2>
               <p>{module.summary}</p>
             </button>
@@ -447,7 +542,7 @@ function DashboardView({ setActiveView }: { setActiveView: (view: ViewKey) => vo
         <section className="panel schedulePanel" aria-labelledby="schedule-heading">
           <div className="panelHeader">
             <div>
-              <p className="sectionLabel">本日</p>
+              <p className="sectionLabel">直近7日</p>
               <h2 id="schedule-heading">予定</h2>
             </div>
             <button
@@ -460,12 +555,22 @@ function DashboardView({ setActiveView }: { setActiveView: (view: ViewKey) => vo
             </button>
           </div>
           <div className="timeline">
-            {timeline.map((item) => (
-              <article className="timelineItem" key={`${item.time}-${item.title}`}>
-                <time>{item.time}</time>
+            {timelineRows.length === 0 && (
+              <EmptyState
+                title={
+                  dashboardState.status === "loading"
+                    ? "予定を取得しています"
+                    : "表示できる予定がありません"
+                }
+                description="API接続後、今後7日間の予定がここに並びます。"
+              />
+            )}
+            {timelineRows.map((item) => (
+              <article className="timelineItem" key={`${item.startsAt}-${item.title}`}>
+                <time>{formatTime(item.startsAt, timezone)}</time>
                 <div>
                   <h3>{item.title}</h3>
-                  <p>{item.meta}</p>
+                  <p>{formatTimelineMeta(item)}</p>
                 </div>
               </article>
             ))}
@@ -483,20 +588,34 @@ function DashboardView({ setActiveView }: { setActiveView: (view: ViewKey) => vo
             </button>
           </div>
           <div className="approvalList">
-            {approvals.map((approval) => (
-              <article className="approvalItem" key={approval.title}>
-                <div>
-                  <h3>{approval.title}</h3>
-                  <p>{approval.owner}</p>
-                </div>
-                <div className="approvalMeta">
-                  <span className={`riskBadge ${approval.level}`}>
-                    {approval.levelLabel}
-                  </span>
-                  <time>{approval.due}</time>
-                </div>
-              </article>
-            ))}
+            {approvalRows.length === 0 && (
+              <EmptyState
+                title={
+                  dashboardState.status === "loading"
+                    ? "承認待ちを取得しています"
+                    : "承認待ちはありません"
+                }
+                description="API接続後、対応が必要な申請がここに表示されます。"
+              />
+            )}
+            {approvalRows.map((approval) => {
+              const priority = getPriorityMeta(approval.priority);
+
+              return (
+                <article className="approvalItem" key={approval.title}>
+                  <div>
+                    <h3>{approval.title}</h3>
+                    <p>{approval.owner ?? approval.category}</p>
+                  </div>
+                  <div className="approvalMeta">
+                    <span className={`riskBadge ${priority.level}`}>
+                      {priority.label}
+                    </span>
+                    <time>{formatDue(approval.dueAt, timezone)}</time>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -504,18 +623,16 @@ function DashboardView({ setActiveView }: { setActiveView: (view: ViewKey) => vo
           <div className="panelHeader">
             <div>
               <p className="sectionLabel">セキュリティ</p>
-              <h2 id="security-heading">基本対策</h2>
+              <h2 id="security-heading">直近の監査</h2>
             </div>
             <LockKeyhole aria-hidden="true" className="panelIcon" size={21} />
           </div>
-          <ul className="securityList">
-            {securityItems.map((item) => (
-              <li key={item}>
-                <ShieldCheck aria-hidden="true" size={17} />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+          <AuditEventList
+            emptyDescription="API接続後、直近の監査イベントがここに表示されます。"
+            rows={securityRows}
+            status={dashboardState.status}
+            timezone={timezone}
+          />
         </section>
 
         <section className="panel mobilePanel" aria-labelledby="mobile-heading">
@@ -540,6 +657,176 @@ function DashboardView({ setActiveView }: { setActiveView: (view: ViewKey) => vo
       </section>
     </>
   );
+}
+
+function DataStatusNotice({
+  dashboardState,
+}: {
+  dashboardState: DashboardLoadState;
+}) {
+  if (dashboardState.status === "ready") {
+    return (
+      <section className="dataNotice ready" aria-label="データ接続状態">
+        <Database aria-hidden="true" size={19} />
+        <div>
+          <p className="sectionLabel">データベース連携</p>
+          <h2>実データでダッシュボードを表示しています</h2>
+          <p>
+            {dashboardState.updatedAt === null
+              ? "最新データを取得済みです。"
+              : `${formatDateTime(dashboardState.updatedAt, dashboardState.snapshot?.tenant.timezone ?? "Asia/Tokyo")} 時点で更新`}
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  if (dashboardState.status === "loading") {
+    return (
+      <section className="dataNotice loading" aria-label="データ接続状態">
+        <Database aria-hidden="true" size={19} />
+        <div>
+          <p className="sectionLabel">データベース連携</p>
+          <h2>最新データを取得しています</h2>
+          <p>予定、承認、通知、監査ログをAPIから読み込んでいます。</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="dataNotice error" aria-label="データ接続状態">
+      <AlertCircle aria-hidden="true" size={19} />
+      <div>
+        <p className="sectionLabel">データベース連携</p>
+        <h2>DBデータを取得できませんでした</h2>
+        <p>{dashboardState.message}</p>
+      </div>
+    </section>
+  );
+}
+
+function EmptyState({
+  description,
+  title,
+}: {
+  description: string;
+  title: string;
+}) {
+  return (
+    <div className="emptyState">
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </div>
+  );
+}
+
+function AuditEventList({
+  emptyDescription,
+  rows,
+  status,
+  timezone,
+}: {
+  emptyDescription: string;
+  rows: DashboardSnapshot["securityEvents"];
+  status: DashboardLoadState["status"];
+  timezone: string;
+}) {
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        description={emptyDescription}
+        title={
+          status === "loading"
+            ? "監査イベントを取得しています"
+            : "表示できる監査イベントがありません"
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="auditList">
+      {rows.map((event) => {
+        const severity = getSeverityMeta(event.severity);
+
+        return (
+          <article className="auditItem" key={`${event.createdAt}-${event.action}`}>
+            <time>{formatTime(event.createdAt, timezone)}</time>
+            <div>
+              <div className="auditTitleRow">
+                <h3>{event.action}</h3>
+                <span className={`severityBadge ${severity.level}`}>
+                  {severity.label}
+                </span>
+              </div>
+              <p>{event.actor ?? "システム"}</p>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("ja-JP").format(value);
+}
+
+function formatTime(value: string, timezone: string) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: timezone,
+  }).format(new Date(value));
+}
+
+function formatDateTime(value: string, timezone: string) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "long",
+    timeZone: timezone,
+  }).format(new Date(value));
+}
+
+function formatDue(value: string | null, timezone: string) {
+  if (value === null) {
+    return "期限なし";
+  }
+
+  return formatDateTime(value, timezone);
+}
+
+function formatTimelineMeta(item: DashboardSnapshot["timeline"][number]) {
+  const meta = [item.location, item.organizationUnit].filter(Boolean);
+
+  return meta.length > 0 ? meta.join(" / ") : "場所未設定";
+}
+
+function getPriorityMeta(priority: string) {
+  if (priority === "URGENT" || priority === "HIGH") {
+    return { label: "重要", level: "high" };
+  }
+
+  if (priority === "MEDIUM") {
+    return { label: "通常", level: "medium" };
+  }
+
+  return { label: "低", level: "low" };
+}
+
+function getSeverityMeta(severity: string) {
+  if (severity === "CRITICAL") {
+    return { label: "緊急", level: "critical" };
+  }
+
+  if (severity === "WARNING") {
+    return { label: "注意", level: "warning" };
+  }
+
+  return { label: "通知", level: "notice" };
 }
 
 function ScheduleView() {
@@ -701,7 +988,14 @@ function DocumentsView() {
   );
 }
 
-function SecurityView() {
+function SecurityView({
+  dashboardState,
+}: {
+  dashboardState: DashboardLoadState;
+}) {
+  const timezone = dashboardState.snapshot?.tenant.timezone ?? "Asia/Tokyo";
+  const securityRows = dashboardState.snapshot?.securityEvents ?? [];
+
   return (
     <section className="viewGrid">
       <section className="panel widePanel" aria-labelledby="audit-heading">
@@ -712,17 +1006,12 @@ function SecurityView() {
           </div>
           <History aria-hidden="true" className="panelIcon" size={21} />
         </div>
-        <div className="auditList">
-          {auditEvents.map(([time, title, detail]) => (
-            <article className="auditItem" key={`${time}-${title}`}>
-              <time>{time}</time>
-              <div>
-                <h3>{title}</h3>
-                <p>{detail}</p>
-              </div>
-            </article>
-          ))}
-        </div>
+        <AuditEventList
+          emptyDescription="DB接続後、管理操作や認証・権限変更の履歴がここに表示されます。"
+          rows={securityRows}
+          status={dashboardState.status}
+          timezone={timezone}
+        />
       </section>
 
       <section className="panel" aria-labelledby="control-heading">
