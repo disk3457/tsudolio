@@ -7,41 +7,6 @@ export const securityItems = [
   "リポジトリに秘密情報を含めない",
 ];
 
-export const scheduleDays = [
-  {
-    label: "今日",
-    date: "5月9日",
-    events: [
-      ["09:00", "災害対策連絡会", "第2会議室"],
-      ["11:00", "地域連携カンファレンス", "オンライン"],
-      ["15:30", "監査ログ確認", "情報政策課"],
-    ],
-  },
-  {
-    label: "明日",
-    date: "5月10日",
-    events: [
-      ["10:00", "定例部長会", "大会議室"],
-      ["13:30", "外部委託レビュー", "第1会議室"],
-    ],
-  },
-  {
-    label: "今週",
-    date: "5月11日から",
-    events: [
-      ["火 09:30", "電子決裁説明会", "研修室"],
-      ["水 14:00", "感染対策委員会", "講堂"],
-      ["金 16:00", "月次報告締切", "各部署"],
-    ],
-  },
-];
-
-export const facilities = [
-  { name: "第1会議室", status: "利用中", next: "13:00から空き", tone: "busy" },
-  { name: "大会議室", status: "予約可", next: "終日 3 枠あり", tone: "open" },
-  { name: "公用車 02", status: "確認中", next: "管理者承認待ち", tone: "wait" },
-];
-
 export const departments = [
   {
     name: "総務課",

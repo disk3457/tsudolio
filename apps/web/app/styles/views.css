@@ -10,6 +10,12 @@
   gap: 14px;
 }
 
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .segmentedControl {
   display: inline-grid;
   grid-auto-flow: column;
@@ -45,7 +51,92 @@
 }
 
 .scheduleBoard {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.scheduleAlert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 1px solid #ffd1dd;
+  border-radius: 8px;
+  color: var(--rose);
+  background: #fff7f9;
+}
+
+.scheduleAlert svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.scheduleAlert p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.scheduleForm {
+  display: grid;
+  gap: 16px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fieldControl {
+  display: grid;
+  gap: 7px;
+}
+
+.fieldControl.wide {
+  grid-column: span 2;
+}
+
+.fieldControl span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.fieldControl input,
+.fieldControl select,
+.fieldControl textarea {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #cdddeb;
+  border-radius: 8px;
+  color: var(--ink);
+  background: #ffffff;
+}
+
+.fieldControl input,
+.fieldControl select {
+  padding: 0 11px;
+}
+
+.fieldControl textarea {
+  resize: vertical;
+  min-height: 92px;
+  padding: 10px 11px;
+  line-height: 1.5;
+}
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 2px;
+}
+
+.formFooter p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
 
 .panelHeader.compact {
@@ -55,6 +146,70 @@
 .timelineItem.compact {
   grid-template-columns: 82px minmax(0, 1fr);
   min-height: 68px;
+}
+
+.scheduleEvent {
+  align-items: start;
+}
+
+.scheduleEvent time span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.scheduleEventHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.reservationBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  color: #08786f;
+  background: var(--cyan-soft);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.eventMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.eventMeta span {
+  min-height: 24px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.eventActions {
+  display: flex;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.iconButton.compact {
+  width: 32px;
+  min-height: 32px;
+}
+
+.iconButton.danger {
+  color: var(--rose);
+  border-color: #f5c7d2;
+  background: #fff7f9;
 }
 
 .quickCards {
@@ -71,6 +226,14 @@
 .facilityCard p {
   margin: 10px 0 0;
   color: var(--muted);
+}
+
+.facilityMeta {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .statusPill {
