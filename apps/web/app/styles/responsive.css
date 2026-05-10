@@ -1,0 +1,149 @@
+@media (max-width: 1100px) {
+  .appShell {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .brand {
+    justify-content: center;
+  }
+
+  .brand > div:last-child,
+  .navItem span {
+    display: none;
+  }
+
+  .navItem {
+    justify-content: center;
+  }
+
+  .moduleGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scheduleBoard,
+  .quickCards,
+  .orgGrid,
+  .settingsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .viewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actionCard {
+    grid-column: span 2;
+  }
+
+  .approvalPanel,
+  .mobilePanel,
+  .securityPanel {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .appShell {
+    display: block;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    padding: 12px;
+  }
+
+  .brand {
+    justify-content: flex-start;
+  }
+
+  .brand > div:last-child {
+    display: block;
+  }
+
+  .navList {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(48px, 1fr);
+    overflow-x: auto;
+    margin-top: 12px;
+  }
+
+  .workspace {
+    padding: 18px 14px 28px;
+  }
+
+  .topbar,
+  .topbarActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .searchBox {
+    width: 100%;
+  }
+
+  .topbarActions .iconButton {
+    align-self: flex-end;
+  }
+
+  h1 {
+    font-size: 1.55rem;
+  }
+
+  .statusStrip,
+  .moduleGrid,
+  .scheduleBoard,
+  .quickCards,
+  .orgGrid,
+  .settingsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .statusStrip > div {
+    min-height: 78px;
+  }
+
+  .moduleCard {
+    min-height: 162px;
+  }
+
+  .timelineItem,
+  .approvalItem,
+  .auditItem {
+    grid-template-columns: 1fr;
+  }
+
+  .approvalMeta {
+    justify-items: start;
+    white-space: normal;
+  }
+
+  .viewToolbar,
+  .facilityCard,
+  .actionCard {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .segmentedControl {
+    width: 100%;
+  }
+
+  .segmentedControl button {
+    min-width: 0;
+  }
+
+  .actionCard {
+    grid-column: auto;
+  }
+
+  .actionRow,
+  .actionRow .textButton,
+  .viewToolbar .textButton {
+    width: 100%;
+  }
+}
