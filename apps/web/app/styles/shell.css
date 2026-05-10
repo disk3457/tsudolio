@@ -164,3 +164,9 @@
   background: linear-gradient(135deg, var(--blue), var(--cyan));
   box-shadow: 0 12px 24px rgba(0, 111, 230, 0.16);
 }
+
+.iconButton:disabled,
+.textButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}

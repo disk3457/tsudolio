@@ -123,10 +123,20 @@
   }
 
   .viewToolbar,
+  .toolbarActions,
   .facilityCard,
+  .formFooter,
   .actionCard {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldControl.wide {
+    grid-column: auto;
   }
 
   .segmentedControl {
@@ -143,6 +153,8 @@
 
   .actionRow,
   .actionRow .textButton,
+  .toolbarActions .textButton,
+  .toolbarActions .iconButton,
   .viewToolbar .textButton {
     width: 100%;
   }
