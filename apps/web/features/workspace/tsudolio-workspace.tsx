@@ -3,18 +3,18 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { Bell, Search } from "lucide-react";
-import type { DashboardApiResponse } from "@/lib/dashboard-types";
-import { navItems } from "@/features/workspace/data/navigation";
 import type {
+  DashboardApiResponse,
   DashboardLoadState,
-  ViewKey,
-} from "@/features/workspace/types";
-import { DashboardView } from "@/features/workspace/views/dashboard-view";
-import { DocumentsView } from "@/features/workspace/views/documents-view";
-import { OrganizationView } from "@/features/workspace/views/organization-view";
-import { ScheduleView } from "@/features/workspace/views/schedule-view";
-import { SecurityView } from "@/features/workspace/views/security-view";
-import { SettingsView } from "@/features/workspace/views/settings-view";
+} from "@/features/dashboard/types";
+import { navItems } from "@/features/workspace/data/navigation";
+import type { ViewKey } from "@/features/workspace/types";
+import { DashboardView } from "@/features/dashboard/dashboard-view";
+import { DocumentsView } from "@/features/documents/documents-view";
+import { OrganizationView } from "@/features/organization/organization-view";
+import { ScheduleView } from "@/features/schedule/schedule-view";
+import { SecurityView } from "@/features/security/security-view";
+import { SettingsView } from "@/features/settings/settings-view";
 
 export function TsudolioWorkspace() {
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");

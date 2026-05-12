@@ -3,8 +3,8 @@ import {
   deleteOrganizationUnit,
   OrganizationDataError,
   updateOrganizationUnit,
-} from "@/lib/organization-data";
-import { parseOrganizationUnitInput } from "@/lib/organization-validation";
+} from "@/features/organization/server/organization-data";
+import { parseOrganizationUnitInput } from "@/features/organization/server/organization-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

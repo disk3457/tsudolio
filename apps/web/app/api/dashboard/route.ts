@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDashboardSnapshot } from "@/lib/dashboard-data";
+import { getDashboardSnapshot } from "@/features/dashboard/server/dashboard-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

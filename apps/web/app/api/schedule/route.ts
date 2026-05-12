@@ -3,11 +3,11 @@ import {
   createScheduleEvent,
   getScheduleSnapshot,
   ScheduleDataError,
-} from "@/lib/schedule-data";
+} from "@/features/schedule/server/schedule-data";
 import {
   parseScheduleEventInput,
   parseScheduleRange,
-} from "@/lib/schedule-validation";
+} from "@/features/schedule/server/schedule-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
