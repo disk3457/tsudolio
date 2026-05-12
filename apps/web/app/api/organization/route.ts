@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   getOrganizationSnapshot,
   OrganizationDataError,
-} from "@/lib/organization-data";
+} from "@/features/organization/server/organization-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

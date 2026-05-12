@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import {
   createUser,
   OrganizationDataError,
-} from "@/lib/organization-data";
-import { parseUserInput } from "@/lib/organization-validation";
+} from "@/features/organization/server/organization-data";
+import { parseUserInput } from "@/features/organization/server/organization-validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
