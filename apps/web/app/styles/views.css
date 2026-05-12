@@ -54,7 +54,8 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
-.scheduleAlert {
+.scheduleAlert,
+.viewAlert {
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -65,12 +66,14 @@
   background: #fff7f9;
 }
 
-.scheduleAlert svg {
+.scheduleAlert svg,
+.viewAlert svg {
   flex: 0 0 auto;
   margin-top: 1px;
 }
 
-.scheduleAlert p {
+.scheduleAlert p,
+.viewAlert p {
   margin: 0;
   line-height: 1.5;
 }
@@ -122,6 +125,22 @@
   min-height: 92px;
   padding: 10px 11px;
   line-height: 1.5;
+}
+
+.checkControl {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding-top: 22px;
+  color: var(--blue-deep);
+  font-weight: 800;
+}
+
+.checkControl input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
 }
 
 .formFooter {
@@ -268,6 +287,10 @@
   align-items: start;
 }
 
+.organizationStats {
+  margin-bottom: 0;
+}
+
 .widePanel {
   min-height: 100%;
 }
@@ -312,6 +335,19 @@
   color: var(--muted);
 }
 
+.orgCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.orgCardMeta span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .chipList {
   display: flex;
   flex-wrap: wrap;
@@ -327,6 +363,16 @@
   background: var(--blue-soft);
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.chipList.compact {
+  margin-top: 6px;
+}
+
+.chipList.compact span {
+  min-height: 24px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
 }
 
 .recordList,
@@ -353,6 +399,17 @@
   color: var(--muted);
   font-size: 0.84rem;
   line-height: 1.5;
+}
+
+.userRecordHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.userRecordHeader p {
+  margin: 5px 0 0;
 }
 
 .tablePanel {

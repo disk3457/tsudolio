@@ -7,51 +7,6 @@ export const securityItems = [
   "リポジトリに秘密情報を含めない",
 ];
 
-export const departments = [
-  {
-    name: "総務課",
-    type: "自治体",
-    users: "82名",
-    lead: "佐藤 課長",
-    children: ["防災安全課", "情報政策課", "契約検査室"],
-  },
-  {
-    name: "医療安全管理室",
-    type: "病院",
-    users: "36名",
-    lead: "中村 室長",
-    children: ["医事課", "看護部", "施設管理"],
-  },
-  {
-    name: "コーポレート本部",
-    type: "民間",
-    users: "128名",
-    lead: "田中 本部長",
-    children: ["人事", "経理", "情報システム"],
-  },
-];
-
-export const roleAssignments = [
-  {
-    role: "システム管理者",
-    scope: "全テナント設定",
-    members: "4名",
-    policy: "MFA必須 / 操作ログ常時記録",
-  },
-  {
-    role: "部門管理者",
-    scope: "所属組織と配下",
-    members: "42名",
-    policy: "利用者招待と施設予約を管理",
-  },
-  {
-    role: "一般利用者",
-    scope: "本人と所属部署",
-    members: "1,202名",
-    policy: "予定、掲示、申請を利用",
-  },
-];
-
 export const documentRows = [
   {
     title: "個人情報取扱マニュアル",

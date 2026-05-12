@@ -1,59 +1,100 @@
-import { KeyRound, UsersRound } from "lucide-react";
+"use client";
+
+import { AlertCircle } from "lucide-react";
+import { OrganizationDirectoryPanel } from "@/features/workspace/organization/organization-directory-panel";
 import {
-  departments,
-  roleAssignments,
-} from "@/features/workspace/data/static-demo";
+  OrganizationUnitForm,
+  UserForm,
+} from "@/features/workspace/organization/organization-forms";
+import { OrganizationRolePanel } from "@/features/workspace/organization/organization-role-panel";
+import { OrganizationStats } from "@/features/workspace/organization/organization-stats";
+import { OrganizationToolbar } from "@/features/workspace/organization/organization-toolbar";
+import { useOrganizationDirectory } from "@/features/workspace/organization/use-organization-directory";
 
 export function OrganizationView() {
-  return (
-    <section className="viewGrid">
-      <section className="panel widePanel" aria-labelledby="org-heading">
-        <div className="panelHeader">
-          <div>
-            <p className="sectionLabel">組織階層</p>
-            <h2 id="org-heading">複数業種に対応する部門モデル</h2>
-          </div>
-          <UsersRound aria-hidden="true" className="panelIcon" size={21} />
-        </div>
-        <div className="orgGrid">
-          {departments.map((department) => (
-            <article className="orgCard" key={department.name}>
-              <div className="orgCardHeader">
-                <span>{department.type}</span>
-                <strong>{department.users}</strong>
-              </div>
-              <h3>{department.name}</h3>
-              <p>{department.lead}</p>
-              <div className="chipList">
-                {department.children.map((child) => (
-                  <span key={child}>{child}</span>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+  const {
+    activePanel,
+    activeUsers,
+    adminUsers,
+    closeUnitForm,
+    closeUserForm,
+    deletingId,
+    formUnits,
+    handleUnitDelete,
+    handleUnitSubmit,
+    handleUserDelete,
+    handleUserSubmit,
+    loadOrganization,
+    openUnitForm,
+    openUserForm,
+    organizationState,
+    organizationUnits,
+    roles,
+    saving,
+    setActivePanel,
+    unitForm,
+    updateUnitForm,
+    updateUserForm,
+    userForm,
+    users,
+  } = useOrganizationDirectory();
 
-      <section className="panel" aria-labelledby="role-heading">
-        <div className="panelHeader">
-          <div>
-            <p className="sectionLabel">権限</p>
-            <h2 id="role-heading">ロール設計</h2>
-          </div>
-          <KeyRound aria-hidden="true" className="panelIcon" size={21} />
+  return (
+    <section className="viewStack">
+      <OrganizationToolbar
+        activePanel={activePanel}
+        onActivePanelChange={setActivePanel}
+        onOpenUnitForm={() => openUnitForm()}
+        onOpenUserForm={() => openUserForm()}
+        onRefresh={() => void loadOrganization()}
+      />
+
+      {organizationState.message && (
+        <div className="viewAlert" role="alert">
+          <AlertCircle aria-hidden="true" size={18} />
+          <p>{organizationState.message}</p>
         </div>
-        <div className="recordList">
-          {roleAssignments.map((role) => (
-            <article className="recordItem" key={role.role}>
-              <div>
-                <h3>{role.role}</h3>
-                <p>{role.scope}</p>
-              </div>
-              <strong>{role.members}</strong>
-              <span>{role.policy}</span>
-            </article>
-          ))}
-        </div>
+      )}
+
+      <OrganizationUnitForm
+        form={unitForm}
+        formUnits={formUnits}
+        onCancel={closeUnitForm}
+        onSubmit={(event) => void handleUnitSubmit(event)}
+        onUpdateField={updateUnitForm}
+        saving={saving}
+      />
+
+      <UserForm
+        form={userForm}
+        organizationUnits={organizationUnits}
+        onCancel={closeUserForm}
+        onSubmit={(event) => void handleUserSubmit(event)}
+        onUpdateField={updateUserForm}
+        saving={saving}
+      />
+
+      <OrganizationStats
+        activeUserCount={activeUsers.length}
+        adminUserCount={adminUsers.length}
+        organizationUnitCount={organizationUnits.length}
+        roleCount={roles.length}
+      />
+
+      <section className="viewGrid">
+        <OrganizationDirectoryPanel
+          activePanel={activePanel}
+          deletingId={deletingId}
+          onDeleteUnit={(unit) => void handleUnitDelete(unit)}
+          onDeleteUser={(user) => void handleUserDelete(user)}
+          onEditUnit={openUnitForm}
+          onEditUser={openUserForm}
+          organizationUnits={organizationUnits}
+          status={organizationState.status}
+          users={users}
+        />
+
+        <OrganizationRolePanel roles={roles} />
       </section>
     </section>
   );
