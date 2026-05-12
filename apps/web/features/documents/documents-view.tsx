@@ -1,50 +1,76 @@
-import { FileCheck2, FileText } from "lucide-react";
-import { documentRows } from "@/features/documents/document-demo-data";
+"use client";
+
+import { AlertCircle } from "lucide-react";
+import { DocumentForm } from "@/features/documents/document-form";
+import { DocumentStats } from "@/features/documents/document-stats";
+import { DocumentTable } from "@/features/documents/document-table";
+import { DocumentToolbar } from "@/features/documents/document-toolbar";
+import { useDocumentDirectory } from "@/features/documents/use-document-directory";
 
 export function DocumentsView() {
+  const {
+    activeCategory,
+    activeDocuments,
+    categories,
+    closeForm,
+    deletingId,
+    documentState,
+    documents,
+    formState,
+    handleDelete,
+    handleSubmit,
+    loadDocuments,
+    openCreateForm,
+    openEditForm,
+    organizationUnits,
+    reviewDocuments,
+    saving,
+    setActiveCategory,
+    updateForm,
+    visibleDocuments,
+  } = useDocumentDirectory();
+
   return (
     <section className="viewStack">
-      <div className="viewToolbar" aria-label="文書操作">
-        <div className="segmentedControl" aria-label="文書分類">
-          <button className="active" type="button">共有</button>
-          <button type="button">規程</button>
-          <button type="button">申請添付</button>
-        </div>
-        <button className="textButton primary" type="button">
-          <FileCheck2 aria-hidden="true" size={17} />
-          文書を登録
-        </button>
-      </div>
+      <DocumentToolbar
+        activeCategory={activeCategory}
+        categories={categories}
+        onActiveCategoryChange={setActiveCategory}
+        onOpenCreateForm={openCreateForm}
+        onRefresh={() => void loadDocuments()}
+      />
 
-      <section className="panel tablePanel" aria-labelledby="document-heading">
-        <div className="panelHeader">
-          <div>
-            <p className="sectionLabel">文書台帳</p>
-            <h2 id="document-heading">共有文書</h2>
-          </div>
-          <FileText aria-hidden="true" className="panelIcon" size={21} />
+      {documentState.message && (
+        <div className="viewAlert" role="alert">
+          <AlertCircle aria-hidden="true" size={18} />
+          <p>{documentState.message}</p>
         </div>
-        <div className="dataTable">
-          <div className="dataRow heading">
-            <span>文書名</span>
-            <span>分類</span>
-            <span>管理部署</span>
-            <span>版</span>
-            <span>保管期限</span>
-            <span>状態</span>
-          </div>
-          {documentRows.map((document) => (
-            <div className="dataRow" key={document.title}>
-              <strong>{document.title}</strong>
-              <span>{document.area}</span>
-              <span>{document.owner}</span>
-              <span>{document.version}</span>
-              <span>{document.retention}</span>
-              <span className="statusPill open">{document.status}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      )}
+
+      <DocumentForm
+        form={formState}
+        onCancel={closeForm}
+        onSubmit={(event) => void handleSubmit(event)}
+        onUpdateField={updateForm}
+        organizationUnits={organizationUnits}
+        saving={saving}
+      />
+
+      <DocumentStats
+        activeCount={activeDocuments.length}
+        categoryCount={categories.length}
+        documentCount={documents.length}
+        reviewCount={reviewDocuments.length}
+      />
+
+      <DocumentTable
+        activeCategory={activeCategory}
+        deletingId={deletingId}
+        documents={visibleDocuments}
+        onDelete={(document) => void handleDelete(document)}
+        onEdit={openEditForm}
+        status={documentState.status}
+      />
     </section>
   );
 }
