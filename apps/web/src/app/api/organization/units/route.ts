@@ -6,6 +6,8 @@ import {
   dataResponse,
   readRequestJson,
 } from "@/presentation/http/json-response";
+import { requireMutationContext } from "@/app/api/_shared/request-context";
+import { permissions } from "@/application/security/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,10 +18,17 @@ const organizationUseCases = createOrganizationUseCases(
 
 export async function POST(request: Request) {
   try {
+    const context = await requireMutationContext(
+      request,
+      permissions.manageOrganization,
+    );
     const input = parseOrganizationUnitInput(
       await readRequestJson(request, "組織データのJSONを読み取れませんでした。"),
     );
-    const unit = await organizationUseCases.createOrganizationUnit(input);
+    const unit = await organizationUseCases.createOrganizationUnit(
+      input,
+      context,
+    );
 
     return dataResponse(unit, 201);
   } catch (error) {

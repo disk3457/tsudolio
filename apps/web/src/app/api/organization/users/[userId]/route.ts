@@ -6,6 +6,15 @@ import {
   dataResponse,
   readRequestJson,
 } from "@/presentation/http/json-response";
+import {
+  requireMutationContext,
+  requirePermission,
+} from "@/app/api/_shared/request-context";
+import {
+  assertPermission,
+  permissions,
+  toMutationContext,
+} from "@/application/security/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,11 +31,23 @@ type RouteContext = {
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
+    const currentUser = await requirePermission(
+      request,
+      permissions.manageOrganization,
+    );
     const { userId } = await context.params;
     const input = parseUserInput(
       await readRequestJson(request, "利用者データのJSONを読み取れませんでした。"),
     );
-    const user = await organizationUseCases.updateUser(userId, input);
+    if (input.isSystemAdmin) {
+      assertPermission(currentUser, permissions.manageTenant);
+    }
+
+    const user = await organizationUseCases.updateUser(
+      userId,
+      input,
+      toMutationContext(currentUser),
+    );
 
     return dataResponse(user);
   } catch (error) {
@@ -34,10 +55,17 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
+    const mutationContext = await requireMutationContext(
+      request,
+      permissions.manageOrganization,
+    );
     const { userId } = await context.params;
-    const result = await organizationUseCases.deleteOrSuspendUser(userId);
+    const result = await organizationUseCases.deleteOrSuspendUser(
+      userId,
+      mutationContext,
+    );
 
     return dataResponse(result);
   } catch (error) {

@@ -4,6 +4,7 @@ import {
   applicationErrorResponse,
   dataResponse,
 } from "@/presentation/http/json-response";
+import { getTenantCodeFromRequest } from "@/app/api/_shared/request-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,9 +13,11 @@ const organizationUseCases = createOrganizationUseCases(
   prismaOrganizationRepository,
 );
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const snapshot = await organizationUseCases.getOrganizationSnapshot();
+    const snapshot = await organizationUseCases.getOrganizationSnapshot(
+      getTenantCodeFromRequest(request) ?? undefined,
+    );
 
     return dataResponse(snapshot);
   } catch (error) {

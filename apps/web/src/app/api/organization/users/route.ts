@@ -6,6 +6,12 @@ import {
   dataResponse,
   readRequestJson,
 } from "@/presentation/http/json-response";
+import { requirePermission } from "@/app/api/_shared/request-context";
+import {
+  assertPermission,
+  permissions,
+  toMutationContext,
+} from "@/application/security/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,10 +22,21 @@ const organizationUseCases = createOrganizationUseCases(
 
 export async function POST(request: Request) {
   try {
+    const currentUser = await requirePermission(
+      request,
+      permissions.manageOrganization,
+    );
     const input = parseUserInput(
       await readRequestJson(request, "利用者データのJSONを読み取れませんでした。"),
     );
-    const user = await organizationUseCases.createUser(input);
+    if (input.isSystemAdmin) {
+      assertPermission(currentUser, permissions.manageTenant);
+    }
+
+    const user = await organizationUseCases.createUser(
+      input,
+      toMutationContext(currentUser),
+    );
 
     return dataResponse(user, 201);
   } catch (error) {

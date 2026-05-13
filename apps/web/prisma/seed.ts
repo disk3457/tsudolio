@@ -105,8 +105,18 @@ async function main() {
   );
   await upsertMembership(tenant.id, requester.id, security.id);
 
-  const [manageTenant, approveWorkflow, readDocuments] = await Promise.all([
+  const [
+    manageTenant,
+    manageOrganization,
+    manageSchedule,
+    manageDocuments,
+    approveWorkflow,
+    readDocuments,
+  ] = await Promise.all([
     upsertPermission("tenant.manage", "テナント設定を管理"),
+    upsertPermission("organization.manage", "組織・利用者を管理"),
+    upsertPermission("schedule.manage", "予定・施設予約を管理"),
+    upsertPermission("document.manage", "文書を管理"),
     upsertPermission("workflow.approve", "申請を承認"),
     upsertPermission("document.read", "文書を閲覧"),
   ]);
@@ -124,6 +134,9 @@ async function main() {
 
   await Promise.all([
     attachPermission(adminRole.id, manageTenant.id),
+    attachPermission(adminRole.id, manageOrganization.id),
+    attachPermission(adminRole.id, manageSchedule.id),
+    attachPermission(adminRole.id, manageDocuments.id),
     attachPermission(adminRole.id, approveWorkflow.id),
     attachPermission(adminRole.id, readDocuments.id),
     attachPermission(approverRole.id, approveWorkflow.id),

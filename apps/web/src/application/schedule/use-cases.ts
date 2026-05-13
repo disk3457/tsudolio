@@ -4,6 +4,7 @@ import type {
   ScheduleRange,
   ScheduleSnapshot,
 } from "@/application/schedule/types";
+import type { MutationContext } from "@/application/security/types";
 
 export type ScheduleRepository = {
   getScheduleSnapshot: (
@@ -12,14 +13,17 @@ export type ScheduleRepository = {
   ) => Promise<ScheduleSnapshot>;
   createScheduleEvent: (
     input: ScheduleEventInput,
-    tenantCode?: string,
+    context: MutationContext,
   ) => Promise<ScheduleEventSummary>;
   updateScheduleEvent: (
     eventId: string,
     input: ScheduleEventInput,
-    tenantCode?: string,
+    context: MutationContext,
   ) => Promise<ScheduleEventSummary>;
-  deleteScheduleEvent: (eventId: string, tenantCode?: string) => Promise<void>;
+  deleteScheduleEvent: (
+    eventId: string,
+    context: MutationContext,
+  ) => Promise<void>;
 };
 
 export function createScheduleUseCases(repository: ScheduleRepository) {

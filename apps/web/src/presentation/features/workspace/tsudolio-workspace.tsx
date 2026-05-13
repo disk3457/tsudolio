@@ -7,6 +7,10 @@ import type {
   DashboardApiResponse,
   DashboardLoadState,
 } from "@/application/dashboard/types";
+import type {
+  CurrentUserApiResponse,
+  SessionLoadState,
+} from "@/application/security/types";
 import { navItems } from "@/presentation/features/workspace/data/navigation";
 import type { ViewKey } from "@/presentation/features/workspace/types";
 import { DashboardView } from "@/presentation/features/dashboard/dashboard-view";
@@ -25,8 +29,18 @@ export function TsudolioWorkspace() {
     message: null,
     updatedAt: null,
   });
+  const [sessionState, setSessionState] = useState<SessionLoadState>({
+    session: null,
+    status: "loading",
+    message: null,
+  });
   const activeItem = navItems.find((item) => item.key === activeView) ?? navItems[0];
   const tenantName = dashboardState.snapshot?.tenant.name ?? "デモ市総合病院";
+  const currentUserLabel =
+    sessionState.session?.user.displayName ?? "利用者確認中";
+  const currentUserRoleLabel = sessionState.session?.user.isSystemAdmin
+    ? "システム管理者"
+    : `${sessionState.session?.permissions.length ?? 0} 権限`;
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -73,6 +87,53 @@ export function TsudolioWorkspace() {
     }
 
     void loadDashboard();
+
+    return () => {
+      shouldIgnore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let shouldIgnore = false;
+
+    async function loadSession() {
+      try {
+        const response = await fetch("/api/auth/session", {
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        const body = (await response.json()) as CurrentUserApiResponse;
+
+        if (!response.ok || !("data" in body)) {
+          throw new Error(
+            "message" in body ? body.message : "利用者情報を取得できませんでした",
+          );
+        }
+
+        if (!shouldIgnore) {
+          setSessionState({
+            session: body.data,
+            status: "ready",
+            message: null,
+          });
+        }
+      } catch (error) {
+        if (!shouldIgnore) {
+          setSessionState({
+            session: null,
+            status: "error",
+            message:
+              error instanceof Error
+                ? error.message
+                : "利用者情報を取得できませんでした",
+          });
+        }
+      }
+    }
+
+    void loadSession();
 
     return () => {
       shouldIgnore = true;
@@ -127,6 +188,13 @@ export function TsudolioWorkspace() {
             <p className="topbarLead">{activeItem.description}</p>
           </div>
           <div className="topbarActions">
+            <div
+              aria-label={sessionState.message ?? "現在の利用者"}
+              className={`sessionBadge ${sessionState.status}`}
+            >
+              <strong>{currentUserLabel}</strong>
+              <span>{currentUserRoleLabel}</span>
+            </div>
             <label className="searchBox">
               <Search aria-hidden="true" size={18} />
               <span className="srOnly">検索</span>

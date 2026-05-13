@@ -41,6 +41,13 @@ case from an application contract plus an infrastructure repository, and return
 HTTP output. UI components call API routes or consume application DTOs; they do
 not import Prisma or generated database types.
 
+API route handlers also resolve request identity at the delivery boundary.
+`src/application/security` owns permission codes and authorization policy,
+while `src/infrastructure/prisma/current-user-repository.ts` adapts seeded
+tenant, membership, role, and permission records into a current-user context.
+This keeps the future OIDC/SSO adapter replaceable without changing product
+use cases.
+
 ## Tenancy
 
 Every persistent business record must be scoped by `tenant_id`. Cross-tenant administration should use separate platform-level roles and explicit break-glass audit events.

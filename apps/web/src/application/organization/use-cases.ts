@@ -5,28 +5,35 @@ import type {
   UserInput,
   UserSummary,
 } from "@/application/organization/types";
+import type { MutationContext } from "@/application/security/types";
 
 export type OrganizationRepository = {
   getOrganizationSnapshot: (tenantCode?: string) => Promise<OrganizationSnapshot>;
   createOrganizationUnit: (
     input: OrganizationUnitInput,
-    tenantCode?: string,
+    context: MutationContext,
   ) => Promise<OrganizationUnitSummary>;
   updateOrganizationUnit: (
     unitId: string,
     input: OrganizationUnitInput,
-    tenantCode?: string,
+    context: MutationContext,
   ) => Promise<OrganizationUnitSummary>;
-  deleteOrganizationUnit: (unitId: string, tenantCode?: string) => Promise<void>;
-  createUser: (input: UserInput, tenantCode?: string) => Promise<UserSummary>;
+  deleteOrganizationUnit: (
+    unitId: string,
+    context: MutationContext,
+  ) => Promise<void>;
+  createUser: (
+    input: UserInput,
+    context: MutationContext,
+  ) => Promise<UserSummary>;
   updateUser: (
     userId: string,
     input: UserInput,
-    tenantCode?: string,
+    context: MutationContext,
   ) => Promise<UserSummary>;
   deleteOrSuspendUser: (
     userId: string,
-    tenantCode?: string,
+    context: MutationContext,
   ) => Promise<{ id: string; deleted: boolean; suspended?: boolean }>;
 };
 

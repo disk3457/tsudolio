@@ -86,6 +86,13 @@
     width: 100%;
   }
 
+  .sessionBadge {
+    align-items: flex-start;
+    min-width: 0;
+    text-align: left;
+    width: 100%;
+  }
+
   .topbarActions .iconButton {
     align-self: flex-end;
   }
