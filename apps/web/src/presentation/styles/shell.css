@@ -113,6 +113,39 @@
   gap: 10px;
 }
 
+.sessionBadge {
+  align-items: flex-end;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(23, 37, 84, 0.1);
+  border-radius: 8px;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+  min-height: 42px;
+  min-width: 136px;
+  padding: 7px 10px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.sessionBadge strong {
+  font-size: 0.84rem;
+  line-height: 1.15;
+}
+
+.sessionBadge span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+
+.sessionBadge.error {
+  background: rgba(255, 245, 245, 0.9);
+  border-color: rgba(190, 18, 60, 0.2);
+}
+
 .searchBox {
   display: flex;
   align-items: center;

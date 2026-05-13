@@ -6,6 +6,8 @@ import {
   dataResponse,
   readRequestJson,
 } from "@/presentation/http/json-response";
+import { requireMutationContext } from "@/app/api/_shared/request-context";
+import { permissions } from "@/application/security/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,11 +22,19 @@ type RouteContext = {
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
+    const mutationContext = await requireMutationContext(
+      request,
+      permissions.manageSchedule,
+    );
     const { eventId } = await context.params;
     const input = parseScheduleEventInput(
       await readRequestJson(request, "予定データのJSONを読み取れませんでした。"),
     );
-    const event = await scheduleUseCases.updateScheduleEvent(eventId, input);
+    const event = await scheduleUseCases.updateScheduleEvent(
+      eventId,
+      input,
+      mutationContext,
+    );
 
     return dataResponse(event);
   } catch (error) {
@@ -32,10 +42,14 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
+    const mutationContext = await requireMutationContext(
+      request,
+      permissions.manageSchedule,
+    );
     const { eventId } = await context.params;
-    await scheduleUseCases.deleteScheduleEvent(eventId);
+    await scheduleUseCases.deleteScheduleEvent(eventId, mutationContext);
 
     return dataResponse({
       id: eventId,

@@ -6,15 +6,22 @@ import {
   dataResponse,
   readRequestJson,
 } from "@/presentation/http/json-response";
+import {
+  getTenantCodeFromRequest,
+  requireMutationContext,
+} from "@/app/api/_shared/request-context";
+import { permissions } from "@/application/security/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const documentUseCases = createDocumentUseCases(prismaDocumentRepository);
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const snapshot = await documentUseCases.getDocumentSnapshot();
+    const snapshot = await documentUseCases.getDocumentSnapshot(
+      getTenantCodeFromRequest(request) ?? undefined,
+    );
 
     return dataResponse(snapshot);
   } catch (error) {
@@ -24,10 +31,14 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const context = await requireMutationContext(
+      request,
+      permissions.manageDocuments,
+    );
     const input = parseDocumentInput(
       await readRequestJson(request, "文書データのJSONを読み取れませんでした。"),
     );
-    const document = await documentUseCases.createDocument(input);
+    const document = await documentUseCases.createDocument(input, context);
 
     return dataResponse(document, 201);
   } catch (error) {

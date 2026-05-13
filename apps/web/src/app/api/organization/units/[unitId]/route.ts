@@ -6,6 +6,8 @@ import {
   dataResponse,
   readRequestJson,
 } from "@/presentation/http/json-response";
+import { requireMutationContext } from "@/app/api/_shared/request-context";
+import { permissions } from "@/application/security/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +24,10 @@ type RouteContext = {
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
+    const mutationContext = await requireMutationContext(
+      request,
+      permissions.manageOrganization,
+    );
     const { unitId } = await context.params;
     const input = parseOrganizationUnitInput(
       await readRequestJson(request, "組織データのJSONを読み取れませんでした。"),
@@ -29,6 +35,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     const unit = await organizationUseCases.updateOrganizationUnit(
       unitId,
       input,
+      mutationContext,
     );
 
     return dataResponse(unit);
@@ -37,10 +44,14 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
+    const mutationContext = await requireMutationContext(
+      request,
+      permissions.manageOrganization,
+    );
     const { unitId } = await context.params;
-    await organizationUseCases.deleteOrganizationUnit(unitId);
+    await organizationUseCases.deleteOrganizationUnit(unitId, mutationContext);
 
     return dataResponse({
       id: unitId,

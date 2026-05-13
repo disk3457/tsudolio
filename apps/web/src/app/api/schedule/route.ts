@@ -9,6 +9,11 @@ import {
   dataResponse,
   readRequestJson,
 } from "@/presentation/http/json-response";
+import {
+  getTenantCodeFromRequest,
+  requireMutationContext,
+} from "@/app/api/_shared/request-context";
+import { permissions } from "@/application/security/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +24,10 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const range = parseScheduleRange(url.searchParams.get("range"));
-    const snapshot = await scheduleUseCases.getScheduleSnapshot(range);
+    const snapshot = await scheduleUseCases.getScheduleSnapshot(
+      range,
+      getTenantCodeFromRequest(request) ?? undefined,
+    );
 
     return dataResponse(snapshot);
   } catch (error) {
@@ -29,10 +37,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const context = await requireMutationContext(
+      request,
+      permissions.manageSchedule,
+    );
     const input = parseScheduleEventInput(
       await readRequestJson(request, "予定データのJSONを読み取れませんでした。"),
     );
-    const event = await scheduleUseCases.createScheduleEvent(input);
+    const event = await scheduleUseCases.createScheduleEvent(input, context);
 
     return dataResponse(event, 201);
   } catch (error) {

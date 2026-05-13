@@ -7,6 +7,7 @@ import type {
   ScheduleRange,
   ScheduleSnapshot,
 } from "@/application/schedule/types";
+import type { MutationContext } from "@/application/security/types";
 import { ScheduleApplicationError } from "@/application/schedule/errors";
 import { reservationWorkflowStatusForFacility } from "@/domain/schedule/facility-reservation";
 import type { Prisma } from "@generated/prisma/client";
@@ -67,14 +68,14 @@ export async function getScheduleSnapshot(
 
 export async function createScheduleEvent(
   input: ScheduleEventInput,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ): Promise<ScheduleEventSummary> {
-  const tenant = await getTenantOrThrow(tenantCode);
-  const actor = await getDefaultActor(tenant.id);
+  const tenant = await getTenantOrThrow(context.tenantCode);
   const startsAt = new Date(input.startsAt);
   const endsAt = new Date(input.endsAt);
 
   const eventId = await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     await assertOrganizationBelongsToTenant(
       tx,
       tenant.id,
@@ -115,7 +116,7 @@ export async function createScheduleEvent(
       data: {
         tenantId: tenant.id,
         organizationUnitId: input.organizationUnitId,
-        createdById: actor.id,
+        createdById: context.actorUserId,
         title: input.title,
         description: input.description,
         startsAt,
@@ -151,13 +152,14 @@ export async function createScheduleEvent(
 export async function updateScheduleEvent(
   eventId: string,
   input: ScheduleEventInput,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ): Promise<ScheduleEventSummary> {
-  const tenant = await getTenantOrThrow(tenantCode);
+  const tenant = await getTenantOrThrow(context.tenantCode);
   const startsAt = new Date(input.startsAt);
   const endsAt = new Date(input.endsAt);
 
   const updatedEventId = await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     const existingEvent = await tx.calendarEvent.findFirst({
       where: {
         id: eventId,
@@ -265,11 +267,12 @@ export async function updateScheduleEvent(
 
 export async function deleteScheduleEvent(
   eventId: string,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ) {
-  const tenant = await getTenantOrThrow(tenantCode);
+  const tenant = await getTenantOrThrow(context.tenantCode);
 
   await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     const existingEvent = await tx.calendarEvent.findFirst({
       where: {
         id: eventId,
@@ -343,12 +346,16 @@ async function getTenantOrThrow(tenantCode: string) {
   return tenant;
 }
 
-async function getDefaultActor(tenantId: string) {
-  const actor = await prisma.user.findFirst({
+async function assertUserBelongsToTenant(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  userId: string,
+) {
+  const actor = await tx.user.findFirst({
     where: {
       tenantId,
+      id: userId,
     },
-    orderBy: [{ isSystemAdmin: "desc" }, { createdAt: "asc" }],
     select: {
       id: true,
     },
@@ -357,12 +364,10 @@ async function getDefaultActor(tenantId: string) {
   if (!actor) {
     throw new ScheduleApplicationError(
       "ACTOR_NOT_FOUND",
-      "予定の登録者として使用できる利用者が見つかりません。",
+      "予定を操作する利用者が見つかりません。",
       404,
     );
   }
-
-  return actor;
 }
 
 async function findScheduleEvents(

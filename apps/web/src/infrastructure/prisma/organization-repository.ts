@@ -8,6 +8,7 @@ import type {
   UserInput,
   UserSummary,
 } from "@/application/organization/types";
+import type { MutationContext } from "@/application/security/types";
 import { OrganizationApplicationError } from "@/application/organization/errors";
 import {
   buildOrganizationUnitPath,
@@ -59,11 +60,12 @@ export async function getOrganizationSnapshot(
 
 export async function createOrganizationUnit(
   input: OrganizationUnitInput,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ): Promise<OrganizationUnitSummary> {
-  const tenant = await getTenantOrThrow(tenantCode);
+  const tenant = await getTenantOrThrow(context.tenantCode);
 
   const unitId = await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     const parent = await getParentUnit(tx, tenant.id, input.parentId);
 
     const unit = await tx.organizationUnit.create({
@@ -90,11 +92,12 @@ export async function createOrganizationUnit(
 export async function updateOrganizationUnit(
   unitId: string,
   input: OrganizationUnitInput,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ): Promise<OrganizationUnitSummary> {
-  const tenant = await getTenantOrThrow(tenantCode);
+  const tenant = await getTenantOrThrow(context.tenantCode);
 
   const updatedUnitId = await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     const existingUnit = await tx.organizationUnit.findFirst({
       where: {
         id: unitId,
@@ -152,11 +155,12 @@ export async function updateOrganizationUnit(
 
 export async function deleteOrganizationUnit(
   unitId: string,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ) {
-  const tenant = await getTenantOrThrow(tenantCode);
+  const tenant = await getTenantOrThrow(context.tenantCode);
 
   await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     const unit = await tx.organizationUnit.findFirst({
       where: {
         id: unitId,
@@ -210,11 +214,12 @@ export async function deleteOrganizationUnit(
 
 export async function createUser(
   input: UserInput,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ): Promise<UserSummary> {
-  const tenant = await getTenantOrThrow(tenantCode);
+  const tenant = await getTenantOrThrow(context.tenantCode);
 
   const userId = await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     await assertOrganizationBelongsToTenant(
       tx,
       tenant.id,
@@ -255,11 +260,12 @@ export async function createUser(
 export async function updateUser(
   userId: string,
   input: UserInput,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ): Promise<UserSummary> {
-  const tenant = await getTenantOrThrow(tenantCode);
+  const tenant = await getTenantOrThrow(context.tenantCode);
 
   const updatedUserId = await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     const existingUser = await tx.user.findFirst({
       where: {
         id: userId,
@@ -325,11 +331,12 @@ export async function updateUser(
 
 export async function deleteOrSuspendUser(
   userId: string,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ) {
-  const tenant = await getTenantOrThrow(tenantCode);
+  const tenant = await getTenantOrThrow(context.tenantCode);
 
   return prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     const user = await tx.user.findFirst({
       where: {
         id: userId,
@@ -616,6 +623,30 @@ async function getParentUnit(
   }
 
   return parent;
+}
+
+async function assertUserBelongsToTenant(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  userId: string,
+) {
+  const user = await tx.user.findFirst({
+    where: {
+      id: userId,
+      tenantId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!user) {
+    throw new OrganizationApplicationError(
+      "ACTOR_NOT_FOUND",
+      "組織を操作する利用者が見つかりません。",
+      404,
+    );
+  }
 }
 
 async function assertOrganizationBelongsToTenant(

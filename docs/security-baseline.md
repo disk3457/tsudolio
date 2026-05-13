@@ -19,6 +19,33 @@
 - Dependency scanning in CI
 - Backup and restore procedures before production use
 
+## Current Implementation
+
+- API routes resolve the current tenant from `x-tsudolio-tenant-code` or
+  `TSUDOLIO_TENANT_CODE`, falling back to the seeded demo tenant.
+- Until full OIDC/SSO is implemented, API routes resolve the current user from
+  `x-tsudolio-user-email` or `TSUDOLIO_ACTOR_EMAIL`, falling back to the seeded
+  demo administrator.
+- Mutating schedule, organization, and document APIs require explicit
+  permissions before calling application use cases.
+- Creating or updating a system administrator requires `tenant.manage` in
+  addition to organization user-management permission.
+- `is_system_admin` is treated as a full-permission break-glass flag for the
+  demo foundation. Production authentication must still provide a request
+  identity and tenant context.
+- `GET /api/auth/session` returns the current tenant, user, assigned
+  permissions, and effective permission booleans for the UI.
+
+Permission codes currently used by the API boundary:
+
+- `schedule.manage`: create, update, and delete schedules and facility
+  reservations
+- `organization.manage`: create, update, and delete organization units and
+  users
+- `document.manage`: create, update, and delete document registry records
+- `tenant.manage`, `document.read`, `workflow.approve`: seeded for the next
+  administration, document access, and workflow steps
+
 ## Explicit Non-Goals for the First Public MVP
 
 - Electronic medical records
@@ -27,4 +54,3 @@
 - Payment or payroll processing
 
 These domains require separate legal, operational, and security review.
-

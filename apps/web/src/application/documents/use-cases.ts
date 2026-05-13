@@ -3,19 +3,23 @@ import type {
   DocumentSnapshot,
   DocumentSummary,
 } from "@/application/documents/types";
+import type { MutationContext } from "@/application/security/types";
 
 export type DocumentRepository = {
   getDocumentSnapshot: (tenantCode?: string) => Promise<DocumentSnapshot>;
   createDocument: (
     input: DocumentInput,
-    tenantCode?: string,
+    context: MutationContext,
   ) => Promise<DocumentSummary>;
   updateDocument: (
     documentId: string,
     input: DocumentInput,
-    tenantCode?: string,
+    context: MutationContext,
   ) => Promise<DocumentSummary>;
-  deleteDocument: (documentId: string, tenantCode?: string) => Promise<void>;
+  deleteDocument: (
+    documentId: string,
+    context: MutationContext,
+  ) => Promise<void>;
 };
 
 export function createDocumentUseCases(repository: DocumentRepository) {

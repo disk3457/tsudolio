@@ -5,6 +5,7 @@ import type {
   DocumentSnapshot,
   DocumentSummary,
 } from "@/application/documents/types";
+import type { MutationContext } from "@/application/security/types";
 import { DocumentApplicationError } from "@/application/documents/errors";
 import type { Prisma } from "@generated/prisma/client";
 import { DocumentStatus } from "@generated/prisma/enums";
@@ -43,12 +44,12 @@ export async function getDocumentSnapshot(
 
 export async function createDocument(
   input: DocumentInput,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ): Promise<DocumentSummary> {
-  const tenant = await getTenantOrThrow(tenantCode);
-  const uploader = await getDefaultUploader(tenant.id);
+  const tenant = await getTenantOrThrow(context.tenantCode);
 
   const documentId = await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     await assertOrganizationBelongsToTenant(
       tx,
       tenant.id,
@@ -59,7 +60,7 @@ export async function createDocument(
       data: {
         tenantId: tenant.id,
         organizationUnitId: input.organizationUnitId,
-        uploadedById: uploader.id,
+        uploadedById: context.actorUserId,
         title: input.title,
         category: input.category,
         version: input.version,
@@ -83,11 +84,12 @@ export async function createDocument(
 export async function updateDocument(
   documentId: string,
   input: DocumentInput,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ): Promise<DocumentSummary> {
-  const tenant = await getTenantOrThrow(tenantCode);
+  const tenant = await getTenantOrThrow(context.tenantCode);
 
   const updatedDocumentId = await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
     const existingDocument = await tx.document.findFirst({
       where: {
         id: documentId,
@@ -135,30 +137,34 @@ export async function updateDocument(
 
 export async function deleteDocument(
   documentId: string,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  context: MutationContext,
 ) {
-  const tenant = await getTenantOrThrow(tenantCode);
+  const tenant = await getTenantOrThrow(context.tenantCode);
 
-  const existingDocument = await prisma.document.findFirst({
-    where: {
-      id: documentId,
-      tenantId: tenant.id,
-    },
-    select: {
-      id: true,
-    },
-  });
+  await prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
 
-  if (!existingDocument) {
-    throw new DocumentApplicationError(
-      "DOCUMENT_NOT_FOUND",
-      "指定された文書が見つかりません。",
-      404,
-    );
-  }
+    const existingDocument = await tx.document.findFirst({
+      where: {
+        id: documentId,
+        tenantId: tenant.id,
+      },
+      select: {
+        id: true,
+      },
+    });
 
-  await prisma.document.delete({
-    where: { id: documentId },
+    if (!existingDocument) {
+      throw new DocumentApplicationError(
+        "DOCUMENT_NOT_FOUND",
+        "指定された文書が見つかりません。",
+        404,
+      );
+    }
+
+    await tx.document.delete({
+      where: { id: documentId },
+    });
   });
 }
 
@@ -180,12 +186,16 @@ async function getTenantOrThrow(tenantCode: string) {
   return tenant;
 }
 
-async function getDefaultUploader(tenantId: string) {
-  const uploader = await prisma.user.findFirst({
+async function assertUserBelongsToTenant(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  userId: string,
+) {
+  const uploader = await tx.user.findFirst({
     where: {
       tenantId,
+      id: userId,
     },
-    orderBy: [{ isSystemAdmin: "desc" }, { createdAt: "asc" }],
     select: {
       id: true,
     },
@@ -194,12 +204,10 @@ async function getDefaultUploader(tenantId: string) {
   if (!uploader) {
     throw new DocumentApplicationError(
       "UPLOADER_NOT_FOUND",
-      "文書の登録者として使用できる利用者が見つかりません。",
+      "文書を操作する利用者が見つかりません。",
       404,
     );
   }
-
-  return uploader;
 }
 
 async function findDocuments(tenantId: string) {
