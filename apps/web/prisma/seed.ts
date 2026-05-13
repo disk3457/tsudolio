@@ -9,7 +9,7 @@ import {
   WorkflowPriority,
   WorkflowStatus,
 } from "../generated/prisma/enums";
-import { getDatabaseUrl } from "../lib/database-url";
+import { getDatabaseUrl } from "../src/infrastructure/database/database-url";
 
 const adapter = new PrismaPg({
   connectionString: getDatabaseUrl(),

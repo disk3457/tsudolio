@@ -66,11 +66,13 @@ curl http://localhost:3000/api/dashboard
 ## Repository Layout
 
 ```text
-apps/web/          Next.js PWA front end
-apps/web/prisma/   PostgreSQL schema, migrations, and seed data
-docs/              architecture, security, roadmap, data model
-.github/           CI and dependency automation
-docker-compose.yml local PostgreSQL, MinIO, and Mailpit
+apps/web/              Next.js PWA package
+apps/web/src/app/      App Router routes, layouts, and API route handlers
+apps/web/src/          web source layers: domain, application, infrastructure, presentation
+apps/web/prisma/       PostgreSQL schema, migrations, and seed data
+docs/                  architecture, security, roadmap, data model
+.github/               CI and dependency automation
+docker-compose.yml     local PostgreSQL, MinIO, and Mailpit
 ```
 
 ## Current Status

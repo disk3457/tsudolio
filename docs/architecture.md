@@ -2,7 +2,44 @@
 
 ## Product Shape
 
-Tsudolio is designed as a multi-tenant business application. The first implementation is a Web/PWA front end with local mock data. The next implementation layer will add API, database persistence, object storage, authentication, and audit logs.
+Tsudolio is designed as a multi-tenant business application. The current web
+app is a Next.js/PWA frontend backed by PostgreSQL through Prisma. The next
+implementation layers will add object storage, authentication, permission
+enforcement, and audit coverage for mutations.
+
+## Web Application Layers
+
+`apps/web` is the Next.js project root inside the npm workspace monorepo. The
+source code lives under `apps/web/src` so framework delivery code and product
+code are in one source tree, while config files, generated artifacts, Prisma,
+and public assets stay at the package root.
+
+- `src/app`: Next.js App Router delivery boundary. Pages, layouts, and route
+  handlers live here. This is a framework convention, not a business layer.
+  Files in this directory should stay thin.
+- `src/presentation`: React views, hooks, workspace composition, shared UI, and
+  global styles. Presentation consumes application DTOs and API responses.
+- `src/application`: use-case contracts, input validation, DTOs, and
+  application errors. It is framework-free and independent from React, Next.js,
+  Prisma, and generated database types.
+- `src/domain`: pure business rules and policies. It is the innermost layer and
+  has no dependency on application, infrastructure, presentation, or framework
+  code.
+- `src/infrastructure`: adapters for external systems, currently Prisma and
+  database connection setup. Infrastructure implements application contracts.
+- `src/shared`: small framework-neutral utilities such as formatters.
+
+The package root remains for tool-owned and runtime boundary files:
+
+- `prisma`: schema, migrations, and seed data.
+- `generated`: generated Prisma client output.
+- `public`: static assets served by Next.js.
+- `next.config.ts`, `eslint.config.mjs`, `tsconfig.json`, and package metadata.
+
+API route handlers are composition roots. They parse HTTP input, create a use
+case from an application contract plus an infrastructure repository, and return
+HTTP output. UI components call API routes or consume application DTOs; they do
+not import Prisma or generated database types.
 
 ## Tenancy
 
