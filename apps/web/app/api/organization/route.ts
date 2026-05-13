@@ -1,48 +1,31 @@
-import { NextResponse } from "next/server";
+import { createOrganizationUseCases } from "@/application/organization/use-cases";
+import { prismaOrganizationRepository } from "@/infrastructure/prisma/organization-repository";
 import {
-  getOrganizationSnapshot,
-  OrganizationDataError,
-} from "@/features/organization/server/organization-data";
+  applicationErrorResponse,
+  dataResponse,
+} from "@/presentation/http/json-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const organizationUseCases = createOrganizationUseCases(
+  prismaOrganizationRepository,
+);
+
 export async function GET() {
   try {
-    const snapshot = await getOrganizationSnapshot();
+    const snapshot = await organizationUseCases.getOrganizationSnapshot();
 
-    return NextResponse.json({
-      data: snapshot,
-      source: "database",
-    });
+    return dataResponse(snapshot);
   } catch (error) {
     return organizationErrorResponse(error);
   }
 }
 
 function organizationErrorResponse(error: unknown) {
-  if (error instanceof OrganizationDataError) {
-    return NextResponse.json(
-      {
-        error: error.code,
-        message: error.message,
-      },
-      {
-        status: error.status,
-      },
-    );
-  }
-
-  const message =
-    error instanceof Error ? error.message : "組織データを処理できませんでした。";
-
-  return NextResponse.json(
-    {
-      error: "ORGANIZATION_DATA_UNAVAILABLE",
-      message,
-    },
-    {
-      status: 503,
-    },
+  return applicationErrorResponse(
+    error,
+    "ORGANIZATION_DATA_UNAVAILABLE",
+    "組織データを処理できませんでした。",
   );
 }

@@ -1,66 +1,36 @@
-import { NextResponse } from "next/server";
+import { createOrganizationUseCases } from "@/application/organization/use-cases";
+import { parseOrganizationUnitInput } from "@/application/organization/organization-validation";
+import { prismaOrganizationRepository } from "@/infrastructure/prisma/organization-repository";
 import {
-  createOrganizationUnit,
-  OrganizationDataError,
-} from "@/features/organization/server/organization-data";
-import { parseOrganizationUnitInput } from "@/features/organization/server/organization-validation";
+  applicationErrorResponse,
+  dataResponse,
+  readRequestJson,
+} from "@/presentation/http/json-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const organizationUseCases = createOrganizationUseCases(
+  prismaOrganizationRepository,
+);
+
 export async function POST(request: Request) {
   try {
-    const input = parseOrganizationUnitInput(await readJson(request));
-    const unit = await createOrganizationUnit(input);
-
-    return NextResponse.json(
-      {
-        data: unit,
-        source: "database",
-      },
-      {
-        status: 201,
-      },
+    const input = parseOrganizationUnitInput(
+      await readRequestJson(request, "組織データのJSONを読み取れませんでした。"),
     );
+    const unit = await organizationUseCases.createOrganizationUnit(input);
+
+    return dataResponse(unit, 201);
   } catch (error) {
     return organizationErrorResponse(error);
   }
 }
 
-async function readJson(request: Request) {
-  try {
-    return await request.json();
-  } catch {
-    throw new OrganizationDataError(
-      "INVALID_JSON",
-      "組織データのJSONを読み取れませんでした。",
-    );
-  }
-}
-
 function organizationErrorResponse(error: unknown) {
-  if (error instanceof OrganizationDataError) {
-    return NextResponse.json(
-      {
-        error: error.code,
-        message: error.message,
-      },
-      {
-        status: error.status,
-      },
-    );
-  }
-
-  const message =
-    error instanceof Error ? error.message : "組織データを処理できませんでした。";
-
-  return NextResponse.json(
-    {
-      error: "ORGANIZATION_DATA_UNAVAILABLE",
-      message,
-    },
-    {
-      status: 503,
-    },
+  return applicationErrorResponse(
+    error,
+    "ORGANIZATION_DATA_UNAVAILABLE",
+    "組織データを処理できませんでした。",
   );
 }

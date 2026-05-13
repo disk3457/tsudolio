@@ -1,29 +1,25 @@
-import { NextResponse } from "next/server";
-import { getDashboardSnapshot } from "@/features/dashboard/server/dashboard-data";
+import { createDashboardUseCases } from "@/application/dashboard/use-cases";
+import { prismaDashboardRepository } from "@/infrastructure/prisma/dashboard-repository";
+import {
+  applicationErrorResponse,
+  dataResponse,
+} from "@/presentation/http/json-response";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const dashboardUseCases = createDashboardUseCases(prismaDashboardRepository);
+
 export async function GET() {
   try {
-    const snapshot = await getDashboardSnapshot();
+    const snapshot = await dashboardUseCases.getDashboardSnapshot();
 
-    return NextResponse.json({
-      data: snapshot,
-      source: "database",
-    });
+    return dataResponse(snapshot);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to load dashboard data";
-
-    return NextResponse.json(
-      {
-        error: "DASHBOARD_DATA_UNAVAILABLE",
-        message,
-      },
-      {
-        status: 503,
-      },
+    return applicationErrorResponse(
+      error,
+      "DASHBOARD_DATA_UNAVAILABLE",
+      "ダッシュボードデータを処理できませんでした。",
     );
   }
 }
