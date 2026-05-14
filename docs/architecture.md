@@ -44,10 +44,11 @@ not import Prisma or generated database types.
 
 API route handlers also resolve request identity at the delivery boundary.
 `src/application/security` owns permission codes and authorization policy,
-while `src/infrastructure/prisma/current-user-repository.ts` adapts seeded
-tenant, membership, role, and permission records into a current-user context.
-This keeps the future OIDC/SSO adapter replaceable without changing product
-use cases.
+while `src/infrastructure/auth` owns login/session adapters and
+`src/infrastructure/prisma/current-user-repository.ts` adapts tenant,
+membership, role, and permission records into a current-user context. This
+keeps password and OIDC adapters replaceable without changing product use
+cases.
 
 ## Tenancy
 

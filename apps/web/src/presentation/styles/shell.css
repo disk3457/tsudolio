@@ -204,3 +204,105 @@
   cursor: not-allowed;
   opacity: 0.58;
 }
+
+.loginShell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 28px 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(243, 248, 252, 0.9)),
+    var(--bg);
+}
+
+.loginPanel {
+  width: min(100%, 430px);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.loginBrand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 28px;
+}
+
+.loginLogo {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border: 1px solid #edf3f8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgba(6, 42, 134, 0.1);
+}
+
+.loginHeader {
+  margin-bottom: 18px;
+}
+
+.loginForm {
+  display: grid;
+  gap: 14px;
+}
+
+.loginField {
+  display: grid;
+  gap: 7px;
+}
+
+.loginField span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.loginField div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #cdddeb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.loginField svg {
+  flex: 0 0 auto;
+  color: var(--blue);
+}
+
+.loginField input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  background: transparent;
+}
+
+.loginError {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid #f5c7d2;
+  border-radius: 8px;
+  color: var(--rose);
+  background: #fff7f9;
+  line-height: 1.45;
+}
+
+.loginSubmit,
+.loginSso {
+  width: 100%;
+}
+
+.loginDivider {
+  height: 1px;
+  margin: 18px 0;
+  background: var(--line);
+}

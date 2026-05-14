@@ -4,23 +4,37 @@ import {
 } from "@/application/security/permissions";
 import type {
   CurrentUserContext,
+  CurrentUserLookup,
   MutationContext,
   PermissionCode,
 } from "@/application/security/types";
+import { ApplicationError } from "@/application/shared/application-error";
+import { readAuthSessionFromRequest } from "@/infrastructure/auth/session-cookie";
 import { prismaCurrentUserRepository } from "@/infrastructure/prisma/current-user-repository";
 
-const tenantHeader = "x-tsudolio-tenant-code";
-const userEmailHeader = "x-tsudolio-user-email";
-
-export function getTenantCodeFromRequest(request: Request) {
-  return readHeader(request, tenantHeader);
+export async function getCurrentUserFromRequest(request: Request) {
+  return prismaCurrentUserRepository.resolveCurrentUser(
+    getCurrentUserLookupFromRequest(request),
+  );
 }
 
-export async function getCurrentUserFromRequest(request: Request) {
-  return prismaCurrentUserRepository.resolveCurrentUser({
-    tenantCode: getTenantCodeFromRequest(request),
-    userEmail: readHeader(request, userEmailHeader),
-  });
+export function getCurrentUserLookupFromRequest(
+  request: Request,
+): CurrentUserLookup {
+  const session = readAuthSessionFromRequest(request);
+
+  if (!session) {
+    throw new ApplicationError(
+      "AUTHENTICATION_REQUIRED",
+      "ログインしてください。",
+      401,
+    );
+  }
+
+  return {
+    tenantCode: session.tenantCode,
+    userEmail: session.userEmail,
+  };
 }
 
 export async function requirePermission(

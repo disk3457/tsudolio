@@ -16,7 +16,7 @@
 - Roles and permissions
 - PostgreSQL migrations and seed data
 - Database health check API
-- OIDC login path
+- Password login and OIDC login path
 
 ## Milestone 2: Daily Groupware
 

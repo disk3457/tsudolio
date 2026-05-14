@@ -10,6 +10,7 @@ import {
   WorkflowStatus,
 } from "../generated/prisma/enums";
 import { getDatabaseUrl } from "../src/infrastructure/database/database-url";
+import { hashPassword } from "../src/infrastructure/auth/password";
 
 const adapter = new PrismaPg({
   connectionString: getDatabaseUrl(),
@@ -80,6 +81,11 @@ async function main() {
     title: "システム管理者",
     isSystemAdmin: true,
   });
+  await upsertUserCredential(
+    tenant.id,
+    admin.id,
+    process.env.TSUDOLIO_SEED_ADMIN_PASSWORD ?? "change-me-in-local-only",
+  );
   const approver = await upsertUser(tenant.id, {
     email: "approver@example.local",
     displayName: "中村 承認者",
@@ -438,6 +444,31 @@ async function upsertUser(
       ...data,
     },
     update: data,
+  });
+}
+
+async function upsertUserCredential(
+  tenantId: string,
+  userId: string,
+  password: string,
+) {
+  const passwordHash = await hashPassword(password);
+
+  return prisma.userCredential.upsert({
+    where: {
+      userId,
+    },
+    create: {
+      tenantId,
+      userId,
+      passwordHash,
+    },
+    update: {
+      passwordHash,
+      passwordChangedAt: new Date(),
+      failedAttempts: 0,
+      lockedUntil: null,
+    },
   });
 }
 

@@ -10,7 +10,7 @@ import {
   readRequestJson,
 } from "@/presentation/http/json-response";
 import {
-  getTenantCodeFromRequest,
+  getCurrentUserFromRequest,
   requireMutationContext,
 } from "@/app/api/_shared/request-context";
 import { permissions } from "@/application/security/permissions";
@@ -24,9 +24,10 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const range = parseScheduleRange(url.searchParams.get("range"));
+    const currentUser = await getCurrentUserFromRequest(request);
     const snapshot = await scheduleUseCases.getScheduleSnapshot(
       range,
-      getTenantCodeFromRequest(request) ?? undefined,
+      currentUser.tenantCode,
     );
 
     return dataResponse(snapshot);
