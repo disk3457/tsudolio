@@ -38,6 +38,11 @@
   identity and tenant context.
 - `GET /api/auth/session` returns the current tenant, user, assigned
   permissions, and effective permission booleans for the UI.
+- `GET /api/auth/providers` exposes the configured auth mode. `GET
+  /api/auth/login` starts an OIDC authorization-code flow with PKCE when
+  `OIDC_ISSUER_URL` and `OIDC_CLIENT_ID` are configured, and `GET
+  /api/auth/callback` validates the returned state before the future token
+  exchange/session-cookie step.
 
 Permission codes currently used by the API boundary:
 
