@@ -14,8 +14,10 @@ import {
   buildOrganizationUnitPath,
   isSameOrDescendantPath,
 } from "@/domain/organization/organization-tree";
+import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import type { Prisma } from "@generated/prisma/client";
 import {
+  AuditSeverity,
   MembershipStatus,
   OrganizationUnitKind,
 } from "@generated/prisma/enums";
@@ -83,6 +85,21 @@ export async function createOrganizationUnit(
       },
     });
 
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "組織を作成",
+      targetType: "organization_unit",
+      targetId: unit.id,
+      severity: AuditSeverity.NOTICE,
+      metadata: {
+        code: input.code,
+        name: input.name,
+        kind: input.kind,
+        parentId: parent?.id ?? null,
+      },
+    });
+
     return unit.id;
   });
 
@@ -147,6 +164,21 @@ export async function updateOrganizationUnit(
 
     await refreshDescendantPaths(tx, tenant.id, unitId);
 
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "組織を更新",
+      targetType: "organization_unit",
+      targetId: unitId,
+      severity: AuditSeverity.NOTICE,
+      metadata: {
+        code: input.code,
+        name: input.name,
+        kind: input.kind,
+        parentId: parent?.id ?? null,
+      },
+    });
+
     return unitId;
   });
 
@@ -209,6 +241,21 @@ export async function deleteOrganizationUnit(
     await tx.organizationUnit.delete({
       where: { id: unitId },
     });
+
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "組織を削除",
+      targetType: "organization_unit",
+      targetId: unitId,
+      severity: AuditSeverity.WARNING,
+      metadata: {
+        code: unit.code,
+        name: unit.name,
+        kind: unit.kind,
+        parentId: unit.parentId,
+      },
+    });
   });
 }
 
@@ -237,6 +284,7 @@ export async function createUser(
       },
       select: {
         id: true,
+        isSystemAdmin: true,
       },
     });
 
@@ -250,6 +298,23 @@ export async function createUser(
         },
       });
     }
+
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "利用者を作成",
+      targetType: "user",
+      targetId: user.id,
+      severity: input.isSystemAdmin
+        ? AuditSeverity.WARNING
+        : AuditSeverity.NOTICE,
+      metadata: {
+        email: input.email,
+        displayName: input.displayName,
+        organizationUnitId: input.organizationUnitId,
+        isSystemAdmin: input.isSystemAdmin,
+      },
+    });
 
     return user.id;
   });
@@ -273,6 +338,7 @@ export async function updateUser(
       },
       select: {
         id: true,
+        isSystemAdmin: true,
       },
     });
 
@@ -323,6 +389,24 @@ export async function updateUser(
       });
     }
 
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "利用者を更新",
+      targetType: "user",
+      targetId: userId,
+      severity: input.isSystemAdmin || existingUser.isSystemAdmin
+        ? AuditSeverity.WARNING
+        : AuditSeverity.NOTICE,
+      metadata: {
+        email: input.email,
+        displayName: input.displayName,
+        organizationUnitId: input.organizationUnitId,
+        isSystemAdminBefore: existingUser.isSystemAdmin,
+        isSystemAdminAfter: input.isSystemAdmin,
+      },
+    });
+
     return userId;
   });
 
@@ -344,6 +428,9 @@ export async function deleteOrSuspendUser(
       },
       select: {
         id: true,
+        email: true,
+        displayName: true,
+        isSystemAdmin: true,
       },
     });
 
@@ -358,6 +445,20 @@ export async function deleteOrSuspendUser(
     const blockingReferenceCount = await countUserReferences(tx, tenant.id, userId);
 
     if (blockingReferenceCount === 0) {
+      await recordAuditEvent(tx, {
+        tenantId: tenant.id,
+        context,
+        action: "利用者を削除",
+        targetType: "user",
+        targetId: userId,
+        severity: AuditSeverity.WARNING,
+        metadata: {
+          email: user.email,
+          displayName: user.displayName,
+          isSystemAdmin: user.isSystemAdmin,
+        },
+      });
+
       await tx.user.delete({
         where: { id: userId },
       });
@@ -379,6 +480,21 @@ export async function deleteOrSuspendUser(
       },
       data: {
         status: MembershipStatus.SUSPENDED,
+      },
+    });
+
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "利用者を停止",
+      targetType: "user",
+      targetId: userId,
+      severity: AuditSeverity.WARNING,
+      metadata: {
+        email: user.email,
+        displayName: user.displayName,
+        isSystemAdmin: user.isSystemAdmin,
+        blockingReferenceCount,
       },
     });
 

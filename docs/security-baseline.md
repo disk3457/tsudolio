@@ -30,6 +30,9 @@
   permissions before calling application use cases.
 - Creating or updating a system administrator requires `tenant.manage` in
   addition to organization user-management permission.
+- Successful schedule, organization, and document mutations write
+  tenant-scoped audit events with actor, target, severity, metadata, and
+  request IP where available.
 - `is_system_admin` is treated as a full-permission break-glass flag for the
   demo foundation. Production authentication must still provide a request
   identity and tenant context.

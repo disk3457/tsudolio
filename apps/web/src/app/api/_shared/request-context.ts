@@ -37,7 +37,9 @@ export async function requireMutationContext(
   request: Request,
   permission: PermissionCode,
 ): Promise<MutationContext> {
-  return toMutationContext(await requirePermission(request, permission));
+  return toMutationContext(await requirePermission(request, permission), {
+    ipAddress: getClientIpAddress(request),
+  });
 }
 
 function readHeader(request: Request, name: string) {
@@ -45,3 +47,15 @@ function readHeader(request: Request, name: string) {
   return value ? value : null;
 }
 
+export function getClientIpAddress(request: Request) {
+  const forwardedFor = readHeader(request, "x-forwarded-for");
+
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0]?.trim() || null;
+  }
+
+  return (
+    readHeader(request, "x-real-ip") ??
+    readHeader(request, "cf-connecting-ip")
+  );
+}

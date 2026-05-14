@@ -7,6 +7,7 @@ import {
   readRequestJson,
 } from "@/presentation/http/json-response";
 import {
+  getClientIpAddress,
   requireMutationContext,
   requirePermission,
 } from "@/app/api/_shared/request-context";
@@ -46,7 +47,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     const user = await organizationUseCases.updateUser(
       userId,
       input,
-      toMutationContext(currentUser),
+      toMutationContext(currentUser, {
+        ipAddress: getClientIpAddress(request),
+      }),
     );
 
     return dataResponse(user);

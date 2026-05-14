@@ -6,7 +6,10 @@ import {
   dataResponse,
   readRequestJson,
 } from "@/presentation/http/json-response";
-import { requirePermission } from "@/app/api/_shared/request-context";
+import {
+  getClientIpAddress,
+  requirePermission,
+} from "@/app/api/_shared/request-context";
 import {
   assertPermission,
   permissions,
@@ -35,7 +38,9 @@ export async function POST(request: Request) {
 
     const user = await organizationUseCases.createUser(
       input,
-      toMutationContext(currentUser),
+      toMutationContext(currentUser, {
+        ipAddress: getClientIpAddress(request),
+      }),
     );
 
     return dataResponse(user, 201);

@@ -26,6 +26,7 @@ export type CurrentUserContext = {
 export type MutationContext = {
   tenantCode: string;
   actorUserId: string;
+  ipAddress?: string | null;
 };
 
 export type CurrentUserLookup = {

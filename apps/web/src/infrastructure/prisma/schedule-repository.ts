@@ -10,8 +10,10 @@ import type {
 import type { MutationContext } from "@/application/security/types";
 import { ScheduleApplicationError } from "@/application/schedule/errors";
 import { reservationWorkflowStatusForFacility } from "@/domain/schedule/facility-reservation";
+import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import type { Prisma } from "@generated/prisma/client";
 import {
+  AuditSeverity,
   FacilityStatus,
   WorkflowStatus,
 } from "@generated/prisma/enums";
@@ -143,6 +145,22 @@ export async function createScheduleEvent(
       });
     }
 
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "予定を作成",
+      targetType: "calendar_event",
+      targetId: event.id,
+      severity: AuditSeverity.NOTICE,
+      metadata: {
+        title: input.title,
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+        organizationUnitId: input.organizationUnitId,
+        facilityId: input.facilityId,
+      },
+    });
+
     return event.id;
   });
 
@@ -235,29 +253,44 @@ export async function updateScheduleEvent(
           eventId,
         },
       });
-      return eventId;
-    }
-
-    const reservationData = {
-      tenantId: tenant.id,
-      facilityId: facility.id,
-      eventId,
-      startsAt,
-      endsAt,
-      purpose: input.title,
-      status: getReservationStatusForFacility(facility.status),
-    };
-
-    if (existingEvent.reservation) {
-      await tx.facilityReservation.update({
-        where: { id: existingEvent.reservation.id },
-        data: reservationData,
-      });
     } else {
-      await tx.facilityReservation.create({
-        data: reservationData,
-      });
+      const reservationData = {
+        tenantId: tenant.id,
+        facilityId: facility.id,
+        eventId,
+        startsAt,
+        endsAt,
+        purpose: input.title,
+        status: getReservationStatusForFacility(facility.status),
+      };
+
+      if (existingEvent.reservation) {
+        await tx.facilityReservation.update({
+          where: { id: existingEvent.reservation.id },
+          data: reservationData,
+        });
+      } else {
+        await tx.facilityReservation.create({
+          data: reservationData,
+        });
+      }
     }
+
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "予定を更新",
+      targetType: "calendar_event",
+      targetId: eventId,
+      severity: AuditSeverity.NOTICE,
+      metadata: {
+        title: input.title,
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+        organizationUnitId: input.organizationUnitId,
+        facilityId: input.facilityId,
+      },
+    });
 
     return eventId;
   });
@@ -280,6 +313,15 @@ export async function deleteScheduleEvent(
       },
       select: {
         id: true,
+        title: true,
+        startsAt: true,
+        endsAt: true,
+        organizationUnitId: true,
+        reservation: {
+          select: {
+            facilityId: true,
+          },
+        },
       },
     });
 
@@ -300,6 +342,22 @@ export async function deleteScheduleEvent(
 
     await tx.calendarEvent.delete({
       where: { id: eventId },
+    });
+
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "予定を削除",
+      targetType: "calendar_event",
+      targetId: eventId,
+      severity: AuditSeverity.WARNING,
+      metadata: {
+        title: existingEvent.title,
+        startsAt: existingEvent.startsAt.toISOString(),
+        endsAt: existingEvent.endsAt.toISOString(),
+        organizationUnitId: existingEvent.organizationUnitId,
+        facilityId: existingEvent.reservation?.facilityId ?? null,
+      },
     });
   });
 }

@@ -7,8 +7,12 @@ import type {
 } from "@/application/documents/types";
 import type { MutationContext } from "@/application/security/types";
 import { DocumentApplicationError } from "@/application/documents/errors";
+import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import type { Prisma } from "@generated/prisma/client";
-import { DocumentStatus } from "@generated/prisma/enums";
+import {
+  AuditSeverity,
+  DocumentStatus,
+} from "@generated/prisma/enums";
 
 const defaultTenantCode = "demo-city-hospital";
 
@@ -75,6 +79,22 @@ export async function createDocument(
       },
     });
 
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "文書を登録",
+      targetType: "document",
+      targetId: document.id,
+      severity: AuditSeverity.NOTICE,
+      metadata: {
+        title: input.title,
+        category: input.category,
+        version: input.version,
+        status: input.status,
+        organizationUnitId: input.organizationUnitId,
+      },
+    });
+
     return document.id;
   });
 
@@ -129,6 +149,22 @@ export async function updateDocument(
       },
     });
 
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "文書を更新",
+      targetType: "document",
+      targetId: documentId,
+      severity: AuditSeverity.NOTICE,
+      metadata: {
+        title: input.title,
+        category: input.category,
+        version: input.version,
+        status: input.status,
+        organizationUnitId: input.organizationUnitId,
+      },
+    });
+
     return documentId;
   });
 
@@ -151,6 +187,11 @@ export async function deleteDocument(
       },
       select: {
         id: true,
+        title: true,
+        category: true,
+        version: true,
+        status: true,
+        organizationUnitId: true,
       },
     });
 
@@ -164,6 +205,22 @@ export async function deleteDocument(
 
     await tx.document.delete({
       where: { id: documentId },
+    });
+
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "文書を削除",
+      targetType: "document",
+      targetId: documentId,
+      severity: AuditSeverity.WARNING,
+      metadata: {
+        title: existingDocument.title,
+        category: existingDocument.category,
+        version: existingDocument.version,
+        status: existingDocument.status,
+        organizationUnitId: existingDocument.organizationUnitId,
+      },
     });
   });
 }
