@@ -52,10 +52,12 @@ export function hasPermission(
 
 export function toMutationContext(
   currentUser: CurrentUserContext,
+  requestContext: Pick<MutationContext, "ipAddress"> = {},
 ): MutationContext {
   return {
     tenantCode: currentUser.tenantCode,
     actorUserId: currentUser.userId,
+    ipAddress: requestContext.ipAddress ?? null,
   };
 }
 
@@ -86,4 +88,3 @@ export function toCurrentUserSession(
     ),
   };
 }
-

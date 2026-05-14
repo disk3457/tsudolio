@@ -4,8 +4,9 @@
 
 Tsudolio is designed as a multi-tenant business application. The current web
 app is a Next.js/PWA frontend backed by PostgreSQL through Prisma. The next
-implementation layers will add object storage, authentication, permission
-enforcement, and audit coverage for mutations.
+implementation layers will add object storage and full authentication, while
+the current API boundary already includes permission enforcement and audit
+coverage for core mutations.
 
 ## Web Application Layers
 
