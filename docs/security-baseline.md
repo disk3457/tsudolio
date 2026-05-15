@@ -32,6 +32,9 @@
   against JWKS, validates issuer/audience/nonce/expiration, resolves the local
   user by email and tenant, then issues the same signed session cookie.
 - `POST /api/auth/logout` clears the signed session cookie.
+- Password and OIDC sign-ins, password login failures, lockout rejections, and
+  logout requests write tenant-scoped audit events with provider, outcome,
+  actor or attempted identity, and request IP where available.
 - Mutating schedule, organization, and document APIs require explicit
   permissions before calling application use cases.
 - Creating or updating a system administrator requires `tenant.manage` in

@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
+import { getClientIpAddress } from "@/app/api/_shared/request-context";
 import {
   exchangeOidcAuthorizationCode,
   getOidcCookieNames,
   getOidcExpiredCookieOptions,
 } from "@/infrastructure/auth/oidc-provider";
 import { createAuthSessionCookie } from "@/infrastructure/auth/session-cookie";
+import { recordAuthAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import { prismaCurrentUserRepository } from "@/infrastructure/prisma/current-user-repository";
 import { applicationErrorResponse } from "@/presentation/http/json-response";
+import { AuditSeverity } from "@generated/prisma/enums";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,6 +41,22 @@ export async function GET(request: Request) {
     response.cookies.set(cookieNames.nonce, "", expiredCookieOptions);
     response.cookies.set(cookieNames.verifier, "", expiredCookieOptions);
     response.cookies.set(cookieNames.next, "", expiredCookieOptions);
+
+    await recordAuthAuditEvent({
+      tenantId: currentUser.tenantId,
+      actorId: currentUser.userId,
+      action: "ログイン成功",
+      targetType: "user",
+      targetId: currentUser.userId,
+      severity: AuditSeverity.NOTICE,
+      ipAddress: getClientIpAddress(request),
+      metadata: {
+        provider: "oidc",
+        outcome: "success",
+        subject: identity.subject,
+        email: currentUser.email,
+      },
+    });
 
     return response;
   } catch (error) {
