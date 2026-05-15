@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getClientIpAddress } from "@/app/api/_shared/request-context";
 import { createSecurityUseCases } from "@/application/security/use-cases";
 import { ApplicationError } from "@/application/shared/application-error";
 import {
@@ -49,7 +50,10 @@ export async function POST(request: Request) {
       await readRequestJson(request, "ログインデータのJSONを読み取れませんでした。"),
     );
     const currentUser =
-      await prismaPasswordAuthRepository.authenticateWithPassword(payload);
+      await prismaPasswordAuthRepository.authenticateWithPassword({
+        ...payload,
+        ipAddress: getClientIpAddress(request),
+      });
     const session = createAuthSessionCookie(
       {
         provider: "password",
