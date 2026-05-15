@@ -9,7 +9,7 @@ import type { MutationContext } from "@/application/security/types";
 export type ScheduleRepository = {
   getScheduleSnapshot: (
     range: ScheduleRange,
-    tenantCode?: string,
+    tenantCode: string,
   ) => Promise<ScheduleSnapshot>;
   createScheduleEvent: (
     input: ScheduleEventInput,

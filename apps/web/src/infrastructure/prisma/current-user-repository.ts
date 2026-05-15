@@ -7,20 +7,19 @@ import type {
 import { prisma } from "@/infrastructure/prisma/prisma-client";
 import { MembershipStatus } from "@generated/prisma/enums";
 
-const defaultTenantCode = "demo-city-hospital";
-const defaultUserEmail = "admin@example.local";
-
 export async function resolveCurrentUser(
   lookup: CurrentUserLookup,
 ): Promise<CurrentUserContext> {
-  const tenantCode =
-    lookup.tenantCode?.trim() ||
-    process.env.TSUDOLIO_TENANT_CODE ||
-    defaultTenantCode;
-  const userEmail =
-    lookup.userEmail?.trim() ||
-    process.env.TSUDOLIO_ACTOR_EMAIL ||
-    defaultUserEmail;
+  const tenantCode = lookup.tenantCode.trim();
+  const userEmail = lookup.userEmail.trim().toLowerCase();
+
+  if (!tenantCode || !userEmail) {
+    throw new ApplicationError(
+      "AUTHENTICATION_REQUIRED",
+      "ログインしてください。",
+      401,
+    );
+  }
 
   const tenant = await prisma.tenant.findUnique({
     where: {
@@ -108,4 +107,3 @@ export async function resolveCurrentUser(
 export const prismaCurrentUserRepository = {
   resolveCurrentUser,
 } satisfies CurrentUserRepository;
-

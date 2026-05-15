@@ -10,25 +10,29 @@ import {
   WorkflowStatus,
 } from "../generated/prisma/enums";
 import { getDatabaseUrl } from "../src/infrastructure/database/database-url";
+import { hashPassword } from "../src/infrastructure/auth/password";
 
 const adapter = new PrismaPg({
   connectionString: getDatabaseUrl(),
 });
 
 const prisma = new PrismaClient({ adapter });
+const localTenantCode = process.env.TSUDOLIO_TENANT_CODE ?? "tsudolio-local";
+const localTenantName = "つどりお総合病院";
 
 async function main() {
   const tenant = await prisma.tenant.upsert({
-    where: { code: "demo-city-hospital" },
+    where: { code: localTenantCode },
     create: {
-      code: "demo-city-hospital",
-      name: "デモ市総合病院",
-      displayName: "デモ市総合病院",
+      code: localTenantCode,
+      name: localTenantName,
+      displayName: localTenantName,
       type: TenantType.HYBRID,
       timezone: "Asia/Tokyo",
     },
     update: {
-      displayName: "デモ市総合病院",
+      name: localTenantName,
+      displayName: localTenantName,
       type: TenantType.HYBRID,
       timezone: "Asia/Tokyo",
     },
@@ -74,20 +78,25 @@ async function main() {
   });
 
   const admin = await upsertUser(tenant.id, {
-    email: "admin@example.local",
+    email: "admin@tsudolio.local",
     displayName: "佐藤 管理者",
     kanaName: "サトウ カンリシャ",
     title: "システム管理者",
     isSystemAdmin: true,
   });
+  await upsertUserCredential(
+    tenant.id,
+    admin.id,
+    process.env.TSUDOLIO_SEED_ADMIN_PASSWORD ?? "change-me-in-local-only",
+  );
   const approver = await upsertUser(tenant.id, {
-    email: "approver@example.local",
+    email: "approver@tsudolio.local",
     displayName: "中村 承認者",
     kanaName: "ナカムラ ショウニンシャ",
     title: "室長",
   });
   const requester = await upsertUser(tenant.id, {
-    email: "requester@example.local",
+    email: "requester@tsudolio.local",
     displayName: "田中 申請者",
     kanaName: "タナカ シンセイシャ",
     title: "主査",
@@ -438,6 +447,31 @@ async function upsertUser(
       ...data,
     },
     update: data,
+  });
+}
+
+async function upsertUserCredential(
+  tenantId: string,
+  userId: string,
+  password: string,
+) {
+  const passwordHash = await hashPassword(password);
+
+  return prisma.userCredential.upsert({
+    where: {
+      userId,
+    },
+    create: {
+      tenantId,
+      userId,
+      passwordHash,
+    },
+    update: {
+      passwordHash,
+      passwordChangedAt: new Date(),
+      failedAttempts: 0,
+      lockedUntil: null,
+    },
   });
 }
 

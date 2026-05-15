@@ -8,7 +8,7 @@ import type {
 import type { MutationContext } from "@/application/security/types";
 
 export type OrganizationRepository = {
-  getOrganizationSnapshot: (tenantCode?: string) => Promise<OrganizationSnapshot>;
+  getOrganizationSnapshot: (tenantCode: string) => Promise<OrganizationSnapshot>;
   createOrganizationUnit: (
     input: OrganizationUnitInput,
     context: MutationContext,

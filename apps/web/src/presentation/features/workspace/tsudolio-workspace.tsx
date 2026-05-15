@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { Bell, Search } from "lucide-react";
+import { Bell, LogOut, Search } from "lucide-react";
 import type {
   DashboardApiResponse,
   DashboardLoadState,
@@ -35,12 +35,20 @@ export function TsudolioWorkspace() {
     message: null,
   });
   const activeItem = navItems.find((item) => item.key === activeView) ?? navItems[0];
-  const tenantName = dashboardState.snapshot?.tenant.name ?? "デモ市総合病院";
+  const tenantName = dashboardState.snapshot?.tenant.name ?? "組織";
   const currentUserLabel =
     sessionState.session?.user.displayName ?? "利用者確認中";
   const currentUserRoleLabel = sessionState.session?.user.isSystemAdmin
     ? "システム管理者"
     : `${sessionState.session?.permissions.length ?? 0} 権限`;
+
+  async function logout() {
+    await fetch("/api/auth/logout", {
+      cache: "no-store",
+      method: "POST",
+    });
+    window.location.assign("/login");
+  }
 
   useEffect(() => {
     let shouldIgnore = false;
@@ -107,6 +115,15 @@ export function TsudolioWorkspace() {
         const body = (await response.json()) as CurrentUserApiResponse;
 
         if (!response.ok || !("data" in body)) {
+          if (response.status === 401) {
+            window.location.replace(
+              `/login?next=${encodeURIComponent(
+                `${window.location.pathname}${window.location.search}`,
+              )}`,
+            );
+            return;
+          }
+
           throw new Error(
             "message" in body ? body.message : "利用者情報を取得できませんでした",
           );
@@ -202,6 +219,14 @@ export function TsudolioWorkspace() {
             </label>
             <button className="iconButton" aria-label="通知" type="button">
               <Bell aria-hidden="true" size={19} />
+            </button>
+            <button
+              className="iconButton"
+              aria-label="ログアウト"
+              onClick={logout}
+              type="button"
+            >
+              <LogOut aria-hidden="true" size={19} />
             </button>
           </div>
         </header>

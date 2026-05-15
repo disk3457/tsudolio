@@ -21,11 +21,17 @@
 
 ## Current Implementation
 
-- API routes resolve the current tenant from `x-tsudolio-tenant-code` or
-  `TSUDOLIO_TENANT_CODE`, falling back to the seeded demo tenant.
-- Until full OIDC/SSO is implemented, API routes resolve the current user from
-  `x-tsudolio-user-email` or `TSUDOLIO_ACTOR_EMAIL`, falling back to the seeded
-  demo administrator.
+- Application API routes require a signed `tsudolio_session` HTTP-only cookie.
+  The cookie is HMAC-signed with `AUTH_SESSION_SECRET` and stores the tenant
+  code, user email, authentication provider, issue time, and expiration time.
+- Password login is available through `POST /api/auth/login`. Password hashes
+  are stored in `user_credentials` with scrypt, failed-attempt counters, and a
+  short account lock after repeated failures.
+- OIDC login is available through `GET /api/auth/login`. The callback exchanges
+  the authorization code for an ID token, verifies the ID token signature
+  against JWKS, validates issuer/audience/nonce/expiration, resolves the local
+  user by email and tenant, then issues the same signed session cookie.
+- `POST /api/auth/logout` clears the signed session cookie.
 - Mutating schedule, organization, and document APIs require explicit
   permissions before calling application use cases.
 - Creating or updating a system administrator requires `tenant.manage` in
@@ -33,11 +39,12 @@
 - Successful schedule, organization, and document mutations write
   tenant-scoped audit events with actor, target, severity, metadata, and
   request IP where available.
-- `is_system_admin` is treated as a full-permission break-glass flag for the
-  demo foundation. Production authentication must still provide a request
-  identity and tenant context.
+- `is_system_admin` is treated as a full-permission break-glass flag, but a
+  valid authenticated request identity and tenant context are still required.
 - `GET /api/auth/session` returns the current tenant, user, assigned
   permissions, and effective permission booleans for the UI.
+- `GET /api/auth/providers` exposes local-login availability and OIDC provider
+  configuration status.
 
 Permission codes currently used by the API boundary:
 

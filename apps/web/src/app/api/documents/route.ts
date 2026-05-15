@@ -7,7 +7,7 @@ import {
   readRequestJson,
 } from "@/presentation/http/json-response";
 import {
-  getTenantCodeFromRequest,
+  getCurrentUserFromRequest,
   requireMutationContext,
 } from "@/app/api/_shared/request-context";
 import { permissions } from "@/application/security/permissions";
@@ -19,8 +19,9 @@ const documentUseCases = createDocumentUseCases(prismaDocumentRepository);
 
 export async function GET(request: Request) {
   try {
+    const currentUser = await getCurrentUserFromRequest(request);
     const snapshot = await documentUseCases.getDocumentSnapshot(
-      getTenantCodeFromRequest(request) ?? undefined,
+      currentUser.tenantCode,
     );
 
     return dataResponse(snapshot);

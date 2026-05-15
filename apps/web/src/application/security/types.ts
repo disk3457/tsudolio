@@ -30,8 +30,8 @@ export type MutationContext = {
 };
 
 export type CurrentUserLookup = {
-  tenantCode?: string | null;
-  userEmail?: string | null;
+  tenantCode: string;
+  userEmail: string;
 };
 
 export type CurrentUserSession = {

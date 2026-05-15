@@ -4,7 +4,7 @@ import {
   applicationErrorResponse,
   dataResponse,
 } from "@/presentation/http/json-response";
-import { getTenantCodeFromRequest } from "@/app/api/_shared/request-context";
+import { getCurrentUserFromRequest } from "@/app/api/_shared/request-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,8 +15,9 @@ const organizationUseCases = createOrganizationUseCases(
 
 export async function GET(request: Request) {
   try {
+    const currentUser = await getCurrentUserFromRequest(request);
     const snapshot = await organizationUseCases.getOrganizationSnapshot(
-      getTenantCodeFromRequest(request) ?? undefined,
+      currentUser.tenantCode,
     );
 
     return dataResponse(snapshot);

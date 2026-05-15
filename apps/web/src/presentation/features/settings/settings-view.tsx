@@ -1,5 +1,5 @@
-import { CircleCheckBig, Send, SlidersHorizontal } from "lucide-react";
-import { settingGroups } from "@/presentation/features/settings/settings-demo-data";
+import { CircleCheckBig, LogIn, Send } from "lucide-react";
+import { settingGroups } from "@/presentation/features/settings/settings-static-data";
 
 export function SettingsView() {
   return (
@@ -29,15 +29,19 @@ export function SettingsView() {
       })}
       <article className="panel settingCard actionCard">
         <div>
-          <p className="sectionLabel">次の接続</p>
-          <h2>認証と通知の外部連携</h2>
-          <p>OIDC、メール、プッシュ通知を後続ステップで接続できる設計にします。</p>
+          <p className="sectionLabel">認証</p>
+          <h2>ログイン方式</h2>
+          <p>通常ログインと OIDC SSO を同じセッション基盤で利用できます。</p>
         </div>
         <div className="actionRow">
-          <button className="textButton" type="button">
-            <SlidersHorizontal aria-hidden="true" size={17} />
-            連携設定
-          </button>
+          <a className="textButton" href="/login">
+            <LogIn aria-hidden="true" size={17} />
+            通常ログイン
+          </a>
+          <a className="textButton" href="/api/auth/login">
+            <LogIn aria-hidden="true" size={17} />
+            SSO
+          </a>
           <button className="textButton primary" type="button">
             <Send aria-hidden="true" size={17} />
             テスト通知

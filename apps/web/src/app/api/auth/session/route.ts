@@ -4,7 +4,7 @@ import {
   applicationErrorResponse,
   dataResponse,
 } from "@/presentation/http/json-response";
-import { getTenantCodeFromRequest } from "@/app/api/_shared/request-context";
+import { getCurrentUserLookupFromRequest } from "@/app/api/_shared/request-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,10 +13,9 @@ const securityUseCases = createSecurityUseCases(prismaCurrentUserRepository);
 
 export async function GET(request: Request) {
   try {
-    const session = await securityUseCases.getCurrentUserSession({
-      tenantCode: getTenantCodeFromRequest(request),
-      userEmail: request.headers.get("x-tsudolio-user-email"),
-    });
+    const session = await securityUseCases.getCurrentUserSession(
+      getCurrentUserLookupFromRequest(request),
+    );
 
     return dataResponse(session);
   } catch (error) {
@@ -27,4 +26,3 @@ export async function GET(request: Request) {
     );
   }
 }
-
