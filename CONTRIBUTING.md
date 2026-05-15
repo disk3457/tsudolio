@@ -8,7 +8,10 @@ Thank you for helping build Tsudolio.
 2. Run `npm install`.
 3. Start the web app with `npm run dev`.
 4. Run `npm run typecheck` and `npm run build` before opening a pull request.
-5. Every development task must end with a commit pushed to its topic branch and
+5. When a change adds or modifies screens, UI flows, or visible browser
+   behavior, verify the intended behavior in a browser before opening or
+   updating the pull request.
+6. Every development task must end with a commit pushed to its topic branch and
    a pull request opened against `main`.
 
 ## Branches
