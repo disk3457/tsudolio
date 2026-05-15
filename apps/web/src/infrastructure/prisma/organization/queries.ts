@@ -6,17 +6,14 @@ import type {
   UserSummary,
 } from "@/application/organization/types";
 import { prisma } from "@/infrastructure/prisma/prisma-client";
-import {
-  defaultTenantCode,
-  getTenantOrThrow,
-} from "@/infrastructure/prisma/organization/common";
+import { getTenantOrThrow } from "@/infrastructure/prisma/organization/common";
 import {
   MembershipStatus,
   OrganizationUnitKind,
 } from "@generated/prisma/enums";
 
 export async function getOrganizationSnapshot(
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  tenantCode: string,
 ): Promise<OrganizationSnapshot> {
   const tenant = await getTenantOrThrow(tenantCode);
   const [organizationUnits, users, roles] = await Promise.all([

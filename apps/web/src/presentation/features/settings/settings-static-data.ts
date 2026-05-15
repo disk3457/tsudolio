@@ -5,7 +5,7 @@ export const settingGroups = [
     title: "組織プロファイル",
     icon: Building2,
     items: [
-      "表示名: デモ市総合病院",
+      "表示名: つどりお総合病院",
       "業種テンプレート: 自治体・医療併用",
       "標準タイムゾーン: Asia/Tokyo",
     ],

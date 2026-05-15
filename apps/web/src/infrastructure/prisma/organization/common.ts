@@ -2,8 +2,6 @@ import { OrganizationApplicationError } from "@/application/organization/errors"
 import { prisma } from "@/infrastructure/prisma/prisma-client";
 import type { Prisma } from "@generated/prisma/client";
 
-export const defaultTenantCode = "demo-city-hospital";
-
 export async function getTenantOrThrow(tenantCode: string) {
   const tenant = await prisma.tenant.findUnique({
     where: {

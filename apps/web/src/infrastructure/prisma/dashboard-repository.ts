@@ -9,10 +9,8 @@ import {
   WorkflowStatus,
 } from "@generated/prisma/enums";
 
-const defaultTenantCode = "demo-city-hospital";
-
 export async function getDashboardSnapshot(
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  tenantCode: string,
 ): Promise<DashboardSnapshot> {
   const tenant = await prisma.tenant.findUnique({
     where: {

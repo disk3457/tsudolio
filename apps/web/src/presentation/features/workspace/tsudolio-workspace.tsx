@@ -35,7 +35,7 @@ export function TsudolioWorkspace() {
     message: null,
   });
   const activeItem = navItems.find((item) => item.key === activeView) ?? navItems[0];
-  const tenantName = dashboardState.snapshot?.tenant.name ?? "デモ市総合病院";
+  const tenantName = dashboardState.snapshot?.tenant.name ?? "組織";
   const currentUserLabel =
     sessionState.session?.user.displayName ?? "利用者確認中";
   const currentUserRoleLabel = sessionState.session?.user.isSystemAdmin

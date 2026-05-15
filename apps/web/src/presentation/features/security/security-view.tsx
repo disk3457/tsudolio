@@ -1,7 +1,7 @@
 import { CircleCheckBig, History, ShieldCheck } from "lucide-react";
 import { AuditEventList } from "@/presentation/components/audit-event-list";
 import type { DashboardLoadState } from "@/application/dashboard/types";
-import { securityItems } from "@/presentation/features/security/security-demo-data";
+import { securityItems } from "@/presentation/features/security/security-static-data";
 
 export function SecurityView({
   dashboardState,

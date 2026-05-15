@@ -14,10 +14,8 @@ import {
   DocumentStatus,
 } from "@generated/prisma/enums";
 
-const defaultTenantCode = "demo-city-hospital";
-
 export async function getDocumentSnapshot(
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  tenantCode: string,
 ): Promise<DocumentSnapshot> {
   const tenant = await getTenantOrThrow(tenantCode);
   const [documents, organizationUnits] = await Promise.all([

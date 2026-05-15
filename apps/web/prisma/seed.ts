@@ -17,19 +17,22 @@ const adapter = new PrismaPg({
 });
 
 const prisma = new PrismaClient({ adapter });
+const localTenantCode = process.env.TSUDOLIO_TENANT_CODE ?? "tsudolio-local";
+const localTenantName = "つどりお総合病院";
 
 async function main() {
   const tenant = await prisma.tenant.upsert({
-    where: { code: "demo-city-hospital" },
+    where: { code: localTenantCode },
     create: {
-      code: "demo-city-hospital",
-      name: "デモ市総合病院",
-      displayName: "デモ市総合病院",
+      code: localTenantCode,
+      name: localTenantName,
+      displayName: localTenantName,
       type: TenantType.HYBRID,
       timezone: "Asia/Tokyo",
     },
     update: {
-      displayName: "デモ市総合病院",
+      name: localTenantName,
+      displayName: localTenantName,
       type: TenantType.HYBRID,
       timezone: "Asia/Tokyo",
     },
@@ -75,7 +78,7 @@ async function main() {
   });
 
   const admin = await upsertUser(tenant.id, {
-    email: "admin@example.local",
+    email: "admin@tsudolio.local",
     displayName: "佐藤 管理者",
     kanaName: "サトウ カンリシャ",
     title: "システム管理者",
@@ -87,13 +90,13 @@ async function main() {
     process.env.TSUDOLIO_SEED_ADMIN_PASSWORD ?? "change-me-in-local-only",
   );
   const approver = await upsertUser(tenant.id, {
-    email: "approver@example.local",
+    email: "approver@tsudolio.local",
     displayName: "中村 承認者",
     kanaName: "ナカムラ ショウニンシャ",
     title: "室長",
   });
   const requester = await upsertUser(tenant.id, {
-    email: "requester@example.local",
+    email: "requester@tsudolio.local",
     displayName: "田中 申請者",
     kanaName: "タナカ シンセイシャ",
     title: "主査",

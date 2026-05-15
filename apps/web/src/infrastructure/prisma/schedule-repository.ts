@@ -18,11 +18,9 @@ import {
   WorkflowStatus,
 } from "@generated/prisma/enums";
 
-const defaultTenantCode = "demo-city-hospital";
-
 export async function getScheduleSnapshot(
   range: ScheduleRange,
-  tenantCode = process.env.TSUDOLIO_TENANT_CODE ?? defaultTenantCode,
+  tenantCode: string,
 ): Promise<ScheduleSnapshot> {
   const tenant = await getTenantOrThrow(tenantCode);
   const { rangeStart, rangeEnd } = getRangeWindow(range);

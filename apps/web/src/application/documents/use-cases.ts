@@ -6,7 +6,7 @@ import type {
 import type { MutationContext } from "@/application/security/types";
 
 export type DocumentRepository = {
-  getDocumentSnapshot: (tenantCode?: string) => Promise<DocumentSnapshot>;
+  getDocumentSnapshot: (tenantCode: string) => Promise<DocumentSnapshot>;
   createDocument: (
     input: DocumentInput,
     context: MutationContext,

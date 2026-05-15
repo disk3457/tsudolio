@@ -1,5 +1,5 @@
 import { CircleCheckBig, LogIn, Send } from "lucide-react";
-import { settingGroups } from "@/presentation/features/settings/settings-demo-data";
+import { settingGroups } from "@/presentation/features/settings/settings-static-data";
 
 export function SettingsView() {
   return (
