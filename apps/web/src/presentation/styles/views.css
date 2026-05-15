@@ -259,6 +259,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
@@ -280,6 +281,11 @@
 .statusPill.wait {
   color: var(--amber);
   background: var(--amber-soft);
+}
+
+.statusPill.done {
+  color: #08786f;
+  background: var(--cyan-soft);
 }
 
 .viewGrid {
@@ -410,6 +416,13 @@
 
 .userRecordHeader p {
   margin: 5px 0 0;
+}
+
+.userRecordBadges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
 }
 
 .tablePanel {

@@ -45,6 +45,7 @@ export type UserSummary = {
   kanaName: string | null;
   title: string | null;
   isSystemAdmin: boolean;
+  passwordLoginEnabled: boolean;
   lastLoginAt: string | null;
   memberships: MembershipSummary[];
 };
@@ -84,6 +85,7 @@ export type UserInput = {
   title: string | null;
   organizationUnitId: string | null;
   isSystemAdmin: boolean;
+  password: string | null;
 };
 
 export type OrganizationApiResponse =

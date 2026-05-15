@@ -4,6 +4,7 @@ import type {
   UserSummary,
 } from "@/application/organization/types";
 import type { MutationContext } from "@/application/security/types";
+import { hashPassword } from "@/infrastructure/auth/password";
 import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import {
   assertOrganizationBelongsToTenant,
@@ -23,6 +24,9 @@ export async function createUser(
   context: MutationContext,
 ): Promise<UserSummary> {
   const tenant = await getTenantOrThrow(context.tenantCode);
+  const passwordHash = input.password
+    ? await hashPassword(input.password)
+    : null;
 
   const userId = await prisma.$transaction(async (tx) => {
     await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
@@ -57,6 +61,17 @@ export async function createUser(
       });
     }
 
+    if (passwordHash) {
+      await tx.userCredential.create({
+        data: {
+          tenantId: tenant.id,
+          userId: user.id,
+          passwordHash,
+          passwordChangedAt: new Date(),
+        },
+      });
+    }
+
     await recordAuditEvent(tx, {
       tenantId: tenant.id,
       context,
@@ -71,8 +86,24 @@ export async function createUser(
         displayName: input.displayName,
         organizationUnitId: input.organizationUnitId,
         isSystemAdmin: input.isSystemAdmin,
+        passwordLoginEnabled: Boolean(passwordHash),
       },
     });
+
+    if (passwordHash) {
+      await recordAuditEvent(tx, {
+        tenantId: tenant.id,
+        context,
+        action: "利用者パスワードを設定",
+        targetType: "user",
+        targetId: user.id,
+        severity: AuditSeverity.WARNING,
+        metadata: {
+          email: input.email,
+          passwordLoginEnabled: true,
+        },
+      });
+    }
 
     return user.id;
   });
@@ -86,6 +117,9 @@ export async function updateUser(
   context: MutationContext,
 ): Promise<UserSummary> {
   const tenant = await getTenantOrThrow(context.tenantCode);
+  const passwordHash = input.password
+    ? await hashPassword(input.password)
+    : null;
 
   const updatedUserId = await prisma.$transaction(async (tx) => {
     await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
@@ -97,6 +131,11 @@ export async function updateUser(
       select: {
         id: true,
         isSystemAdmin: true,
+        credential: {
+          select: {
+            id: true,
+          },
+        },
       },
     });
 
@@ -147,6 +186,26 @@ export async function updateUser(
       });
     }
 
+    if (passwordHash) {
+      await tx.userCredential.upsert({
+        where: {
+          userId,
+        },
+        create: {
+          tenantId: tenant.id,
+          userId,
+          passwordHash,
+          passwordChangedAt: new Date(),
+        },
+        update: {
+          passwordHash,
+          passwordChangedAt: new Date(),
+          failedAttempts: 0,
+          lockedUntil: null,
+        },
+      });
+    }
+
     await recordAuditEvent(tx, {
       tenantId: tenant.id,
       context,
@@ -162,8 +221,26 @@ export async function updateUser(
         organizationUnitId: input.organizationUnitId,
         isSystemAdminBefore: existingUser.isSystemAdmin,
         isSystemAdminAfter: input.isSystemAdmin,
+        passwordCredentialChanged: Boolean(passwordHash),
       },
     });
+
+    if (passwordHash) {
+      await recordAuditEvent(tx, {
+        tenantId: tenant.id,
+        context,
+        action: existingUser.credential
+          ? "利用者パスワードを更新"
+          : "利用者パスワードを設定",
+        targetType: "user",
+        targetId: userId,
+        severity: AuditSeverity.WARNING,
+        metadata: {
+          email: input.email,
+          passwordLoginEnabled: true,
+        },
+      });
+    }
 
     return userId;
   });

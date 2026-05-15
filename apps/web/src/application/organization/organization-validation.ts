@@ -15,6 +15,8 @@ const organizationUnitKinds = new Set([
 
 const organizationCodePattern = /^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$/;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const minimumPasswordLength = 12;
+const maximumPasswordLength = 128;
 
 export function parseOrganizationUnitInput(
   body: unknown,
@@ -68,6 +70,7 @@ export function parseUserInput(body: unknown): UserInput {
     title: readOptionalText(body.title, "役職", 120),
     organizationUnitId: readOptionalId(body.organizationUnitId, "所属組織"),
     isSystemAdmin: readBoolean(body.isSystemAdmin),
+    password: readOptionalPassword(body.password),
   };
 }
 
@@ -143,6 +146,38 @@ function readOptionalId(value: unknown, label: string) {
     throw new OrganizationApplicationError(
       "INVALID_FIELD",
       `${label}の形式が正しくありません。`,
+    );
+  }
+
+  return value;
+}
+
+function readOptionalPassword(value: unknown) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    throw new OrganizationApplicationError(
+      "INVALID_FIELD",
+      "パスワードの形式が正しくありません。",
+    );
+  }
+
+  if (!value.trim()) {
+    throw new OrganizationApplicationError(
+      "INVALID_FIELD",
+      "パスワードを入力してください。",
+    );
+  }
+
+  if (
+    value.length < minimumPasswordLength ||
+    value.length > maximumPasswordLength
+  ) {
+    throw new OrganizationApplicationError(
+      "INVALID_FIELD",
+      `パスワードは${minimumPasswordLength}文字以上${maximumPasswordLength}文字以内で入力してください。`,
     );
   }
 
