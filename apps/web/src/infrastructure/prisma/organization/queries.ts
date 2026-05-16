@@ -101,6 +101,11 @@ export async function getUserSummary(
       tenantId,
     },
     include: {
+      credential: {
+        select: {
+          id: true,
+        },
+      },
       memberships: {
         include: {
           organizationUnit: true,
@@ -160,6 +165,11 @@ async function findUsers(tenantId: string) {
   return prisma.user.findMany({
     where: { tenantId },
     include: {
+      credential: {
+        select: {
+          id: true,
+        },
+      },
       memberships: {
         include: {
           organizationUnit: true,
@@ -216,6 +226,7 @@ function mapUser(user: UserRecord): UserSummary {
     kanaName: user.kanaName,
     title: user.title,
     isSystemAdmin: user.isSystemAdmin,
+    passwordLoginEnabled: Boolean(user.credential),
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
     memberships: user.memberships.map(mapMembership),
   };

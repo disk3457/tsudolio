@@ -1,4 +1,4 @@
-import { Building2, Pencil, Trash2, UsersRound } from "lucide-react";
+import { Building2, KeyRound, Pencil, Trash2, UsersRound } from "lucide-react";
 import { EmptyState } from "@/presentation/components/empty-state";
 import type {
   OrganizationUnitSummary,
@@ -175,7 +175,17 @@ function UserList({
               <h3>{user.displayName}</h3>
               <p>{user.email}</p>
             </div>
-            {user.isSystemAdmin && <span className="statusPill wait">管理者</span>}
+            <div className="userRecordBadges">
+              {user.passwordLoginEnabled && (
+                <span className="statusPill done">
+                  <KeyRound aria-hidden="true" size={12} />
+                  ログイン
+                </span>
+              )}
+              {user.isSystemAdmin && (
+                <span className="statusPill wait">管理者</span>
+              )}
+            </div>
           </div>
           <strong>{user.title ?? "役職未設定"}</strong>
           <div className="chipList compact">

@@ -29,4 +29,5 @@ export type UserFormState = {
   title: string;
   organizationUnitId: string;
   isSystemAdmin: boolean;
+  password: string;
 };

@@ -27,6 +27,9 @@
 - Password login is available through `POST /api/auth/login`. Password hashes
   are stored in `user_credentials` with scrypt, failed-attempt counters, and a
   short account lock after repeated failures.
+- Organization administrators can create or rotate a user's password credential
+  from the user-management workflow. Password changes reset failed-attempt and
+  lockout state and are recorded as warning-level audit events.
 - OIDC login is available through `GET /api/auth/login`. The callback exchanges
   the authorization code for an ID token, verifies the ID token signature
   against JWKS, validates issuer/audience/nonce/expiration, resolves the local

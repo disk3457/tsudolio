@@ -209,6 +209,17 @@ export function UserForm({
             ))}
           </select>
         </label>
+        <label className="fieldControl wide">
+          <span>{form.id ? "新しいパスワード" : "初期パスワード"}</span>
+          <input
+            autoComplete="new-password"
+            maxLength={128}
+            minLength={12}
+            onChange={(event) => onUpdateField("password", event.target.value)}
+            type="password"
+            value={form.password}
+          />
+        </label>
         <label className="checkControl">
           <input
             checked={form.isSystemAdmin}
