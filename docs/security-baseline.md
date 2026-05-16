@@ -30,6 +30,10 @@
 - Organization administrators can create or rotate a user's password credential
   from the user-management workflow. Password changes reset failed-attempt and
   lockout state and are recorded as warning-level audit events.
+- Organization administrators can assign seeded roles to a user's active
+  membership from the user-management workflow. Role assignment changes are
+  synchronized with the selected membership and recorded as warning-level audit
+  events.
 - OIDC login is available through `GET /api/auth/login`. The callback exchanges
   the authorization code for an ID token, verifies the ID token signature
   against JWKS, validates issuer/audience/nonce/expiration, resolves the local

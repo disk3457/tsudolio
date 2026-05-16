@@ -3,6 +3,7 @@ import { Save, X } from "lucide-react";
 import type {
   OrganizationUnitKind,
   OrganizationUnitSummary,
+  RoleSummary,
 } from "@/application/organization/types";
 import type { UnitFormState, UserFormState } from "./view-types";
 
@@ -120,6 +121,7 @@ export function OrganizationUnitForm({
 type UserFormProps = {
   form: UserFormState | null;
   organizationUnits: OrganizationUnitSummary[];
+  roles: RoleSummary[];
   onCancel: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onUpdateField: <Field extends keyof UserFormState>(
@@ -132,6 +134,7 @@ type UserFormProps = {
 export function UserForm({
   form,
   organizationUnits,
+  roles,
   onCancel,
   onSubmit,
   onUpdateField,
@@ -140,6 +143,16 @@ export function UserForm({
   if (!form) {
     return null;
   }
+
+  const roleSelectionDisabled = !form.organizationUnitId;
+  const toggleRole = (roleId: string, checked: boolean) => {
+    onUpdateField(
+      "roleIds",
+      checked
+        ? Array.from(new Set([...form.roleIds, roleId]))
+        : form.roleIds.filter((currentRoleId) => currentRoleId !== roleId),
+    );
+  };
 
   return (
     <form className="panel scheduleForm" onSubmit={onSubmit}>
@@ -196,9 +209,12 @@ export function UserForm({
         <label className="fieldControl wide">
           <span>所属組織</span>
           <select
-            onChange={(event) =>
-              onUpdateField("organizationUnitId", event.target.value)
-            }
+            onChange={(event) => {
+              onUpdateField("organizationUnitId", event.target.value);
+              if (!event.target.value) {
+                onUpdateField("roleIds", []);
+              }
+            }}
             value={form.organizationUnitId}
           >
             <option value="">未指定</option>
@@ -230,6 +246,25 @@ export function UserForm({
           />
           <span>システム管理者</span>
         </label>
+        <fieldset className="fieldControl wide roleChoiceGroup">
+          <legend>ロール</legend>
+          <div className="roleChoiceGrid">
+            {roles.map((role) => (
+              <label className="roleChoice" key={role.id}>
+                <input
+                  checked={form.roleIds.includes(role.id)}
+                  disabled={roleSelectionDisabled}
+                  onChange={(event) => toggleRole(role.id, event.target.checked)}
+                  type="checkbox"
+                />
+                <span>
+                  <strong>{role.name}</strong>
+                  <small>{role.code}</small>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </div>
       <FormFooter disabled={saving} onCancel={onCancel} saving={saving} />
     </form>

@@ -27,6 +27,7 @@ export function createDefaultUserFormState(): UserFormState {
     organizationUnitId: "",
     isSystemAdmin: false,
     password: "",
+    roleIds: [],
   };
 }
 
@@ -56,6 +57,7 @@ export function userToFormState(user: UserSummary): UserFormState {
     organizationUnitId: primaryMembership?.organizationUnitId ?? "",
     isSystemAdmin: user.isSystemAdmin,
     password: "",
+    roleIds: primaryMembership?.roleIds ?? [],
   };
 }
 
@@ -78,5 +80,6 @@ export function userFormToInput(form: UserFormState): UserInput {
     organizationUnitId: form.organizationUnitId || null,
     isSystemAdmin: form.isSystemAdmin,
     password: form.password || null,
+    roleIds: form.roleIds,
   };
 }

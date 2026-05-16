@@ -12,6 +12,7 @@ import {
   getTenantOrThrow,
 } from "@/infrastructure/prisma/organization/common";
 import { getUserSummary } from "@/infrastructure/prisma/organization/queries";
+import { syncUserMembershipAndRoles } from "@/infrastructure/prisma/organization/user-role-assignments";
 import { prisma } from "@/infrastructure/prisma/prisma-client";
 import type { Prisma } from "@generated/prisma/client";
 import {
@@ -50,17 +51,6 @@ export async function createUser(
       },
     });
 
-    if (input.organizationUnitId) {
-      await tx.membership.create({
-        data: {
-          tenantId: tenant.id,
-          userId: user.id,
-          organizationUnitId: input.organizationUnitId,
-          status: MembershipStatus.ACTIVE,
-        },
-      });
-    }
-
     if (passwordHash) {
       await tx.userCredential.create({
         data: {
@@ -71,6 +61,14 @@ export async function createUser(
         },
       });
     }
+
+    const roleSync = await syncUserMembershipAndRoles(
+      tx,
+      tenant.id,
+      user.id,
+      input.organizationUnitId,
+      input.roleIds,
+    );
 
     await recordAuditEvent(tx, {
       tenantId: tenant.id,
@@ -87,6 +85,8 @@ export async function createUser(
         organizationUnitId: input.organizationUnitId,
         isSystemAdmin: input.isSystemAdmin,
         passwordLoginEnabled: Boolean(passwordHash),
+        roleIds: roleSync.roleIds,
+        roleAssignmentCount: roleSync.roleIds.length,
       },
     });
 
@@ -101,6 +101,22 @@ export async function createUser(
         metadata: {
           email: input.email,
           passwordLoginEnabled: true,
+        },
+      });
+    }
+
+    if (roleSync.changed && roleSync.roleIds.length > 0) {
+      await recordAuditEvent(tx, {
+        tenantId: tenant.id,
+        context,
+        action: "利用者ロールを設定",
+        targetType: "user",
+        targetId: user.id,
+        severity: AuditSeverity.WARNING,
+        metadata: {
+          email: input.email,
+          organizationUnitId: input.organizationUnitId,
+          roleIds: roleSync.roleIds,
         },
       });
     }
@@ -206,6 +222,14 @@ export async function updateUser(
       });
     }
 
+    const roleSync = await syncUserMembershipAndRoles(
+      tx,
+      tenant.id,
+      userId,
+      input.organizationUnitId,
+      input.roleIds,
+    );
+
     await recordAuditEvent(tx, {
       tenantId: tenant.id,
       context,
@@ -222,6 +246,9 @@ export async function updateUser(
         isSystemAdminBefore: existingUser.isSystemAdmin,
         isSystemAdminAfter: input.isSystemAdmin,
         passwordCredentialChanged: Boolean(passwordHash),
+        roleIdsBefore: roleSync.previousRoleIds,
+        roleIdsAfter: roleSync.roleIds,
+        roleAssignmentChanged: roleSync.changed,
       },
     });
 
@@ -238,6 +265,23 @@ export async function updateUser(
         metadata: {
           email: input.email,
           passwordLoginEnabled: true,
+        },
+      });
+    }
+
+    if (roleSync.changed) {
+      await recordAuditEvent(tx, {
+        tenantId: tenant.id,
+        context,
+        action: "利用者ロールを更新",
+        targetType: "user",
+        targetId: userId,
+        severity: AuditSeverity.WARNING,
+        metadata: {
+          email: input.email,
+          organizationUnitId: input.organizationUnitId,
+          roleIdsBefore: roleSync.previousRoleIds,
+          roleIdsAfter: roleSync.roleIds,
         },
       });
     }

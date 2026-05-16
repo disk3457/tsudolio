@@ -23,7 +23,16 @@ export async function getOrganizationSnapshot(
       where: { tenantId: tenant.id },
       include: {
         permissions: true,
-        assignments: true,
+        assignments: {
+          where: {
+            membership: {
+              status: MembershipStatus.ACTIVE,
+            },
+          },
+          select: {
+            id: true,
+          },
+        },
       },
       orderBy: { name: "asc" },
     }),
@@ -241,6 +250,7 @@ function mapMembership(
     organizationUnitName: membership.organizationUnit.name,
     status: membership.status,
     statusLabel: getMembershipStatusLabel(membership.status),
+    roleIds: membership.roleAssignments.map((assignment) => assignment.role.id),
     roleNames: membership.roleAssignments.map((assignment) => assignment.role.name),
   };
 }

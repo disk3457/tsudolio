@@ -143,6 +143,61 @@
   accent-color: var(--blue);
 }
 
+.roleChoiceGroup {
+  grid-column: span 4;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.roleChoiceGroup legend {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.roleChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.roleChoice {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid #cdddeb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.roleChoice input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--blue);
+}
+
+.roleChoice span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.roleChoice small {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .formFooter {
   display: flex;
   align-items: center;
