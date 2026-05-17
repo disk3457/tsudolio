@@ -1,6 +1,6 @@
 import { ApplicationError } from "@/application/shared/application-error";
 import type { CurrentUserContext } from "@/application/security/types";
-import { verifyPassword } from "@/infrastructure/auth/password";
+import { hashPassword, verifyPassword } from "@/infrastructure/auth/password";
 import {
   recordAuthAuditEvent,
   recordAuthAuditEventInTransaction,
@@ -18,6 +18,18 @@ export type PasswordLoginInput = {
   email: string;
   password: string;
   ipAddress?: string | null;
+};
+
+export type PasswordChangeInput = {
+  currentUser: CurrentUserContext;
+  currentPassword: string;
+  newPassword: string;
+  ipAddress?: string | null;
+};
+
+export type PasswordChangeResult = {
+  changed: boolean;
+  passwordChangedAt: string;
 };
 
 export async function authenticateWithPassword(
@@ -172,8 +184,149 @@ export async function authenticateWithPassword(
   });
 }
 
+export async function changeOwnPassword(
+  input: PasswordChangeInput,
+): Promise<PasswordChangeResult> {
+  const { currentUser } = input;
+  const credential = await prisma.userCredential.findFirst({
+    where: {
+      tenantId: currentUser.tenantId,
+      userId: currentUser.userId,
+    },
+    select: {
+      id: true,
+      passwordHash: true,
+      failedAttempts: true,
+      lockedUntil: true,
+    },
+  });
+
+  if (!credential) {
+    await recordAuthAuditEvent({
+      tenantId: currentUser.tenantId,
+      actorId: currentUser.userId,
+      action: "パスワード変更失敗",
+      targetType: "user",
+      targetId: currentUser.userId,
+      severity: AuditSeverity.WARNING,
+      ipAddress: input.ipAddress ?? null,
+      metadata: createPasswordAuditMetadata(
+        "missing_password_credential",
+        currentUser.email,
+      ),
+    });
+
+    throw new ApplicationError(
+      "PASSWORD_CREDENTIAL_NOT_FOUND",
+      "通常ログイン用のパスワードが設定されていません。",
+      409,
+    );
+  }
+
+  if (credential.lockedUntil && credential.lockedUntil > new Date()) {
+    await recordAuthAuditEvent({
+      tenantId: currentUser.tenantId,
+      actorId: currentUser.userId,
+      action: "パスワード変更拒否",
+      targetType: "user",
+      targetId: currentUser.userId,
+      severity: AuditSeverity.WARNING,
+      ipAddress: input.ipAddress ?? null,
+      metadata: createPasswordAuditMetadata("locked", currentUser.email, {
+        lockedUntil: credential.lockedUntil.toISOString(),
+      }),
+    });
+
+    throw new ApplicationError(
+      "LOGIN_LOCKED",
+      "ログイン試行回数が上限に達しました。時間を置いて再度お試しください。",
+      423,
+    );
+  }
+
+  if (!(await verifyPassword(input.currentPassword, credential.passwordHash))) {
+    const failedLogin = createFailedLoginUpdate(credential.failedAttempts);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.userCredential.update({
+        where: {
+          id: credential.id,
+        },
+        data: {
+          failedAttempts: failedLogin.failedAttempts,
+          lockedUntil: failedLogin.lockedUntil,
+        },
+      });
+      await recordAuthAuditEventInTransaction(tx, {
+        tenantId: currentUser.tenantId,
+        actorId: currentUser.userId,
+        action: "パスワード変更失敗",
+        targetType: "user",
+        targetId: currentUser.userId,
+        severity: AuditSeverity.WARNING,
+        ipAddress: input.ipAddress ?? null,
+        metadata: createPasswordAuditMetadata(
+          "invalid_current_password",
+          currentUser.email,
+          {
+            failedAttempts: failedLogin.failedAttempts,
+            ...(failedLogin.lockedUntil
+              ? {
+                  lockedUntil: failedLogin.lockedUntil.toISOString(),
+                }
+              : {}),
+          },
+        ),
+      });
+    });
+
+    throw invalidCredentials();
+  }
+
+  if (await verifyPassword(input.newPassword, credential.passwordHash)) {
+    throw new ApplicationError(
+      "PASSWORD_REUSE_NOT_ALLOWED",
+      "新しいパスワードは現在のパスワードと異なる値にしてください。",
+      400,
+    );
+  }
+
+  const passwordHash = await hashPassword(input.newPassword);
+  const passwordChangedAt = new Date();
+
+  await prisma.$transaction(async (tx) => {
+    await tx.userCredential.update({
+      where: {
+        id: credential.id,
+      },
+      data: {
+        passwordHash,
+        passwordChangedAt,
+        failedAttempts: 0,
+        lockedUntil: null,
+      },
+    });
+    await recordAuthAuditEventInTransaction(tx, {
+      tenantId: currentUser.tenantId,
+      actorId: currentUser.userId,
+      action: "パスワードを変更",
+      targetType: "user",
+      targetId: currentUser.userId,
+      severity: AuditSeverity.WARNING,
+      ipAddress: input.ipAddress ?? null,
+      metadata: createPasswordAuditMetadata("success", currentUser.email),
+    });
+  });
+
+  return {
+    changed: true,
+    passwordChangedAt: passwordChangedAt.toISOString(),
+  };
+}
+
 export const prismaPasswordAuthRepository = {
   authenticateWithPassword,
+  changeOwnPassword,
 };
 
 function createFailedLoginUpdate(currentFailedAttempts: number) {

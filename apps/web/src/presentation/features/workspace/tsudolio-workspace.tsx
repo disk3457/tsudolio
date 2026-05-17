@@ -240,7 +240,9 @@ export function TsudolioWorkspace() {
         {activeView === "security" && (
           <SecurityView dashboardState={dashboardState} />
         )}
-        {activeView === "settings" && <SettingsView />}
+        {activeView === "settings" && (
+          <SettingsView session={sessionState.session} />
+        )}
       </section>
     </main>
   );

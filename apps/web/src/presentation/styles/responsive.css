@@ -39,6 +39,10 @@
     grid-column: span 2;
   }
 
+  .passwordSettingsCard {
+    grid-column: span 2;
+  }
+
   .approvalPanel,
   .mobilePanel,
   .securityPanel {
@@ -164,6 +168,10 @@
   }
 
   .actionCard {
+    grid-column: auto;
+  }
+
+  .passwordSettingsCard {
     grid-column: auto;
   }
 

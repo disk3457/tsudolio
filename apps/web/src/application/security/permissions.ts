@@ -74,6 +74,7 @@ export function toCurrentUserSession(
       email: currentUser.email,
       displayName: currentUser.displayName,
       isSystemAdmin: currentUser.isSystemAdmin,
+      passwordLoginEnabled: currentUser.passwordLoginEnabled,
       organizationUnitIds: currentUser.organizationUnitIds,
     },
     permissions: permissionCatalog.filter((permission) =>
