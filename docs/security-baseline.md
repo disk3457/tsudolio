@@ -33,6 +33,11 @@
 - Users with an existing password credential can change their own password
   from settings after re-entering the current password. Successful and failed
   password-change attempts are recorded as authentication audit events.
+- Password reset requests are accepted through
+  `POST /api/auth/password/reset/request` and reset confirmation is handled by
+  `POST /api/auth/password/reset/confirm`. Reset tokens are stored only as
+  short-lived hashes in `password_reset_tokens`; successful, expired, invalid,
+  and unknown-account attempts are recorded as authentication audit events.
 - Organization administrators can assign seeded roles to a user's active
   membership from the user-management workflow. Role assignment changes are
   synchronized with the selected membership and recorded as warning-level audit

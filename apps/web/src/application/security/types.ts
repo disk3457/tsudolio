@@ -65,6 +65,33 @@ export type PasswordChangeApiResponse =
       message: string;
     };
 
+export type PasswordResetRequestApiResponse =
+  | {
+      data: {
+        accepted: boolean;
+        expiresAt?: string;
+        resetUrl?: string;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type PasswordResetConfirmApiResponse =
+  | {
+      data: {
+        changed: boolean;
+        passwordChangedAt: string;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
 export type CurrentUserApiResponse =
   | {
       data: CurrentUserSession;

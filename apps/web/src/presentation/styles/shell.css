@@ -296,9 +296,40 @@
   line-height: 1.45;
 }
 
+.loginNotice {
+  margin: 0;
+  padding: 11px 12px;
+  border: 1px solid #ccefe9;
+  border-radius: 8px;
+  color: #08786f;
+  background: #f1fffc;
+  line-height: 1.45;
+}
+
+.loginNotice.error {
+  border-color: #f5c7d2;
+  color: var(--rose);
+  background: #fff7f9;
+}
+
+.loginNotice.success {
+  font-weight: 800;
+}
+
 .loginSubmit,
 .loginSso {
   width: 100%;
+}
+
+.loginTextAction {
+  justify-self: start;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  color: var(--blue-deep);
+  background: transparent;
+  font-size: 0.86rem;
+  font-weight: 800;
 }
 
 .loginDivider {

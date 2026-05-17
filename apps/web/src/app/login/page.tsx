@@ -9,6 +9,8 @@ import { LoginView } from "@/presentation/features/auth/login-view";
 type LoginPageProps = {
   searchParams: Promise<{
     next?: string;
+    resetToken?: string;
+    tenantCode?: string;
   }>;
 };
 
@@ -28,6 +30,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <LoginView
       defaultTenantCode={process.env.TSUDOLIO_TENANT_CODE ?? ""}
       nextUrl={nextUrl}
+      resetTenantCode={params.tenantCode ?? ""}
+      resetToken={params.resetToken ?? ""}
     />
   );
 }
