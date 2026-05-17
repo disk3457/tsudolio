@@ -35,6 +35,7 @@ export type MembershipSummary = {
   organizationUnitName: string;
   status: MembershipStatus;
   statusLabel: string;
+  roleIds: string[];
   roleNames: string[];
 };
 
@@ -86,6 +87,7 @@ export type UserInput = {
   organizationUnitId: string | null;
   isSystemAdmin: boolean;
   password: string | null;
+  roleIds: string[];
 };
 
 export type OrganizationApiResponse =

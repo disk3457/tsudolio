@@ -146,6 +146,15 @@
     grid-column: auto;
   }
 
+  .roleChoiceGroup,
+  .roleChoiceGrid {
+    grid-column: auto;
+  }
+
+  .roleChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
   .segmentedControl {
     width: 100%;
   }

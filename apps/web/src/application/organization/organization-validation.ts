@@ -63,14 +63,25 @@ export function parseUserInput(body: unknown): UserInput {
     );
   }
 
+  const organizationUnitId = readOptionalId(body.organizationUnitId, "所属組織");
+  const roleIds = readOptionalIds(body.roleIds, "ロール");
+
+  if (!organizationUnitId && roleIds.length > 0) {
+    throw new OrganizationApplicationError(
+      "INVALID_FIELD",
+      "ロールを割り当てる場合は所属組織を選択してください。",
+    );
+  }
+
   return {
     email: email.toLowerCase(),
     displayName: readRequiredText(body.displayName, "表示名", 120),
     kanaName: readOptionalText(body.kanaName, "カナ氏名", 120),
     title: readOptionalText(body.title, "役職", 120),
-    organizationUnitId: readOptionalId(body.organizationUnitId, "所属組織"),
+    organizationUnitId,
     isSystemAdmin: readBoolean(body.isSystemAdmin),
     password: readOptionalPassword(body.password),
+    roleIds,
   };
 }
 
@@ -150,6 +161,25 @@ function readOptionalId(value: unknown, label: string) {
   }
 
   return value;
+}
+
+function readOptionalIds(value: unknown, label: string) {
+  if (value === undefined || value === null) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    throw new OrganizationApplicationError(
+      "INVALID_FIELD",
+      `${label}の形式が正しくありません。`,
+    );
+  }
+
+  const ids = value
+    .map((item) => readOptionalId(item, label))
+    .filter((id): id is string => Boolean(id));
+
+  return Array.from(new Set(ids));
 }
 
 function readOptionalPassword(value: unknown) {

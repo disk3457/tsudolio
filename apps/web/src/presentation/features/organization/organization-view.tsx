@@ -68,6 +68,7 @@ export function OrganizationView() {
       <UserForm
         form={userForm}
         organizationUnits={organizationUnits}
+        roles={roles}
         onCancel={closeUserForm}
         onSubmit={(event) => void handleUserSubmit(event)}
         onUpdateField={updateUserForm}

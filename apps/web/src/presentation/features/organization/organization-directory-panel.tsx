@@ -193,6 +193,9 @@ function UserList({
               user.memberships.map((membership) => (
                 <span key={membership.id}>
                   {membership.organizationUnitName} / {membership.statusLabel}
+                  {membership.roleNames.length > 0
+                    ? ` / ${membership.roleNames.join("・")}`
+                    : ""}
                 </span>
               ))
             ) : (
