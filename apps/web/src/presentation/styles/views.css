@@ -586,6 +586,35 @@
   min-height: 244px;
 }
 
+.passwordSettingsCard {
+  grid-column: span 2;
+}
+
+.passwordSettingsForm {
+  display: grid;
+  gap: 14px;
+}
+
+.settingsNotice {
+  min-height: 34px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.settingsNotice.success {
+  color: #08786f;
+  background: var(--cyan-soft);
+}
+
+.settingsNotice.error {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
 .settingCard ul {
   padding: 0;
   margin: 0;

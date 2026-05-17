@@ -30,6 +30,9 @@
 - Organization administrators can create or rotate a user's password credential
   from the user-management workflow. Password changes reset failed-attempt and
   lockout state and are recorded as warning-level audit events.
+- Users with an existing password credential can change their own password
+  from settings after re-entering the current password. Successful and failed
+  password-change attempts are recorded as authentication audit events.
 - Organization administrators can assign seeded roles to a user's active
   membership from the user-management workflow. Role assignment changes are
   synchronized with the selected membership and recorded as warning-level audit

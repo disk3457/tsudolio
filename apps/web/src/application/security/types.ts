@@ -19,6 +19,7 @@ export type CurrentUserContext = {
   email: string;
   displayName: string;
   isSystemAdmin: boolean;
+  passwordLoginEnabled: boolean;
   organizationUnitIds: string[];
   permissionCodes: string[];
 };
@@ -44,11 +45,25 @@ export type CurrentUserSession = {
     email: string;
     displayName: string;
     isSystemAdmin: boolean;
+    passwordLoginEnabled: boolean;
     organizationUnitIds: string[];
   };
   permissions: PermissionDescriptor[];
   can: Record<PermissionCode, boolean>;
 };
+
+export type PasswordChangeApiResponse =
+  | {
+      data: {
+        changed: boolean;
+        passwordChangedAt: string;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
 
 export type CurrentUserApiResponse =
   | {

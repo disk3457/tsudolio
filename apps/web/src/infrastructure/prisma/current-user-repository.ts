@@ -47,6 +47,11 @@ export async function resolveCurrentUser(
       email: userEmail,
     },
     include: {
+      credential: {
+        select: {
+          id: true,
+        },
+      },
       memberships: {
         where: {
           status: MembershipStatus.ACTIVE,
@@ -99,6 +104,7 @@ export async function resolveCurrentUser(
     email: user.email,
     displayName: user.displayName,
     isSystemAdmin: user.isSystemAdmin,
+    passwordLoginEnabled: Boolean(user.credential),
     organizationUnitIds: Array.from(organizationUnitIds),
     permissionCodes: Array.from(permissionCodes).sort(),
   };
