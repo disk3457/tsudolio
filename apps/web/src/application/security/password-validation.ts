@@ -8,6 +8,17 @@ export type PasswordChangeInput = {
   newPassword: string;
 };
 
+export type PasswordResetRequestInput = {
+  tenantCode: string;
+  email: string;
+};
+
+export type PasswordResetConfirmInput = {
+  tenantCode: string;
+  token: string;
+  newPassword: string;
+};
+
 export function parsePasswordChangeInput(body: unknown): PasswordChangeInput {
   if (!isRecord(body)) {
     throw new ApplicationError(
@@ -40,6 +51,41 @@ export function parsePasswordChangeInput(body: unknown): PasswordChangeInput {
   };
 }
 
+export function parsePasswordResetRequestInput(
+  body: unknown,
+): PasswordResetRequestInput {
+  if (!isRecord(body)) {
+    throw new ApplicationError(
+      "INVALID_JSON",
+      "パスワードリセット申請データの形式が正しくありません。",
+      400,
+    );
+  }
+
+  return {
+    tenantCode: readRequiredText(body.tenantCode, "テナントコード").trim(),
+    email: readEmail(body.email),
+  };
+}
+
+export function parsePasswordResetConfirmInput(
+  body: unknown,
+): PasswordResetConfirmInput {
+  if (!isRecord(body)) {
+    throw new ApplicationError(
+      "INVALID_JSON",
+      "パスワードリセットデータの形式が正しくありません。",
+      400,
+    );
+  }
+
+  return {
+    tenantCode: readRequiredText(body.tenantCode, "テナントコード").trim(),
+    token: readRequiredText(body.token, "リセットトークン").trim(),
+    newPassword: readNewPassword(body.newPassword, "新しいパスワード"),
+  };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -54,6 +100,20 @@ function readRequiredText(value: unknown, label: string) {
   }
 
   return value;
+}
+
+function readEmail(value: unknown) {
+  const email = readRequiredText(value, "メールアドレス").trim().toLowerCase();
+
+  if (!email.includes("@")) {
+    throw new ApplicationError(
+      "INVALID_FIELD",
+      "メールアドレスの形式を確認してください。",
+      400,
+    );
+  }
+
+  return email;
 }
 
 function readNewPassword(value: unknown, label: string) {

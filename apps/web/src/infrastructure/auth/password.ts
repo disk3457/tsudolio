@@ -1,4 +1,5 @@
 import {
+  createHash,
   randomBytes,
   scrypt as scryptCallback,
   timingSafeEqual,
@@ -65,4 +66,12 @@ export async function verifyPassword(password: string, storedHash: string) {
     actualKey.byteLength === expectedKey.byteLength &&
     timingSafeEqual(actualKey, expectedKey)
   );
+}
+
+export function createPasswordResetToken() {
+  return randomBytes(32).toString("base64url");
+}
+
+export function hashPasswordResetToken(token: string) {
+  return createHash("sha256").update(token).digest("base64url");
 }

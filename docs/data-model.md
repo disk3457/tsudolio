@@ -6,6 +6,7 @@
 - `organization_unit`: 部署、病棟、支店、チーム、外部委託先などの階層
 - `user`: 人のアカウント
 - `user_credential`: 通常ログイン用のパスワードハッシュとロック状態
+- `password_reset_token`: パスワードリセット用の短期トークンハッシュ
 - `membership`: 利用者と組織の所属関係
 - `role`: テナント内で定義する権限束
 - `permission`: 機能単位の細かな権限

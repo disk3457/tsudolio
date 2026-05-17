@@ -48,6 +48,9 @@ Local infrastructure can be started with:
 docker compose up -d
 ```
 
+Password reset emails are captured by Mailpit at `http://localhost:8025` in
+local development.
+
 To initialize the local PostgreSQL schema and seed a working tenant:
 
 ```bash
