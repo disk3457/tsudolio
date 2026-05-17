@@ -35,6 +35,20 @@
     grid-template-columns: 1fr;
   }
 
+  .auditFilters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .auditSearchControl {
+    grid-column: span 2;
+  }
+
+  .auditPanel,
+  .securityControlsPanel {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
   .actionCard {
     grid-column: span 2;
   }
@@ -165,6 +179,16 @@
 
   .segmentedControl button {
     min-width: 0;
+  }
+
+  .auditFilters,
+  .auditSearchControl {
+    grid-template-columns: 1fr;
+    grid-column: auto;
+  }
+
+  .auditLogItem {
+    grid-template-columns: 1fr;
   }
 
   .actionCard {
