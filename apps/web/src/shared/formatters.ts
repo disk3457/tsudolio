@@ -20,6 +20,18 @@ export function formatDateTime(value: string, timezone: string) {
   }).format(new Date(value));
 }
 
+export function formatFullDateTime(value: string, timezone: string) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit",
+    second: "2-digit",
+    timeZone: timezone,
+    year: "numeric",
+  }).format(new Date(value));
+}
+
 export function formatDue(value: string | null, timezone: string) {
   if (value === null) {
     return "期限なし";
@@ -47,6 +59,10 @@ export function getSeverityMeta(severity: string) {
 
   if (severity === "WARNING") {
     return { label: "注意", level: "warning" };
+  }
+
+  if (severity === "INFO") {
+    return { label: "情報", level: "info" };
   }
 
   return { label: "通知", level: "notice" };
