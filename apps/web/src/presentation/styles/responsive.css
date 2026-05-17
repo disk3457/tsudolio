@@ -201,9 +201,15 @@
 
   .actionRow,
   .actionRow .textButton,
+  .passkeyRegistrationControls,
+  .passkeyRegistrationControls .textButton,
   .toolbarActions .textButton,
   .toolbarActions .iconButton,
   .viewToolbar .textButton {
     width: 100%;
+  }
+
+  .passkeyRegistrationControls {
+    grid-template-columns: 1fr;
   }
 }

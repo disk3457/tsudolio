@@ -798,6 +798,73 @@
   gap: 14px;
 }
 
+.passkeySettingsCard {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.passkeyRegistrationControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.passkeyList {
+  display: grid;
+  gap: 9px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.passkeyItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 10px;
+  align-items: center;
+  min-height: 58px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.passkeyItem span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.passkeyItem strong,
+.passkeyItem small {
+  overflow-wrap: anywhere;
+}
+
+.passkeyItem strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.passkeyItem small,
+.passkeyEmpty {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.passkeyEmpty {
+  min-height: 42px;
+  margin: 0;
+  padding: 11px;
+  border: 1px dashed #cdddeb;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
 .settingsNotice {
   min-height: 34px;
   margin: 0;
