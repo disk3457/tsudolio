@@ -69,6 +69,7 @@ export type PasswordResetRequestApiResponse =
   | {
       data: {
         accepted: boolean;
+        emailDelivery?: "sent" | "skipped";
         expiresAt?: string;
         resetUrl?: string;
       };

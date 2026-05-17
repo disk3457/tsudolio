@@ -6,6 +6,7 @@ import {
   hashPasswordResetToken,
   verifyPassword,
 } from "@/infrastructure/auth/password";
+import { sendPasswordResetEmail } from "@/infrastructure/email/password-reset-email";
 import {
   recordAuthAuditEvent,
   recordAuthAuditEventInTransaction,
@@ -48,6 +49,7 @@ export type PasswordResetRequestInput = {
 export type PasswordResetRequestResult = {
   accepted: true;
   expiresAt?: string;
+  emailDelivery?: "sent" | "skipped";
   resetUrl?: string;
 };
 
@@ -362,6 +364,8 @@ export async function requestPasswordReset(
     select: {
       id: true,
       code: true,
+      displayName: true,
+      name: true,
     },
   });
 
@@ -378,6 +382,8 @@ export async function requestPasswordReset(
     },
     select: {
       id: true,
+      displayName: true,
+      email: true,
     },
   });
 
@@ -403,6 +409,7 @@ export async function requestPasswordReset(
   const expiresAt = new Date(
     createdAt.getTime() + passwordResetTokenMinutes * 60 * 1000,
   );
+  const resetUrl = createResetUrl(input.origin, tenant.code, token);
 
   await prisma.$transaction(async (tx) => {
     await tx.passwordResetToken.updateMany({
@@ -437,13 +444,72 @@ export async function requestPasswordReset(
     });
   });
 
+  let emailDelivery: Awaited<ReturnType<typeof sendPasswordResetEmail>>;
+
+  try {
+    emailDelivery = await sendPasswordResetEmail({
+      expiresAt,
+      recipientEmail: user.email,
+      recipientName: user.displayName,
+      resetUrl,
+      tenantName: tenant.displayName ?? tenant.name,
+    });
+  } catch (error) {
+    await recordAuthAuditEvent({
+      tenantId: tenant.id,
+      actorId: user.id,
+      action: "パスワードリセットメール送信失敗",
+      targetType: "user",
+      targetId: user.id,
+      severity: AuditSeverity.CRITICAL,
+      ipAddress: input.ipAddress ?? null,
+      metadata: createPasswordAuditMetadata("email_failed", email, {
+        channel: "email",
+        reason:
+          error instanceof ApplicationError ? error.code : "delivery_failed",
+      }),
+    });
+
+    throw error;
+  }
+
+  await recordAuthAuditEvent({
+    tenantId: tenant.id,
+    actorId: user.id,
+    action:
+      emailDelivery.status === "sent"
+        ? "パスワードリセットメール送信"
+        : "パスワードリセットメール未送信",
+    targetType: "user",
+    targetId: user.id,
+    severity:
+      emailDelivery.status === "sent"
+        ? AuditSeverity.NOTICE
+        : AuditSeverity.WARNING,
+    ipAddress: input.ipAddress ?? null,
+    metadata: createPasswordAuditMetadata(emailDelivery.status, email, {
+      channel: "email",
+      ...(emailDelivery.messageId
+        ? {
+            messageId: emailDelivery.messageId,
+          }
+        : {}),
+      ...(emailDelivery.reason
+        ? {
+            reason: emailDelivery.reason,
+          }
+        : {}),
+    }),
+  });
+
   return {
     accepted: true,
+    emailDelivery: emailDelivery.status,
     expiresAt: expiresAt.toISOString(),
     ...(process.env.NODE_ENV === "production"
       ? {}
       : {
-          resetUrl: createResetUrl(input.origin, tenant.code, token),
+          resetUrl,
         }),
   };
 }
@@ -653,8 +719,17 @@ function invalidResetToken() {
   );
 }
 
-function createResetUrl(origin: string | null | undefined, tenantCode: string, token: string) {
-  const url = new URL("/login", origin ?? "http://localhost:3000");
+function createResetUrl(
+  origin: string | null | undefined,
+  tenantCode: string,
+  token: string,
+) {
+  const url = new URL(
+    "/login",
+    process.env.TSUDOLIO_PUBLIC_BASE_URL?.trim() ||
+      origin ||
+      "http://localhost:3000",
+  );
 
   url.searchParams.set("tenantCode", tenantCode);
   url.searchParams.set("resetToken", token);

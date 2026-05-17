@@ -36,8 +36,11 @@
 - Password reset requests are accepted through
   `POST /api/auth/password/reset/request` and reset confirmation is handled by
   `POST /api/auth/password/reset/confirm`. Reset tokens are stored only as
-  short-lived hashes in `password_reset_tokens`; successful, expired, invalid,
-  and unknown-account attempts are recorded as authentication audit events.
+  short-lived hashes in `password_reset_tokens`, then delivered by SMTP using
+  the `MAIL_*` environment configuration. Local development defaults to the
+  Mailpit SMTP endpoint from Docker Compose, while production requires an
+  explicit sender and SMTP host. Successful, expired, invalid, unknown-account,
+  and delivery-failure attempts are recorded as authentication audit events.
 - Organization administrators can assign seeded roles to a user's active
   membership from the user-management workflow. Role assignment changes are
   synchronized with the selected membership and recorded as warning-level audit

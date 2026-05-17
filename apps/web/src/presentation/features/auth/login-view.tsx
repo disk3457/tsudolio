@@ -141,8 +141,7 @@ export function LoginView({
 
       setResetState({
         status: "success",
-        message:
-          "入力したメールアドレスにリセット手順を送信しました。",
+        message: createPasswordResetRequestMessage(body.data),
         resetUrl: body.data.resetUrl ?? null,
       });
     } catch (error) {
@@ -463,6 +462,16 @@ function ResetMessage({ state }: { state: FormState }) {
       {state.message}
     </p>
   );
+}
+
+function createPasswordResetRequestMessage(
+  data: Extract<PasswordResetRequestApiResponse, { data: unknown }>["data"],
+) {
+  if (data.resetUrl && data.emailDelivery !== "sent") {
+    return "開発環境ではメール送信を完了できなかったため、開発用リセットリンクを表示しています。";
+  }
+
+  return "入力したメールアドレスにリセット手順を送信しました。";
 }
 
 function BackToLoginButton({ onClick }: { onClick: () => void }) {
