@@ -8,6 +8,7 @@
 - `user_credential`: 通常ログイン用のパスワードハッシュとロック状態
 - `password_reset_token`: パスワードリセット用の短期トークンハッシュ
 - `webauthn_credential`: Passkey/WebAuthn 認証器の公開鍵と署名カウンタ
+- `webauthn_authentication_challenge`: Passkeyログイン時の短期チャレンジハッシュ
 - `webauthn_registration_challenge`: Passkey登録時の短期チャレンジハッシュ
 - `membership`: 利用者と組織の所属関係
 - `role`: テナント内で定義する権限束

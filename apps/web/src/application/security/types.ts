@@ -139,6 +139,28 @@ export type PasskeyRegistrationVerifyApiResponse =
       message: string;
     };
 
+export type PasskeyAuthenticationOptionsApiResponse =
+  | {
+      data: {
+        options: unknown;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type PasskeyAuthenticationVerifyApiResponse =
+  | {
+      data: CurrentUserSession;
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
 export type PasskeyDeleteApiResponse =
   | {
       data: {

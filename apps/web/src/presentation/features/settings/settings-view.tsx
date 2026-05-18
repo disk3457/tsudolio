@@ -12,7 +12,6 @@ import {
   Trash2,
 } from "lucide-react";
 import {
-  browserSupportsWebAuthn,
   startRegistration,
   type PublicKeyCredentialCreationOptionsJSON,
 } from "@simplewebauthn/browser";
@@ -25,6 +24,7 @@ import type {
   PasskeySummary,
   PasswordChangeApiResponse,
 } from "@/application/security/types";
+import { useWebAuthnSupport } from "@/presentation/features/auth/use-webauthn-support";
 import { settingGroups } from "@/presentation/features/settings/settings-static-data";
 
 type PasswordFormState = {
@@ -62,7 +62,7 @@ export function SettingsView({
   });
   const [passkeys, setPasskeys] = useState<PasskeySummary[]>([]);
   const [passkeyName, setPasskeyName] = useState("");
-  const [webAuthnSupported] = useState(() => browserSupportsWebAuthn());
+  const webAuthnSupported = useWebAuthnSupport();
   const [passkeyState, setPasskeyState] = useState<PasskeySaveState>({
     status: "idle",
     message: null,

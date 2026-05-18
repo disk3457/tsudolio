@@ -1,20 +1,25 @@
 "use client";
 
+import { startAuthentication } from "@simplewebauthn/browser";
 import Image from "next/image";
 import { FormEvent, useMemo, useState } from "react";
 import {
   ArrowLeft,
   Building2,
   CircleCheckBig,
+  Fingerprint,
   KeyRound,
   Link as LinkIcon,
   LogIn,
   Mail,
 } from "lucide-react";
 import type {
+  PasskeyAuthenticationOptionsApiResponse,
+  PasskeyAuthenticationVerifyApiResponse,
   PasswordResetConfirmApiResponse,
   PasswordResetRequestApiResponse,
 } from "@/application/security/types";
+import { useWebAuthnSupport } from "@/presentation/features/auth/use-webauthn-support";
 
 type LoginViewProps = {
   defaultTenantCode: string;
@@ -30,6 +35,10 @@ type FormState = {
   message: string | null;
   resetUrl?: string | null;
 };
+
+type AuthenticationOptionsJSON = Parameters<
+  typeof startAuthentication
+>[0]["optionsJSON"];
 
 const idleState: FormState = {
   status: "idle",
@@ -54,6 +63,7 @@ export function LoginView({
   const [resetTokenValue, setResetTokenValue] = useState(resetToken);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const webAuthnSupported = useWebAuthnSupport();
   const [loginState, setLoginState] = useState<FormState>(idleState);
   const [resetState, setResetState] = useState<FormState>(idleState);
   const ssoLoginUrl = useMemo(
@@ -104,6 +114,83 @@ export function LoginView({
           error instanceof Error
             ? error.message
             : "ログインできませんでした。",
+      });
+    }
+  }
+
+  async function submitPasskeyLogin() {
+    if (!webAuthnSupported) {
+      setLoginState({
+        status: "error",
+        message: "このブラウザではPasskeyを利用できません。",
+      });
+      return;
+    }
+
+    setLoginState({
+      status: "submitting",
+      message: null,
+    });
+
+    try {
+      const optionsResponse = await fetch("/api/auth/passkeys/login/options", {
+        body: JSON.stringify({
+          email,
+          tenantCode,
+        }),
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const optionsBody =
+        (await optionsResponse.json()) as PasskeyAuthenticationOptionsApiResponse;
+
+      if (!optionsResponse.ok || !("data" in optionsBody)) {
+        throw new Error(
+          "message" in optionsBody
+            ? optionsBody.message
+            : "Passkeyログインを開始できませんでした。",
+        );
+      }
+
+      const authenticationResponse = await startAuthentication({
+        optionsJSON: optionsBody.data.options as AuthenticationOptionsJSON,
+      });
+      const verifyResponse = await fetch("/api/auth/passkeys/login/verify", {
+        body: JSON.stringify({
+          email,
+          response: authenticationResponse,
+          tenantCode,
+        }),
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const verifyBody =
+        (await verifyResponse.json()) as PasskeyAuthenticationVerifyApiResponse;
+
+      if (!verifyResponse.ok || !("data" in verifyBody)) {
+        throw new Error(
+          "message" in verifyBody
+            ? verifyBody.message
+            : "Passkeyでログインできませんでした。",
+        );
+      }
+
+      window.location.assign(nextUrl);
+    } catch (error) {
+      setLoginState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Passkeyでログインできませんでした。",
       });
     }
   }
@@ -285,6 +372,25 @@ export function LoginView({
               </label>
 
               <button
+                className="textButton passkeyLoginButton"
+                disabled={
+                  loginState.status === "submitting" || !webAuthnSupported
+                }
+                onClick={() => void submitPasskeyLogin()}
+                title={
+                  webAuthnSupported
+                    ? "Passkeyでログイン"
+                    : "このブラウザではPasskeyを利用できません"
+                }
+                type="button"
+              >
+                <Fingerprint aria-hidden="true" size={17} />
+                {loginState.status === "submitting"
+                  ? "確認中"
+                  : "Passkeyでログイン"}
+              </button>
+
+              <button
                 className="loginTextAction"
                 onClick={openResetRequest}
                 type="button"
@@ -304,7 +410,7 @@ export function LoginView({
                 type="submit"
               >
                 <LogIn aria-hidden="true" size={17} />
-                ログイン
+                {loginState.status === "submitting" ? "ログイン中" : "ログイン"}
               </button>
             </form>
 
