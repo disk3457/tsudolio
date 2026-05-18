@@ -93,6 +93,64 @@ export type PasswordResetConfirmApiResponse =
       message: string;
     };
 
+export type PasskeySummary = {
+  id: string;
+  name: string;
+  deviceType: string;
+  backedUp: boolean;
+  transports: string[];
+  createdAt: string;
+  lastUsedAt: string | null;
+};
+
+export type PasskeyListApiResponse =
+  | {
+      data: {
+        passkeys: PasskeySummary[];
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type PasskeyRegistrationOptionsApiResponse =
+  | {
+      data: {
+        options: unknown;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type PasskeyRegistrationVerifyApiResponse =
+  | {
+      data: {
+        passkey: PasskeySummary;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type PasskeyDeleteApiResponse =
+  | {
+      data: {
+        deleted: boolean;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
 export type CurrentUserApiResponse =
   | {
       data: CurrentUserSession;

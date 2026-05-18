@@ -73,28 +73,30 @@ enum AuditSeverity {
 }
 
 model Tenant {
-  id                String                @id @default(uuid()) @db.Uuid
-  code              String                @unique @db.VarChar(64)
-  name              String                @db.VarChar(160)
-  displayName       String?               @map("display_name") @db.VarChar(160)
-  type              TenantType            @default(HYBRID)
-  timezone          String                @default("Asia/Tokyo") @db.VarChar(80)
-  createdAt         DateTime              @default(now()) @map("created_at")
-  updatedAt         DateTime              @updatedAt @map("updated_at")
-  organizationUnits OrganizationUnit[]
-  users             User[]
-  userCredentials   UserCredential[]
-  memberships       Membership[]
-  roles             Role[]
-  facilities        Facility[]
-  calendarEvents    CalendarEvent[]
-  reservations      FacilityReservation[]
-  notices           Notice[]
-  workflowRequests  WorkflowRequest[]
-  documents         Document[]
-  auditEvents         AuditEvent[]
-  notifications       Notification[]
-  passwordResetTokens PasswordResetToken[]
+  id                             String                          @id @default(uuid()) @db.Uuid
+  code                           String                          @unique @db.VarChar(64)
+  name                           String                          @db.VarChar(160)
+  displayName                    String?                         @map("display_name") @db.VarChar(160)
+  type                           TenantType                      @default(HYBRID)
+  timezone                       String                          @default("Asia/Tokyo") @db.VarChar(80)
+  createdAt                      DateTime                        @default(now()) @map("created_at")
+  updatedAt                      DateTime                        @updatedAt @map("updated_at")
+  organizationUnits              OrganizationUnit[]
+  users                          User[]
+  userCredentials                UserCredential[]
+  memberships                    Membership[]
+  roles                          Role[]
+  facilities                     Facility[]
+  calendarEvents                 CalendarEvent[]
+  reservations                   FacilityReservation[]
+  notices                        Notice[]
+  workflowRequests               WorkflowRequest[]
+  documents                      Document[]
+  auditEvents                    AuditEvent[]
+  notifications                  Notification[]
+  passwordResetTokens            PasswordResetToken[]
+  webAuthnCredentials            WebAuthnCredential[]
+  webAuthnRegistrationChallenges WebAuthnRegistrationChallenge[]
 
   @@map("tenants")
 }
@@ -126,26 +128,28 @@ model OrganizationUnit {
 }
 
 model User {
-  id                 String            @id @default(uuid()) @db.Uuid
-  tenantId           String            @map("tenant_id") @db.Uuid
-  email              String            @db.VarChar(254)
-  displayName        String            @map("display_name") @db.VarChar(120)
-  kanaName           String?           @map("kana_name") @db.VarChar(120)
-  title              String?           @db.VarChar(120)
-  locale             String            @default("ja-JP") @db.VarChar(20)
-  isSystemAdmin      Boolean           @default(false) @map("is_system_admin")
-  lastLoginAt        DateTime?         @map("last_login_at")
-  createdAt          DateTime          @default(now()) @map("created_at")
-  updatedAt          DateTime          @updatedAt @map("updated_at")
-  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  memberships        Membership[]
-  createdEvents      CalendarEvent[]   @relation("CalendarEventCreator")
-  requestedWorkflows WorkflowRequest[] @relation("WorkflowRequester")
-  uploadedDocuments  Document[]        @relation("DocumentUploader")
-  auditEvents         AuditEvent[]
-  notifications       Notification[]
-  credential          UserCredential?
-  passwordResetTokens PasswordResetToken[]
+  id                             String                          @id @default(uuid()) @db.Uuid
+  tenantId                       String                          @map("tenant_id") @db.Uuid
+  email                          String                          @db.VarChar(254)
+  displayName                    String                          @map("display_name") @db.VarChar(120)
+  kanaName                       String?                         @map("kana_name") @db.VarChar(120)
+  title                          String?                         @db.VarChar(120)
+  locale                         String                          @default("ja-JP") @db.VarChar(20)
+  isSystemAdmin                  Boolean                         @default(false) @map("is_system_admin")
+  lastLoginAt                    DateTime?                       @map("last_login_at")
+  createdAt                      DateTime                        @default(now()) @map("created_at")
+  updatedAt                      DateTime                        @updatedAt @map("updated_at")
+  tenant                         Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  memberships                    Membership[]
+  createdEvents                  CalendarEvent[]                 @relation("CalendarEventCreator")
+  requestedWorkflows             WorkflowRequest[]               @relation("WorkflowRequester")
+  uploadedDocuments              Document[]                      @relation("DocumentUploader")
+  auditEvents                    AuditEvent[]
+  notifications                  Notification[]
+  credential                     UserCredential?
+  passwordResetTokens            PasswordResetToken[]
+  webAuthnCredentials            WebAuthnCredential[]
+  webAuthnRegistrationChallenges WebAuthnRegistrationChallenge[]
 
   @@unique([tenantId, email])
   @@index([tenantId, displayName])
@@ -184,6 +188,41 @@ model PasswordResetToken {
   @@index([tenantId, userId, createdAt])
   @@index([tenantId, expiresAt])
   @@map("password_reset_tokens")
+}
+
+model WebAuthnCredential {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  credentialId String    @map("credential_id") @db.VarChar(255)
+  publicKey    Bytes     @map("public_key")
+  signCount    Int       @default(0) @map("sign_count")
+  deviceType   String    @map("device_type") @db.VarChar(40)
+  backedUp     Boolean   @default(false) @map("backed_up")
+  transports   Json?
+  name         String?   @db.VarChar(120)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  lastUsedAt   DateTime? @map("last_used_at")
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, credentialId])
+  @@index([tenantId, userId, createdAt])
+  @@map("webauthn_credentials")
+}
+
+model WebAuthnRegistrationChallenge {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  challengeHash String   @map("challenge_hash") @db.VarChar(96)
+  expiresAt     DateTime @map("expires_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, userId, expiresAt])
+  @@map("webauthn_registration_challenges")
 }
 
 model Membership {

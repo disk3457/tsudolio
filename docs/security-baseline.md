@@ -41,6 +41,12 @@
   Mailpit SMTP endpoint from Docker Compose, while production requires an
   explicit sender and SMTP host. Successful, expired, invalid, unknown-account,
   and delivery-failure attempts are recorded as authentication audit events.
+- Logged-in users can register and remove Passkeys from settings. Registration
+  challenges are stored as short-lived hashes in
+  `webauthn_registration_challenges`, and verified credentials are stored in
+  `webauthn_credentials` with public keys, signature counters, device type, and
+  backup state. Passkey registration and removal write authentication audit
+  events. Passkey login and MFA enforcement are not enabled yet.
 - Organization administrators can assign seeded roles to a user's active
   membership from the user-management workflow. Role assignment changes are
   synchronized with the selected membership and recorded as warning-level audit
