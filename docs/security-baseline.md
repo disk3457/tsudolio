@@ -46,7 +46,13 @@
   `webauthn_registration_challenges`, and verified credentials are stored in
   `webauthn_credentials` with public keys, signature counters, device type, and
   backup state. Passkey registration and removal write authentication audit
-  events. Passkey login and MFA enforcement are not enabled yet.
+  events.
+- Passkey login is available from the login screen. Authentication challenges
+  are stored as short-lived hashes in `webauthn_authentication_challenges`;
+  successful verification updates credential counters, `last_used_at`, user
+  `last_login_at`, and issues the same signed session cookie with provider
+  `passkey`. Successful and failed Passkey login attempts write authentication
+  audit events. MFA enforcement is not enabled yet.
 - Organization administrators can assign seeded roles to a user's active
   membership from the user-management workflow. Role assignment changes are
   synchronized with the selected membership and recorded as warning-level audit

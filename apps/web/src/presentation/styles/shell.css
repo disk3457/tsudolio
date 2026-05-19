@@ -317,8 +317,15 @@
 }
 
 .loginSubmit,
-.loginSso {
+.loginSso,
+.passkeyLoginButton {
   width: 100%;
+}
+
+.passkeyLoginButton {
+  border-color: #b8d6ea;
+  color: #123952;
+  background: #f5fbff;
 }
 
 .loginTextAction {

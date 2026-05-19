@@ -7,6 +7,17 @@ export type PasskeyRegistrationVerifyInput = {
   response: unknown;
 };
 
+export type PasskeyAuthenticationOptionsInput = {
+  email: string;
+  tenantCode: string;
+};
+
+export type PasskeyAuthenticationVerifyInput = {
+  email: string;
+  tenantCode: string;
+  response: unknown;
+};
+
 export function parsePasskeyRegistrationOptionsInput(body: unknown) {
   if (!isRecord(body)) {
     return {
@@ -44,6 +55,35 @@ export function parsePasskeyRegistrationVerifyInput(
   };
 }
 
+export function parsePasskeyAuthenticationOptionsInput(
+  body: unknown,
+  defaultTenantCode?: string,
+): PasskeyAuthenticationOptionsInput {
+  const values = readPasskeyAuthenticationBaseInput(body, defaultTenantCode);
+
+  return {
+    email: values.email,
+    tenantCode: values.tenantCode,
+  };
+}
+
+export function parsePasskeyAuthenticationVerifyInput(
+  body: unknown,
+  defaultTenantCode?: string,
+): PasskeyAuthenticationVerifyInput {
+  const values = readPasskeyAuthenticationBaseInput(body, defaultTenantCode);
+
+  if (!isRecord(values.response)) {
+    throw invalidPasskeyAuthenticationInput();
+  }
+
+  return {
+    email: values.email,
+    response: values.response,
+    tenantCode: values.tenantCode,
+  };
+}
+
 function readOptionalName(value: unknown) {
   if (typeof value === "undefined" || value === null) {
     return null;
@@ -72,6 +112,39 @@ function readOptionalName(value: unknown) {
   }
 
   return name;
+}
+
+function readPasskeyAuthenticationBaseInput(
+  body: unknown,
+  defaultTenantCode?: string,
+) {
+  if (!isRecord(body)) {
+    throw invalidPasskeyAuthenticationInput();
+  }
+
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  const tenantCode =
+    typeof body.tenantCode === "string" && body.tenantCode.trim()
+      ? body.tenantCode.trim()
+      : defaultTenantCode?.trim();
+
+  if (!tenantCode || !email) {
+    throw invalidPasskeyAuthenticationInput();
+  }
+
+  return {
+    email,
+    response: body.response,
+    tenantCode,
+  };
+}
+
+function invalidPasskeyAuthenticationInput(): never {
+  throw new ApplicationError(
+    "PASSKEY_AUTHENTICATION_INPUT_INVALID",
+    "テナントコードとメールアドレスを入力してください。",
+    400,
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
