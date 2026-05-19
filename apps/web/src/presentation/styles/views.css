@@ -558,6 +558,86 @@
   grid-column: 2;
 }
 
+.authPolicyCard {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.authPolicyHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.authPolicyHeader svg {
+  flex: 0 0 auto;
+  color: var(--blue);
+}
+
+.authPolicyHeader span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.authPolicyHeader strong {
+  color: var(--blue-deep);
+  line-height: 1.25;
+}
+
+.authPolicyHeader small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.authPolicyToggle {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid #cdddeb;
+  border-radius: 8px;
+  color: var(--ink);
+  background: #ffffff;
+  font-weight: 800;
+}
+
+.authPolicyToggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+}
+
+.authPolicyToggle span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.authPolicyMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.authPolicyMetrics span {
+  min-height: 30px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--surface-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .auditFilters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));

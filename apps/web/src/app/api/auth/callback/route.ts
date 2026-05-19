@@ -7,6 +7,7 @@ import {
 } from "@/infrastructure/auth/oidc-provider";
 import { createAuthSessionCookie } from "@/infrastructure/auth/session-cookie";
 import { recordAuthAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
+import { prismaAuthPolicyRepository } from "@/infrastructure/prisma/auth-policy-repository";
 import { prismaCurrentUserRepository } from "@/infrastructure/prisma/current-user-repository";
 import { applicationErrorResponse } from "@/presentation/http/json-response";
 import { AuditSeverity } from "@generated/prisma/enums";
@@ -20,6 +21,12 @@ export async function GET(request: Request) {
     const currentUser = await prismaCurrentUserRepository.resolveCurrentUser({
       tenantCode: identity.tenantCode,
       userEmail: identity.userEmail,
+    });
+    await prismaAuthPolicyRepository.assertAuthPolicyAllowsLogin({
+      currentUser,
+      provider: "oidc",
+      subject: identity.subject,
+      ipAddress: getClientIpAddress(request),
     });
     const session = createAuthSessionCookie(
       {

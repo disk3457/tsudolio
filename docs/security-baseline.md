@@ -52,7 +52,12 @@
   successful verification updates credential counters, `last_used_at`, user
   `last_login_at`, and issues the same signed session cookie with provider
   `passkey`. Successful and failed Passkey login attempts write authentication
-  audit events. MFA enforcement is not enabled yet.
+  audit events.
+- Tenant administrators can require Passkey login for privileged users through
+  the security controls. The policy is stored on the tenant, blocks password
+  and OIDC sessions for users with system-admin, management, or approval
+  privileges, requires the enabling administrator to already have a Passkey,
+  and records policy changes and blocked login attempts as audit events.
 - Organization administrators can assign seeded roles to a user's active
   membership from the user-management workflow. Role assignment changes are
   synchronized with the selected membership and recorded as warning-level audit
