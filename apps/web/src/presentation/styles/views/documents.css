@@ -1,0 +1,16 @@
+.documentTable .dataRow {
+  grid-template-columns:
+    minmax(220px, 1.7fr)
+    minmax(90px, 0.7fr)
+    minmax(130px, 1fr)
+    minmax(70px, 0.55fr)
+    minmax(116px, 0.85fr)
+    minmax(96px, 0.7fr)
+    minmax(78px, 0.55fr);
+}
+
+.documentActions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
