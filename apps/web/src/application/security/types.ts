@@ -161,6 +161,31 @@ export type PasskeyAuthenticationVerifyApiResponse =
       message: string;
     };
 
+export type PasskeyStepUpOptionsApiResponse =
+  | {
+      data: {
+        options: unknown;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type PasskeyStepUpVerifyApiResponse =
+  | {
+      data: {
+        expiresAt: string;
+        verified: boolean;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
 export type PasskeyDeleteApiResponse =
   | {
       data: {

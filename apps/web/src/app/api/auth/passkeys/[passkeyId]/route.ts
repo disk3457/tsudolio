@@ -1,6 +1,7 @@
 import {
   getClientIpAddress,
   getCurrentUserFromRequest,
+  requireRecentStepUp,
 } from "@/app/api/_shared/request-context";
 import { prismaPasskeyRepository } from "@/infrastructure/prisma/passkey-repository";
 import {
@@ -20,6 +21,7 @@ type RouteContext = {
 export async function DELETE(request: Request, context: RouteContext) {
   try {
     const currentUser = await getCurrentUserFromRequest(request);
+    requireRecentStepUp(request);
     const { passkeyId } = await context.params;
     const result = await prismaPasskeyRepository.deletePasskey({
       currentUser,

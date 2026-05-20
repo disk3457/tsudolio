@@ -10,6 +10,8 @@ export type AuthSessionProvider =
   | "passkey"
   | "recovery_code";
 
+export type AuthSessionStepUpProvider = "passkey";
+
 export type AuthSession = {
   tenantCode: string;
   userEmail: string;
@@ -17,6 +19,9 @@ export type AuthSession = {
   subject?: string;
   issuedAt: number;
   expiresAt: number;
+  stepUpProvider?: AuthSessionStepUpProvider;
+  stepUpAt?: number;
+  stepUpExpiresAt?: number;
 };
 
 type CreateAuthSessionInput = {
@@ -24,6 +29,7 @@ type CreateAuthSessionInput = {
   userEmail: string;
   provider: AuthSessionProvider;
   subject?: string;
+  stepUpProvider?: AuthSessionStepUpProvider;
 };
 
 export function createAuthSessionCookie(
@@ -32,6 +38,8 @@ export function createAuthSessionCookie(
 ) {
   const issuedAt = Math.floor(Date.now() / 1000);
   const ttlSeconds = getSessionTtlSeconds();
+  const stepUpProvider =
+    input.stepUpProvider ?? (input.provider === "passkey" ? "passkey" : null);
   const session: AuthSession = {
     tenantCode: input.tenantCode,
     userEmail: input.userEmail,
@@ -39,10 +47,18 @@ export function createAuthSessionCookie(
     subject: input.subject,
     issuedAt,
     expiresAt: issuedAt + ttlSeconds,
+    ...(stepUpProvider
+      ? {
+          stepUpProvider,
+          stepUpAt: issuedAt,
+          stepUpExpiresAt: issuedAt + getStepUpTtlSeconds(),
+        }
+      : {}),
   };
 
   return {
     name: sessionCookieName,
+    session,
     value: signSession(session),
     options: {
       httpOnly: true,
@@ -118,6 +134,14 @@ export function getExpiredAuthSessionCookieOptions() {
   };
 }
 
+export function isStepUpSessionFresh(session: AuthSession) {
+  return (
+    session.stepUpProvider === "passkey" &&
+    typeof session.stepUpExpiresAt === "number" &&
+    session.stepUpExpiresAt > Math.floor(Date.now() / 1000)
+  );
+}
+
 function signSession(session: AuthSession) {
   const payloadValue = Buffer.from(JSON.stringify(session)).toString(
     "base64url",
@@ -153,7 +177,22 @@ function getSessionTtlSeconds() {
   return defaultSessionTtlSeconds;
 }
 
+function getStepUpTtlSeconds() {
+  const ttlSeconds = Number(process.env.AUTH_STEP_UP_TTL_SECONDS);
+
+  if (Number.isInteger(ttlSeconds) && ttlSeconds > 0) {
+    return ttlSeconds;
+  }
+
+  return 10 * 60;
+}
+
 function isAuthSession(value: Partial<AuthSession>): value is AuthSession {
+  const hasStepUpFields =
+    typeof value.stepUpProvider !== "undefined" ||
+    typeof value.stepUpAt !== "undefined" ||
+    typeof value.stepUpExpiresAt !== "undefined";
+
   return (
     typeof value.tenantCode === "string" &&
     value.tenantCode.length > 0 &&
@@ -165,7 +204,12 @@ function isAuthSession(value: Partial<AuthSession>): value is AuthSession {
       value.provider === "recovery_code") &&
     typeof value.issuedAt === "number" &&
     typeof value.expiresAt === "number" &&
-    (typeof value.subject === "undefined" || typeof value.subject === "string")
+    (typeof value.subject === "undefined" || typeof value.subject === "string") &&
+    (!hasStepUpFields ||
+      (value.stepUpProvider === "passkey" &&
+        typeof value.stepUpAt === "number" &&
+        typeof value.stepUpExpiresAt === "number" &&
+        value.stepUpExpiresAt > value.stepUpAt))
   );
 }
 

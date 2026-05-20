@@ -2,6 +2,33 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.settingsStepUpNotice {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.settingsStepUpNotice.success {
+  color: #08786f;
+  background: var(--cyan-soft);
+}
+
+.settingsStepUpNotice.error {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.settingsStepUpNotice svg {
+  flex: 0 0 auto;
+}
+
 .settingCard {
   min-height: 244px;
 }

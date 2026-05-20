@@ -9,7 +9,11 @@ import type {
   PermissionCode,
 } from "@/application/security/types";
 import { ApplicationError } from "@/application/shared/application-error";
-import { readAuthSessionFromRequest } from "@/infrastructure/auth/session-cookie";
+import {
+  isStepUpSessionFresh,
+  readAuthSessionFromRequest,
+  type AuthSession,
+} from "@/infrastructure/auth/session-cookie";
 import { prismaCurrentUserRepository } from "@/infrastructure/prisma/current-user-repository";
 
 export async function getCurrentUserFromRequest(request: Request) {
@@ -21,6 +25,15 @@ export async function getCurrentUserFromRequest(request: Request) {
 export function getCurrentUserLookupFromRequest(
   request: Request,
 ): CurrentUserLookup {
+  const session = requireAuthSessionFromRequest(request);
+
+  return {
+    tenantCode: session.tenantCode,
+    userEmail: session.userEmail,
+  };
+}
+
+export function requireAuthSessionFromRequest(request: Request): AuthSession {
   const session = readAuthSessionFromRequest(request);
 
   if (!session) {
@@ -31,10 +44,21 @@ export function getCurrentUserLookupFromRequest(
     );
   }
 
-  return {
-    tenantCode: session.tenantCode,
-    userEmail: session.userEmail,
-  };
+  return session;
+}
+
+export function requireRecentStepUp(request: Request): AuthSession {
+  const session = requireAuthSessionFromRequest(request);
+
+  if (!isStepUpSessionFresh(session)) {
+    throw new ApplicationError(
+      "STEP_UP_REQUIRED",
+      "Passkeyで本人確認してください。",
+      428,
+    );
+  }
+
+  return session;
 }
 
 export async function requirePermission(

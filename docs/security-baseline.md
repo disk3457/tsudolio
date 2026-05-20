@@ -53,6 +53,10 @@
   `last_login_at`, and issues the same signed session cookie with provider
   `passkey`. Successful and failed Passkey login attempts write authentication
   audit events.
+- Sensitive authentication actions require a recent Passkey step-up. The same
+  signed session cookie carries a short-lived step-up marker, and Passkey
+  removal, recovery-code generation, and authentication-policy updates reject
+  stale sessions with `STEP_UP_REQUIRED`.
 - Logged-in users with at least one Passkey can issue recovery codes from
   settings. Codes are displayed only once, stored as hashes in
   `recovery_codes`, and older unused codes are revoked on regeneration.
