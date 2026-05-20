@@ -1,0 +1,218 @@
+.viewStack {
+  display: grid;
+  gap: 18px;
+}
+
+.viewToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.segmentedControl {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.segmentedControl button {
+  min-width: 74px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 800;
+}
+
+.segmentedControl button.active,
+.segmentedControl button:hover {
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+}
+
+.scheduleBoard,
+.quickCards,
+.viewGrid,
+.settingsGrid {
+  display: grid;
+  gap: 18px;
+}
+
+.scheduleBoard {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.scheduleAlert,
+.viewAlert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 1px solid #ffd1dd;
+  border-radius: 8px;
+  color: var(--rose);
+  background: #fff7f9;
+}
+
+.scheduleAlert svg,
+.viewAlert svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.scheduleAlert p,
+.viewAlert p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.scheduleForm {
+  display: grid;
+  gap: 16px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fieldControl {
+  display: grid;
+  gap: 7px;
+}
+
+.fieldControl.wide {
+  grid-column: span 2;
+}
+
+.fieldControl span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.fieldControl input,
+.fieldControl select,
+.fieldControl textarea {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #cdddeb;
+  border-radius: 8px;
+  color: var(--ink);
+  background: #ffffff;
+}
+
+.fieldControl input,
+.fieldControl select {
+  padding: 0 11px;
+}
+
+.fieldControl textarea {
+  resize: vertical;
+  min-height: 92px;
+  padding: 10px 11px;
+  line-height: 1.5;
+}
+
+.checkControl {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding-top: 22px;
+  color: var(--blue-deep);
+  font-weight: 800;
+}
+
+.checkControl input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+}
+
+.roleChoiceGroup {
+  grid-column: span 4;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.roleChoiceGroup legend {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.roleChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.roleChoice {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid #cdddeb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.roleChoice input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--blue);
+}
+
+.roleChoice span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.roleChoice small {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.formFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 2px;
+}
+
+.formFooter p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.panelHeader.compact {
+  margin-bottom: 12px;
+}

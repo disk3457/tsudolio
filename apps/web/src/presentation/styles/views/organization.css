@@ -1,0 +1,170 @@
+.viewGrid {
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  align-items: start;
+}
+
+.organizationStats {
+  margin-bottom: 0;
+}
+
+.widePanel {
+  min-height: 100%;
+}
+
+.orgGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.orgCard {
+  min-height: 230px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.orgCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.orgCardHeader span {
+  color: var(--cyan);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.orgCardHeader strong {
+  color: var(--blue-deep);
+}
+
+.orgCard p,
+.recordItem p,
+.dataRow span,
+.auditItem p,
+.settingCard p {
+  color: var(--muted);
+}
+
+.orgCardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.orgCardMeta span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.chipList span {
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.chipList.compact {
+  margin-top: 6px;
+}
+
+.chipList.compact span {
+  min-height: 24px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+}
+
+.recordList,
+.auditList,
+.settingCard ul {
+  display: grid;
+  gap: 10px;
+}
+
+.recordItem {
+  display: grid;
+  gap: 8px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.recordItem strong {
+  color: var(--blue-deep);
+}
+
+.recordItem span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.userRecordHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.userRecordHeader p {
+  margin: 5px 0 0;
+}
+
+.userRecordBadges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.tablePanel {
+  overflow-x: auto;
+}
+
+.dataTable {
+  min-width: 860px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.dataRow {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) minmax(90px, 0.8fr) minmax(130px, 1fr) minmax(74px, 0.55fr) minmax(120px, 0.9fr) minmax(96px, 0.75fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 58px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+  background: #ffffff;
+}
+
+.dataRow:last-child {
+  border-bottom: 0;
+}
+
+.dataRow.heading {
+  min-height: 42px;
+  color: var(--muted);
+  background: var(--surface-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}

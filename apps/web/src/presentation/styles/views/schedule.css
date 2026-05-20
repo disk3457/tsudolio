@@ -1,0 +1,125 @@
+.timelineItem.compact {
+  grid-template-columns: 82px minmax(0, 1fr);
+  min-height: 68px;
+}
+
+.scheduleEvent {
+  align-items: start;
+}
+
+.scheduleEvent time span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.scheduleEventHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.reservationBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  color: #08786f;
+  background: var(--cyan-soft);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.eventMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.eventMeta span {
+  min-height: 24px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.eventActions {
+  display: flex;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.iconButton.compact {
+  width: 32px;
+  min-height: 32px;
+}
+
+.iconButton.danger {
+  color: var(--rose);
+  border-color: #f5c7d2;
+  background: #fff7f9;
+}
+
+.quickCards {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.facilityCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.facilityCard p {
+  margin: 10px 0 0;
+  color: var(--muted);
+}
+
+.facilityMeta {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.statusPill.open {
+  color: #08786f;
+  background: var(--cyan-soft);
+}
+
+.statusPill.busy {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.statusPill.wait {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.statusPill.done {
+  color: #08786f;
+  background: var(--cyan-soft);
+}
