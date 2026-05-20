@@ -173,6 +173,31 @@ export type PasskeyDeleteApiResponse =
       message: string;
     };
 
+export type AuthPolicy = {
+  requirePasskeyForPrivilegedUsers: boolean;
+  privilegedUserCount: number;
+  privilegedUsersWithoutPasskeyCount: number;
+  currentUserPasskeyCount: number;
+  updatedAt: string;
+};
+
+export type AuthPolicyApiResponse =
+  | {
+      data: AuthPolicy;
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type AuthPolicyLoadState = {
+  snapshot: AuthPolicy | null;
+  status: "loading" | "ready" | "saving" | "error";
+  message: string | null;
+  updatedAt: string | null;
+};
+
 export type CurrentUserApiResponse =
   | {
       data: CurrentUserSession;

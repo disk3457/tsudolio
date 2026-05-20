@@ -191,6 +191,10 @@
     grid-template-columns: 1fr;
   }
 
+  .authPolicyMetrics {
+    grid-template-columns: 1fr;
+  }
+
   .actionCard {
     grid-column: auto;
   }

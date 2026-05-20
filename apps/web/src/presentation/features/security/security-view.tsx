@@ -3,6 +3,7 @@
 import {
   AlertCircle,
   CircleCheckBig,
+  Fingerprint,
   History,
   RefreshCw,
   Search,
@@ -14,8 +15,13 @@ import type {
   AuditEventSummary,
 } from "@/application/audit/types";
 import type { DashboardLoadState } from "@/application/dashboard/types";
+import type {
+  AuthPolicy,
+  AuthPolicyLoadState,
+} from "@/application/security/types";
 import { EmptyState } from "@/presentation/components/empty-state";
 import { securityItems } from "@/presentation/features/security/security-static-data";
+import { useAuthPolicy } from "@/presentation/features/security/use-auth-policy";
 import { useAuditEvents } from "@/presentation/features/security/use-audit-events";
 import {
   formatDateTime,
@@ -64,6 +70,7 @@ export function SecurityView({
     setSelectedEventId,
     updateFilter,
   } = useAuditEvents();
+  const { authPolicyState, updateAuthPolicy } = useAuthPolicy();
   const timezone =
     auditState.snapshot?.tenant.timezone ??
     dashboardState.snapshot?.tenant.timezone ??
@@ -169,6 +176,10 @@ export function SecurityView({
           </div>
           <ShieldCheck aria-hidden="true" className="panelIcon" size={21} />
         </div>
+        <AuthPolicyControl
+          onToggle={updateAuthPolicy}
+          state={authPolicyState}
+        />
         <ul className="securityList">
           {securityItems.map((item) => (
             <li key={item}>
@@ -179,6 +190,65 @@ export function SecurityView({
         </ul>
       </section>
     </section>
+  );
+}
+
+function AuthPolicyControl({
+  onToggle,
+  state,
+}: {
+  onToggle: (requirePasskeyForPrivilegedUsers: boolean) => Promise<void>;
+  state: AuthPolicyLoadState;
+}) {
+  const policy = state.snapshot;
+  const enabled = Boolean(policy?.requirePasskeyForPrivilegedUsers);
+  const busy = state.status === "loading" || state.status === "saving";
+
+  return (
+    <div className="authPolicyCard">
+      <div className="authPolicyHeader">
+        <Fingerprint aria-hidden="true" size={20} />
+        <span>
+          <strong>高権限Passkey</strong>
+          <small>{enabled ? "必須" : "任意"}</small>
+        </span>
+      </div>
+
+      <label className="authPolicyToggle">
+        <input
+          checked={enabled}
+          disabled={!policy || busy}
+          onChange={(event) => void onToggle(event.currentTarget.checked)}
+          type="checkbox"
+        />
+        <span>管理・承認権限はPasskey必須</span>
+      </label>
+
+      <AuthPolicyMetrics policy={policy} />
+
+      {state.message && (
+        <p
+          className={`settingsNotice ${
+            state.status === "error" ? "error" : "success"
+          }`}
+          role={state.status === "error" ? "alert" : "status"}
+        >
+          {state.message}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AuthPolicyMetrics({ policy }: { policy: AuthPolicy | null }) {
+  return (
+    <div className="authPolicyMetrics">
+      <span>対象 {policy ? `${policy.privilegedUserCount}人` : "確認中"}</span>
+      <span>
+        未登録{" "}
+        {policy ? `${policy.privilegedUsersWithoutPasskeyCount}人` : "確認中"}
+      </span>
+    </div>
   );
 }
 

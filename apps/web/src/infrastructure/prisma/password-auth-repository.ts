@@ -11,6 +11,7 @@ import {
   recordAuthAuditEvent,
   recordAuthAuditEventInTransaction,
 } from "@/infrastructure/prisma/audit-event-repository";
+import { prismaAuthPolicyRepository } from "@/infrastructure/prisma/auth-policy-repository";
 import { prisma } from "@/infrastructure/prisma/prisma-client";
 import { resolveCurrentUser } from "@/infrastructure/prisma/current-user-repository";
 import type { Prisma } from "@generated/prisma/client";
@@ -176,6 +177,17 @@ export async function authenticateWithPassword(
     throw invalidCredentials();
   }
 
+  const currentUser = await resolveCurrentUser({
+    tenantCode: tenant.code,
+    userEmail: user.email,
+  });
+
+  await prismaAuthPolicyRepository.assertAuthPolicyAllowsLogin({
+    currentUser,
+    provider: "password",
+    ipAddress: input.ipAddress ?? null,
+  });
+
   await prisma.$transaction(async (tx) => {
     await tx.userCredential.update({
       where: {
@@ -206,10 +218,7 @@ export async function authenticateWithPassword(
     });
   });
 
-  return resolveCurrentUser({
-    tenantCode: tenant.code,
-    userEmail: user.email,
-  });
+  return currentUser;
 }
 
 export async function changeOwnPassword(

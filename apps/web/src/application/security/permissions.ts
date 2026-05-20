@@ -25,6 +25,14 @@ export const permissions = {
   approveWorkflow: "workflow.approve",
 } as const;
 
+export const privilegedAuthenticationPermissionCodes = [
+  permissions.manageTenant,
+  permissions.manageOrganization,
+  permissions.manageSchedule,
+  permissions.manageDocuments,
+  permissions.approveWorkflow,
+] satisfies PermissionCode[];
+
 export function assertPermission(
   currentUser: CurrentUserContext,
   permission: PermissionCode,
@@ -47,6 +55,15 @@ export function hasPermission(
   return (
     currentUser.isSystemAdmin ||
     currentUser.permissionCodes.includes(permission)
+  );
+}
+
+export function isPrivilegedForAuthPolicy(currentUser: CurrentUserContext) {
+  return (
+    currentUser.isSystemAdmin ||
+    privilegedAuthenticationPermissionCodes.some((permission) =>
+      currentUser.permissionCodes.includes(permission),
+    )
   );
 }
 
