@@ -884,6 +884,12 @@
   align-content: start;
 }
 
+.recoveryCodeSettingsCard {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
 .passkeyRegistrationControls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -943,6 +949,68 @@
   border: 1px dashed #cdddeb;
   border-radius: 8px;
   background: #fbfdff;
+}
+
+.recoveryCodeMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.recoveryCodeMetrics span {
+  display: grid;
+  gap: 2px;
+  min-height: 58px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.recoveryCodeMetrics strong {
+  color: var(--blue-deep);
+  font-size: 1.15rem;
+  line-height: 1.15;
+}
+
+.recoveryCodeMetrics small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.recoveryCodeVault {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.recoveryCodeVault ol {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.recoveryCodeVault li {
+  min-width: 0;
+}
+
+.recoveryCodeVault code {
+  display: block;
+  padding: 7px 8px;
+  border: 1px solid #cdddeb;
+  border-radius: 8px;
+  color: var(--ink);
+  background: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .settingsNotice {

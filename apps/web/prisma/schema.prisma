@@ -96,6 +96,7 @@ model Tenant {
   auditEvents                      AuditEvent[]
   notifications                    Notification[]
   passwordResetTokens              PasswordResetToken[]
+  recoveryCodes                    RecoveryCode[]
   webAuthnCredentials              WebAuthnCredential[]
   webAuthnAuthenticationChallenges WebAuthnAuthenticationChallenge[]
   webAuthnRegistrationChallenges   WebAuthnRegistrationChallenge[]
@@ -150,6 +151,7 @@ model User {
   notifications                    Notification[]
   credential                       UserCredential?
   passwordResetTokens              PasswordResetToken[]
+  recoveryCodes                    RecoveryCode[]
   webAuthnCredentials              WebAuthnCredential[]
   webAuthnAuthenticationChallenges WebAuthnAuthenticationChallenge[]
   webAuthnRegistrationChallenges   WebAuthnRegistrationChallenge[]
@@ -191,6 +193,24 @@ model PasswordResetToken {
   @@index([tenantId, userId, createdAt])
   @@index([tenantId, expiresAt])
   @@map("password_reset_tokens")
+}
+
+model RecoveryCode {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  codeHash   String    @map("code_hash") @db.VarChar(96)
+  codeSuffix String    @map("code_suffix") @db.VarChar(12)
+  usedAt     DateTime? @map("used_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, codeHash])
+  @@index([tenantId, userId, createdAt])
+  @@index([tenantId, userId, usedAt, revokedAt])
+  @@map("recovery_codes")
 }
 
 model WebAuthnCredential {

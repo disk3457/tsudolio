@@ -93,6 +93,7 @@ export async function assertAuthPolicyAllowsLogin(input: {
 }) {
   if (
     input.provider === "passkey" ||
+    input.provider === "recovery_code" ||
     !isPrivilegedForAuthPolicy(input.currentUser)
   ) {
     return;
