@@ -195,6 +195,10 @@
     grid-template-columns: 1fr;
   }
 
+  .recoveryCodeVault ol {
+    grid-template-columns: 1fr;
+  }
+
   .actionCard {
     grid-column: auto;
   }
@@ -207,6 +211,7 @@
   .actionRow .textButton,
   .passkeyRegistrationControls,
   .passkeyRegistrationControls .textButton,
+  .recoveryCodeVault .textButton,
   .toolbarActions .textButton,
   .toolbarActions .iconButton,
   .viewToolbar .textButton {

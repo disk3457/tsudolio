@@ -18,6 +18,7 @@ import type {
   PasskeyAuthenticationVerifyApiResponse,
   PasswordResetConfirmApiResponse,
   PasswordResetRequestApiResponse,
+  RecoveryCodeLoginApiResponse,
 } from "@/application/security/types";
 import { useWebAuthnSupport } from "@/presentation/features/auth/use-webauthn-support";
 
@@ -28,7 +29,11 @@ type LoginViewProps = {
   resetToken: string;
 };
 
-type AuthMode = "login" | "reset-request" | "reset-confirm";
+type AuthMode =
+  | "login"
+  | "recovery-code"
+  | "reset-request"
+  | "reset-confirm";
 
 type FormState = {
   status: "idle" | "submitting" | "success" | "error";
@@ -59,6 +64,7 @@ export function LoginView({
   const [tenantCode, setTenantCode] = useState(initialTenantCode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
   const [resetEmail, setResetEmail] = useState("");
   const [resetTokenValue, setResetTokenValue] = useState(resetToken);
   const [newPassword, setNewPassword] = useState("");
@@ -75,6 +81,8 @@ export function LoginView({
       ? "パスワードをリセット"
       : mode === "reset-confirm"
         ? "新しいパスワードを設定"
+        : mode === "recovery-code"
+          ? "リカバリーコードでログイン"
         : "業務ポータルへログイン";
 
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
@@ -191,6 +199,49 @@ export function LoginView({
           error instanceof Error
             ? error.message
             : "Passkeyでログインできませんでした。",
+      });
+    }
+  }
+
+  async function submitRecoveryCodeLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoginState({
+      status: "submitting",
+      message: null,
+    });
+
+    try {
+      const response = await fetch("/api/auth/recovery-codes/login", {
+        body: JSON.stringify({
+          code: recoveryCode,
+          email,
+          tenantCode,
+        }),
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const body = (await response.json()) as RecoveryCodeLoginApiResponse;
+
+      if (!response.ok || !("data" in body)) {
+        throw new Error(
+          "message" in body
+            ? body.message
+            : "リカバリーコードでログインできませんでした。",
+        );
+      }
+
+      window.location.assign(nextUrl);
+    } catch (error) {
+      setLoginState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "リカバリーコードでログインできませんでした。",
       });
     }
   }
@@ -312,6 +363,12 @@ export function LoginView({
     setResetState(idleState);
   }
 
+  function openRecoveryCodeLogin() {
+    setMode("recovery-code");
+    setLoginState(idleState);
+    setResetState(idleState);
+  }
+
   return (
     <main className="loginShell">
       <section className="loginPanel" aria-label="ログイン">
@@ -332,7 +389,9 @@ export function LoginView({
 
         <div className="loginHeader">
           <p className="sectionLabel">
-            {mode === "login" ? "ログイン" : "パスワード再設定"}
+            {mode === "login" || mode === "recovery-code"
+              ? "ログイン"
+              : "パスワード再設定"}
           </p>
           <h1>{heading}</h1>
         </div>
@@ -392,6 +451,14 @@ export function LoginView({
 
               <button
                 className="loginTextAction"
+                onClick={openRecoveryCodeLogin}
+                type="button"
+              >
+                リカバリーコードでログイン
+              </button>
+
+              <button
+                className="loginTextAction"
                 onClick={openResetRequest}
                 type="button"
               >
@@ -420,6 +487,59 @@ export function LoginView({
               <LogIn aria-hidden="true" size={17} />
               SSO でログイン
             </a>
+          </>
+        )}
+
+        {mode === "recovery-code" && (
+          <>
+            <form className="loginForm" onSubmit={submitRecoveryCodeLogin}>
+              <TenantField tenantCode={tenantCode} setTenantCode={setTenantCode} />
+
+              <label className="loginField">
+                <span>メールアドレス</span>
+                <div>
+                  <Mail aria-hidden="true" size={18} />
+                  <input
+                    autoComplete="email"
+                    inputMode="email"
+                    onChange={(event) => setEmail(event.target.value)}
+                    required
+                    type="email"
+                    value={email}
+                  />
+                </div>
+              </label>
+
+              <label className="loginField">
+                <span>リカバリーコード</span>
+                <div>
+                  <KeyRound aria-hidden="true" size={18} />
+                  <input
+                    autoComplete="one-time-code"
+                    onChange={(event) => setRecoveryCode(event.target.value)}
+                    required
+                    value={recoveryCode}
+                  />
+                </div>
+              </label>
+
+              {loginState.message && (
+                <p className="loginError" role="alert">
+                  {loginState.message}
+                </p>
+              )}
+
+              <button
+                className="textButton primary loginSubmit"
+                disabled={loginState.status === "submitting"}
+                type="submit"
+              >
+                <LogIn aria-hidden="true" size={17} />
+                {loginState.status === "submitting" ? "確認中" : "ログイン"}
+              </button>
+            </form>
+
+            <BackToLoginButton onClick={openLogin} />
           </>
         )}
 

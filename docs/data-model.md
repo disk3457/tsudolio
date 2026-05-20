@@ -7,6 +7,7 @@
 - `user`: 人のアカウント
 - `user_credential`: 通常ログイン用のパスワードハッシュとロック状態
 - `password_reset_token`: パスワードリセット用の短期トークンハッシュ
+- `recovery_code`: Passkey復旧ログイン用の単回コードハッシュと失効状態
 - `webauthn_credential`: Passkey/WebAuthn 認証器の公開鍵と署名カウンタ
 - `webauthn_authentication_challenge`: Passkeyログイン時の短期チャレンジハッシュ
 - `webauthn_registration_challenge`: Passkey登録時の短期チャレンジハッシュ

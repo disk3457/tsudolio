@@ -3,12 +3,15 @@
 import { useEffect, useState, type FormEvent } from "react";
 import {
   CircleCheckBig,
+  Copy,
   Fingerprint,
   KeyRound,
   LogIn,
   Plus,
+  RefreshCw,
   Save,
   Send,
+  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import {
@@ -23,6 +26,9 @@ import type {
   PasskeyRegistrationVerifyApiResponse,
   PasskeySummary,
   PasswordChangeApiResponse,
+  RecoveryCodeGenerateApiResponse,
+  RecoveryCodeListApiResponse,
+  RecoveryCodeSummary,
 } from "@/application/security/types";
 import { useWebAuthnSupport } from "@/presentation/features/auth/use-webauthn-support";
 import { settingGroups } from "@/presentation/features/settings/settings-static-data";
@@ -40,6 +46,11 @@ type PasswordSaveState = {
 
 type PasskeySaveState = {
   status: "idle" | "loading" | "registering" | "deleting" | "success" | "error";
+  message: string | null;
+};
+
+type RecoveryCodeSaveState = {
+  status: "idle" | "loading" | "generating" | "success" | "error";
   message: string | null;
 };
 
@@ -62,11 +73,21 @@ export function SettingsView({
   });
   const [passkeys, setPasskeys] = useState<PasskeySummary[]>([]);
   const [passkeyName, setPasskeyName] = useState("");
+  const [recoveryCodes, setRecoveryCodes] =
+    useState<RecoveryCodeSummary | null>(null);
+  const [generatedRecoveryCodes, setGeneratedRecoveryCodes] = useState<
+    string[]
+  >([]);
   const webAuthnSupported = useWebAuthnSupport();
   const [passkeyState, setPasskeyState] = useState<PasskeySaveState>({
     status: "idle",
     message: null,
   });
+  const [recoveryCodeState, setRecoveryCodeState] =
+    useState<RecoveryCodeSaveState>({
+      status: "idle",
+      message: null,
+    });
   const passwordLoginEnabled = Boolean(session?.user.passwordLoginEnabled);
   const passwordFormDisabled =
     !passwordLoginEnabled || passwordState.status === "saving";
@@ -74,8 +95,14 @@ export function SettingsView({
     passkeyState.status === "loading" ||
     passkeyState.status === "registering" ||
     passkeyState.status === "deleting";
+  const passkeysLoaded = passkeyState.status !== "loading";
   const passkeyRegistrationDisabled =
     !session || !webAuthnSupported || passkeyBusy;
+  const recoveryCodeBusy =
+    recoveryCodeState.status === "loading" ||
+    recoveryCodeState.status === "generating";
+  const recoveryCodeGenerateDisabled =
+    !session || !passkeysLoaded || passkeys.length === 0 || recoveryCodeBusy;
 
   useEffect(() => {
     if (!session) {
@@ -85,6 +112,11 @@ export function SettingsView({
     let cancelled = false;
 
     async function loadPasskeys() {
+      setPasskeyState({
+        status: "loading",
+        message: null,
+      });
+
       try {
         const response = await fetch("/api/auth/passkeys", {
           cache: "no-store",
@@ -122,7 +154,51 @@ export function SettingsView({
       }
     }
 
+    async function loadRecoveryCodes() {
+      setRecoveryCodeState({
+        status: "loading",
+        message: null,
+      });
+
+      try {
+        const response = await fetch("/api/auth/recovery-codes", {
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        const body = (await response.json()) as RecoveryCodeListApiResponse;
+
+        if (!response.ok || !("data" in body)) {
+          throw new Error(
+            "message" in body
+              ? body.message
+              : "リカバリーコード情報を取得できませんでした。",
+          );
+        }
+
+        if (!cancelled) {
+          setRecoveryCodes(body.data.recoveryCodes);
+          setRecoveryCodeState({
+            status: "idle",
+            message: null,
+          });
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setRecoveryCodeState({
+            status: "error",
+            message:
+              error instanceof Error
+                ? error.message
+                : "リカバリーコード情報を取得できませんでした。",
+          });
+        }
+      }
+    }
+
     void loadPasskeys();
+    void loadRecoveryCodes();
 
     return () => {
       cancelled = true;
@@ -315,6 +391,66 @@ export function SettingsView({
     }
   }
 
+  async function generateRecoveryCodes() {
+    setRecoveryCodeState({
+      status: "generating",
+      message: null,
+    });
+    setGeneratedRecoveryCodes([]);
+
+    try {
+      const response = await fetch("/api/auth/recovery-codes", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      const body = (await response.json()) as RecoveryCodeGenerateApiResponse;
+
+      if (!response.ok || !("data" in body)) {
+        throw new Error(
+          "message" in body
+            ? body.message
+            : "リカバリーコードを発行できませんでした。",
+        );
+      }
+
+      setGeneratedRecoveryCodes(body.data.codes);
+      setRecoveryCodes(body.data.recoveryCodes);
+      setRecoveryCodeState({
+        status: "success",
+        message: "リカバリーコードを発行しました。",
+      });
+    } catch (error) {
+      setRecoveryCodeState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "リカバリーコードを発行できませんでした。",
+      });
+    }
+  }
+
+  async function copyGeneratedRecoveryCodes() {
+    if (generatedRecoveryCodes.length === 0) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(generatedRecoveryCodes.join("\n"));
+      setRecoveryCodeState({
+        status: "success",
+        message: "リカバリーコードをコピーしました。",
+      });
+    } catch {
+      setRecoveryCodeState({
+        status: "error",
+        message: "リカバリーコードをコピーできませんでした。",
+      });
+    }
+  }
+
   return (
     <section className="settingsGrid" aria-label="共通設定">
       <article className="panel settingCard passwordSettingsCard">
@@ -472,6 +608,78 @@ export function SettingsView({
         )}
       </article>
 
+      <article className="panel settingCard recoveryCodeSettingsCard">
+        <div className="panelHeader">
+          <div>
+            <p className="sectionLabel">認証</p>
+            <h2>リカバリーコード</h2>
+          </div>
+          <ShieldCheck aria-hidden="true" className="panelIcon" size={21} />
+        </div>
+        <div className="recoveryCodeMetrics">
+          <span>
+            <strong>{recoveryCodes?.activeCount ?? 0}</strong>
+            <small>未使用</small>
+          </span>
+          <span>
+            <strong>{recoveryCodes?.usedCount ?? 0}</strong>
+            <small>使用済み</small>
+          </span>
+          <span>
+            <strong>{recoveryCodes?.revokedCount ?? 0}</strong>
+            <small>失効</small>
+          </span>
+        </div>
+        {passkeysLoaded && passkeys.length === 0 && (
+          <p className="settingsNotice error" role="status">
+            Passkey登録後に発行できます。
+          </p>
+        )}
+        {recoveryCodeState.message && (
+          <p
+            className={`settingsNotice ${recoveryCodeState.status}`}
+            role={recoveryCodeState.status === "error" ? "alert" : "status"}
+          >
+            {recoveryCodeState.message}
+          </p>
+        )}
+        {generatedRecoveryCodes.length > 0 && (
+          <div className="recoveryCodeVault">
+            <ol>
+              {generatedRecoveryCodes.map((code) => (
+                <li key={code}>
+                  <code>{code}</code>
+                </li>
+              ))}
+            </ol>
+            <button
+              className="textButton"
+              onClick={() => void copyGeneratedRecoveryCodes()}
+              type="button"
+            >
+              <Copy aria-hidden="true" size={16} />
+              コピー
+            </button>
+          </div>
+        )}
+        <div className="formFooter">
+          <p>最終発行: {formatOptionalDate(recoveryCodes?.lastGeneratedAt)}</p>
+          <button
+            className="textButton primary"
+            disabled={recoveryCodeGenerateDisabled}
+            onClick={() => void generateRecoveryCodes()}
+            type="button"
+          >
+            <RefreshCw aria-hidden="true" size={16} />
+            {recoveryCodeState.status === "generating"
+              ? "発行中"
+              : recoveryCodes && recoveryCodes.activeCount > 0
+                ? "再発行"
+                : "発行"}
+          </button>
+        </div>
+      </article>
+
       {settingGroups.map((group) => {
         const Icon = group.icon;
 
@@ -521,6 +729,16 @@ export function SettingsView({
 }
 
 function formatPasskeyDate(value: string) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    dateStyle: "medium",
+  }).format(new Date(value));
+}
+
+function formatOptionalDate(value: string | null | undefined) {
+  if (!value) {
+    return "なし";
+  }
+
   return new Intl.DateTimeFormat("ja-JP", {
     dateStyle: "medium",
   }).format(new Date(value));

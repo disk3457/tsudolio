@@ -53,11 +53,18 @@
   `last_login_at`, and issues the same signed session cookie with provider
   `passkey`. Successful and failed Passkey login attempts write authentication
   audit events.
+- Logged-in users with at least one Passkey can issue recovery codes from
+  settings. Codes are displayed only once, stored as hashes in
+  `recovery_codes`, and older unused codes are revoked on regeneration.
+  Recovery-code login consumes one active code, updates `last_login_at`, issues
+  the same signed session cookie with provider `recovery_code`, and writes
+  authentication audit events for generation, failures, and successful use.
 - Tenant administrators can require Passkey login for privileged users through
   the security controls. The policy is stored on the tenant, blocks password
   and OIDC sessions for users with system-admin, management, or approval
-  privileges, requires the enabling administrator to already have a Passkey,
-  and records policy changes and blocked login attempts as audit events.
+  privileges while allowing Passkey and recovery-code sessions, requires the
+  enabling administrator to already have a Passkey, and records policy changes
+  and blocked login attempts as audit events.
 - Organization administrators can assign seeded roles to a user's active
   membership from the user-management workflow. Role assignment changes are
   synchronized with the selected membership and recorded as warning-level audit

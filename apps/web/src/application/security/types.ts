@@ -173,6 +173,49 @@ export type PasskeyDeleteApiResponse =
       message: string;
     };
 
+export type RecoveryCodeSummary = {
+  activeCount: number;
+  usedCount: number;
+  revokedCount: number;
+  lastGeneratedAt: string | null;
+  lastUsedAt: string | null;
+};
+
+export type RecoveryCodeListApiResponse =
+  | {
+      data: {
+        recoveryCodes: RecoveryCodeSummary;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type RecoveryCodeGenerateApiResponse =
+  | {
+      data: {
+        codes: string[];
+        recoveryCodes: RecoveryCodeSummary;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type RecoveryCodeLoginApiResponse =
+  | {
+      data: CurrentUserSession;
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
 export type AuthPolicy = {
   requirePasskeyForPrivilegedUsers: boolean;
   privilegedUserCount: number;

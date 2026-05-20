@@ -4,7 +4,11 @@ import { ApplicationError } from "@/application/shared/application-error";
 const sessionCookieName = "tsudolio_session";
 const defaultSessionTtlSeconds = 8 * 60 * 60;
 
-export type AuthSessionProvider = "password" | "oidc" | "passkey";
+export type AuthSessionProvider =
+  | "password"
+  | "oidc"
+  | "passkey"
+  | "recovery_code";
 
 export type AuthSession = {
   tenantCode: string;
@@ -157,7 +161,8 @@ function isAuthSession(value: Partial<AuthSession>): value is AuthSession {
     value.userEmail.length > 0 &&
     (value.provider === "password" ||
       value.provider === "oidc" ||
-      value.provider === "passkey") &&
+      value.provider === "passkey" ||
+      value.provider === "recovery_code") &&
     typeof value.issuedAt === "number" &&
     typeof value.expiresAt === "number" &&
     (typeof value.subject === "undefined" || typeof value.subject === "string")
