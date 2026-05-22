@@ -22,6 +22,10 @@ export type PasskeyStepUpVerifyInput = {
   response: unknown;
 };
 
+export type PasskeyUpdateInput = {
+  name: string;
+};
+
 export function parsePasskeyRegistrationOptionsInput(body: unknown) {
   if (!isRecord(body)) {
     return {
@@ -104,6 +108,16 @@ export function parsePasskeyStepUpVerifyInput(
   };
 }
 
+export function parsePasskeyUpdateInput(body: unknown): PasskeyUpdateInput {
+  if (!isRecord(body)) {
+    throw invalidPasskeyUpdateInput();
+  }
+
+  return {
+    name: readRequiredName(body.name),
+  };
+}
+
 function readOptionalName(value: unknown) {
   if (typeof value === "undefined" || value === null) {
     return null;
@@ -121,6 +135,32 @@ function readOptionalName(value: unknown) {
 
   if (!name) {
     return null;
+  }
+
+  if (name.length > maximumPasskeyNameLength) {
+    throw new ApplicationError(
+      "INVALID_FIELD",
+      `Passkey名は${maximumPasskeyNameLength}文字以内で入力してください。`,
+      400,
+    );
+  }
+
+  return name;
+}
+
+function readRequiredName(value: unknown) {
+  if (typeof value !== "string") {
+    throw invalidPasskeyUpdateInput();
+  }
+
+  const name = value.trim();
+
+  if (!name) {
+    throw new ApplicationError(
+      "INVALID_FIELD",
+      "Passkey名を入力してください。",
+      400,
+    );
   }
 
   if (name.length > maximumPasskeyNameLength) {
@@ -163,6 +203,14 @@ function invalidPasskeyAuthenticationInput(): never {
   throw new ApplicationError(
     "PASSKEY_AUTHENTICATION_INPUT_INVALID",
     "テナントコードとメールアドレスを入力してください。",
+    400,
+  );
+}
+
+function invalidPasskeyUpdateInput(): never {
+  throw new ApplicationError(
+    "PASSKEY_UPDATE_INPUT_INVALID",
+    "Passkey名を確認できません。",
     400,
   );
 }

@@ -71,39 +71,60 @@
 
 .passkeyItem {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 42px;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
-  min-height: 58px;
+  min-height: 76px;
   padding: 9px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
 }
 
-.passkeyItem span {
+.passkeySummary {
   display: grid;
   gap: 3px;
   min-width: 0;
 }
 
-.passkeyItem strong,
-.passkeyItem small {
+.passkeySummary strong,
+.passkeySummary small {
   overflow-wrap: anywhere;
 }
 
-.passkeyItem strong {
+.passkeySummary strong {
   color: var(--ink);
   font-size: 0.9rem;
   line-height: 1.25;
 }
 
-.passkeyItem small,
+.passkeySummary small,
 .passkeyEmpty {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.45;
+}
+
+.passkeyEditControl {
+  display: block;
+  min-width: 0;
+}
+
+.passkeyEditControl input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid #cdddeb;
+  border-radius: 8px;
+  color: var(--ink);
+  background: #ffffff;
+}
+
+.passkeyActions {
+  display: grid;
+  grid-template-columns: repeat(2, 42px);
+  gap: 8px;
 }
 
 .passkeyEmpty {
