@@ -198,6 +198,18 @@ export type PasskeyDeleteApiResponse =
       message: string;
     };
 
+export type PasskeyUpdateApiResponse =
+  | {
+      data: {
+        passkey: PasskeySummary;
+      };
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
 export type RecoveryCodeSummary = {
   activeCount: number;
   usedCount: number;

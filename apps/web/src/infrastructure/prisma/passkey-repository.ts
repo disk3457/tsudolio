@@ -822,12 +822,81 @@ export async function deletePasskey(input: {
   };
 }
 
+export async function updatePasskey(input: {
+  currentUser: CurrentUserContext;
+  passkeyId: string;
+  name: string;
+  ipAddress?: string | null;
+}): Promise<{ passkey: PasskeySummary }> {
+  const passkey = await prisma.webAuthnCredential.findFirst({
+    where: {
+      id: input.passkeyId,
+      tenantId: input.currentUser.tenantId,
+      userId: input.currentUser.userId,
+    },
+    select: {
+      ...passkeySummarySelect,
+      credentialId: true,
+    },
+  });
+
+  if (!passkey) {
+    throw new ApplicationError(
+      "PASSKEY_NOT_FOUND",
+      "Passkeyが見つかりません。",
+      404,
+    );
+  }
+
+  const nextName = input.name.trim();
+
+  if (passkey.name === nextName) {
+    return {
+      passkey: toPasskeySummary(passkey),
+    };
+  }
+
+  const updatedPasskey = await prisma.$transaction(async (tx) => {
+    const updated = await tx.webAuthnCredential.update({
+      where: {
+        id: passkey.id,
+      },
+      data: {
+        name: nextName,
+      },
+      select: passkeySummarySelect,
+    });
+
+    await recordAuthAuditEventInTransaction(tx, {
+      tenantId: input.currentUser.tenantId,
+      actorId: input.currentUser.userId,
+      action: "Passkey名変更",
+      targetType: "webauthn_credential",
+      targetId: passkey.id,
+      severity: AuditSeverity.INFO,
+      ipAddress: input.ipAddress ?? null,
+      metadata: createPasskeyAuditMetadata("renamed", {
+        credentialId: passkey.credentialId,
+        newName: nextName,
+        previousName: passkey.name,
+      }),
+    });
+
+    return updated;
+  });
+
+  return {
+    passkey: toPasskeySummary(updatedPasskey),
+  };
+}
+
 export const prismaPasskeyRepository = {
   createPasskeyAuthenticationOptions,
   createPasskeyRegistrationOptions,
   createPasskeyStepUpOptions,
   deletePasskey,
   listPasskeys,
+  updatePasskey,
   verifyPasskeyAuthentication,
   verifyPasskeyRegistration,
   verifyPasskeyStepUp,

@@ -41,12 +41,12 @@
   Mailpit SMTP endpoint from Docker Compose, while production requires an
   explicit sender and SMTP host. Successful, expired, invalid, unknown-account,
   and delivery-failure attempts are recorded as authentication audit events.
-- Logged-in users can register and remove Passkeys from settings. Registration
-  challenges are stored as short-lived hashes in
+- Logged-in users can register, rename, and remove Passkeys from settings.
+  Registration challenges are stored as short-lived hashes in
   `webauthn_registration_challenges`, and verified credentials are stored in
   `webauthn_credentials` with public keys, signature counters, device type, and
-  backup state. Passkey registration and removal write authentication audit
-  events.
+  backup state. Passkey registration, rename, and removal write authentication
+  audit events.
 - Passkey login is available from the login screen. Authentication challenges
   are stored as short-lived hashes in `webauthn_authentication_challenges`;
   successful verification updates credential counters, `last_used_at`, user
@@ -55,8 +55,8 @@
   audit events.
 - Sensitive authentication actions require a recent Passkey step-up. The same
   signed session cookie carries a short-lived step-up marker, and Passkey
-  removal, recovery-code generation, and authentication-policy updates reject
-  stale sessions with `STEP_UP_REQUIRED`.
+  rename/removal, recovery-code generation, and authentication-policy updates
+  reject stale sessions with `STEP_UP_REQUIRED`.
 - Logged-in users with at least one Passkey can issue recovery codes from
   settings. Codes are displayed only once, stored as hashes in
   `recovery_codes`, and older unused codes are revoked on regeneration.

@@ -2,17 +2,20 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import {
+  Check,
   CircleCheckBig,
   Copy,
   Fingerprint,
   KeyRound,
   LogIn,
+  Pencil,
   Plus,
   RefreshCw,
   Save,
   Send,
   ShieldCheck,
   Trash2,
+  X,
 } from "lucide-react";
 import {
   startRegistration,
@@ -25,6 +28,7 @@ import type {
   PasskeyRegistrationOptionsApiResponse,
   PasskeyRegistrationVerifyApiResponse,
   PasskeySummary,
+  PasskeyUpdateApiResponse,
   PasswordChangeApiResponse,
   RecoveryCodeGenerateApiResponse,
   RecoveryCodeListApiResponse,
@@ -46,7 +50,14 @@ type PasswordSaveState = {
 };
 
 type PasskeySaveState = {
-  status: "idle" | "loading" | "registering" | "deleting" | "success" | "error";
+  status:
+    | "idle"
+    | "loading"
+    | "registering"
+    | "renaming"
+    | "deleting"
+    | "success"
+    | "error";
   message: string | null;
 };
 
@@ -74,6 +85,8 @@ export function SettingsView({
   });
   const [passkeys, setPasskeys] = useState<PasskeySummary[]>([]);
   const [passkeyName, setPasskeyName] = useState("");
+  const [editingPasskeyId, setEditingPasskeyId] = useState<string | null>(null);
+  const [editingPasskeyName, setEditingPasskeyName] = useState("");
   const [recoveryCodes, setRecoveryCodes] =
     useState<RecoveryCodeSummary | null>(null);
   const [generatedRecoveryCodes, setGeneratedRecoveryCodes] = useState<
@@ -96,6 +109,7 @@ export function SettingsView({
   const passkeyBusy =
     passkeyState.status === "loading" ||
     passkeyState.status === "registering" ||
+    passkeyState.status === "renaming" ||
     passkeyState.status === "deleting" ||
     stepUpState.status === "verifying";
   const passkeysLoaded = passkeyState.status !== "loading";
@@ -356,6 +370,86 @@ export function SettingsView({
     }
   }
 
+  function startPasskeyRename(passkey: PasskeySummary) {
+    setEditingPasskeyId(passkey.id);
+    setEditingPasskeyName(passkey.name);
+    setPasskeyState({
+      status: "idle",
+      message: null,
+    });
+  }
+
+  function cancelPasskeyRename() {
+    setEditingPasskeyId(null);
+    setEditingPasskeyName("");
+  }
+
+  async function renamePasskey(passkey: PasskeySummary) {
+    const nextName = editingPasskeyName.trim();
+
+    if (!nextName) {
+      setPasskeyState({
+        status: "error",
+        message: "Passkey名を入力してください。",
+      });
+      return;
+    }
+
+    if (nextName === passkey.name) {
+      cancelPasskeyRename();
+      return;
+    }
+
+    setPasskeyState({
+      status: "renaming",
+      message: null,
+    });
+
+    try {
+      const { body, response } =
+        await fetchJsonWithStepUp<PasskeyUpdateApiResponse>(
+          `/api/auth/passkeys/${passkey.id}`,
+          {
+            method: "PATCH",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: nextName,
+            }),
+          },
+        );
+
+      if (!response.ok || !("data" in body)) {
+        throw new Error(
+          "message" in body ? body.message : "Passkeyを更新できませんでした。",
+        );
+      }
+
+      setPasskeys((current) =>
+        current.map((currentPasskey) =>
+          currentPasskey.id === body.data.passkey.id
+            ? body.data.passkey
+            : currentPasskey,
+        ),
+      );
+      cancelPasskeyRename();
+      setPasskeyState({
+        status: "success",
+        message: "Passkey名を更新しました。",
+      });
+    } catch (error) {
+      setPasskeyState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Passkeyを更新できませんでした。",
+      });
+    }
+  }
+
   async function deletePasskey(passkey: PasskeySummary) {
     setPasskeyState({
       status: "deleting",
@@ -602,23 +696,88 @@ export function SettingsView({
           <ul className="passkeyList">
             {passkeys.map((passkey) => (
               <li className="passkeyItem" key={passkey.id}>
-                <span>
-                  <strong>{passkey.name}</strong>
-                  <small>
-                    {formatPasskeyDate(passkey.createdAt)} /{" "}
-                    {formatPasskeyDevice(passkey)}
-                  </small>
-                </span>
-                <button
-                  aria-label={`${passkey.name}を削除`}
-                  className="iconButton"
-                  disabled={passkeyBusy}
-                  onClick={() => void deletePasskey(passkey)}
-                  title="削除"
-                  type="button"
-                >
-                  <Trash2 aria-hidden="true" size={16} />
-                </button>
+                {editingPasskeyId === passkey.id ? (
+                  <label className="passkeyEditControl">
+                    <span className="srOnly">Passkey表示名</span>
+                    <input
+                      autoFocus
+                      disabled={passkeyBusy}
+                      maxLength={120}
+                      onChange={(event) =>
+                        setEditingPasskeyName(event.target.value)
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void renamePasskey(passkey);
+                        }
+                        if (event.key === "Escape") {
+                          cancelPasskeyRename();
+                        }
+                      }}
+                      value={editingPasskeyName}
+                    />
+                  </label>
+                ) : (
+                  <span className="passkeySummary">
+                    <strong>{passkey.name}</strong>
+                    <small>登録: {formatPasskeyDate(passkey.createdAt)}</small>
+                    <small>最終利用: {formatOptionalDate(passkey.lastUsedAt)}</small>
+                    <small>
+                      {formatPasskeyDevice(passkey)} /{" "}
+                      {formatPasskeyTransports(passkey.transports)}
+                    </small>
+                  </span>
+                )}
+                <div className="passkeyActions">
+                  {editingPasskeyId === passkey.id ? (
+                    <>
+                      <button
+                        aria-label={`${passkey.name}の名前を保存`}
+                        className="iconButton"
+                        disabled={passkeyBusy}
+                        onClick={() => void renamePasskey(passkey)}
+                        title="保存"
+                        type="button"
+                      >
+                        <Check aria-hidden="true" size={16} />
+                      </button>
+                      <button
+                        aria-label={`${passkey.name}の編集をキャンセル`}
+                        className="iconButton"
+                        disabled={passkeyBusy}
+                        onClick={cancelPasskeyRename}
+                        title="キャンセル"
+                        type="button"
+                      >
+                        <X aria-hidden="true" size={16} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        aria-label={`${passkey.name}の名前を編集`}
+                        className="iconButton"
+                        disabled={passkeyBusy}
+                        onClick={() => startPasskeyRename(passkey)}
+                        title="名前を編集"
+                        type="button"
+                      >
+                        <Pencil aria-hidden="true" size={16} />
+                      </button>
+                      <button
+                        aria-label={`${passkey.name}を削除`}
+                        className="iconButton"
+                        disabled={passkeyBusy}
+                        onClick={() => void deletePasskey(passkey)}
+                        title="削除"
+                        type="button"
+                      >
+                        <Trash2 aria-hidden="true" size={16} />
+                      </button>
+                    </>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -770,4 +929,24 @@ function formatPasskeyDevice(passkey: PasskeySummary) {
     passkey.deviceType === "multiDevice" ? "同期対応" : "端末固定";
 
   return passkey.backedUp ? `${deviceType} / バックアップ済み` : deviceType;
+}
+
+function formatPasskeyTransports(transports: string[]) {
+  if (transports.length === 0) {
+    return "方式未記録";
+  }
+
+  const labels: Record<string, string> = {
+    ble: "BLE",
+    cable: "CA BLE",
+    hybrid: "ハイブリッド",
+    internal: "内蔵",
+    nfc: "NFC",
+    "smart-card": "スマートカード",
+    usb: "USB",
+  };
+
+  return transports
+    .map((transport) => labels[transport] ?? transport)
+    .join(" / ");
 }
