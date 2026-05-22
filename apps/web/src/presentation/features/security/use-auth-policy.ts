@@ -5,8 +5,10 @@ import type {
   AuthPolicyApiResponse,
   AuthPolicyLoadState,
 } from "@/application/security/types";
+import { usePasskeyStepUp } from "@/presentation/features/auth/use-passkey-step-up";
 
 export function useAuthPolicy() {
+  const { fetchJsonWithStepUp, stepUpState } = usePasskeyStepUp();
   const [authPolicyState, setAuthPolicyState] =
     useState<AuthPolicyLoadState>({
       snapshot: null,
@@ -71,17 +73,20 @@ export function useAuthPolicy() {
       }));
 
       try {
-        const response = await fetch("/api/security/auth-policy", {
-          method: "PUT",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            requirePasskeyForPrivilegedUsers,
-          }),
-        });
-        const body = (await response.json()) as AuthPolicyApiResponse;
+        const { body, response } =
+          await fetchJsonWithStepUp<AuthPolicyApiResponse>(
+            "/api/security/auth-policy",
+            {
+              method: "PUT",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                requirePasskeyForPrivilegedUsers,
+              }),
+            },
+          );
 
         if (!response.ok || !("data" in body)) {
           throw new Error(
@@ -108,7 +113,7 @@ export function useAuthPolicy() {
         }));
       }
     },
-    [],
+    [fetchJsonWithStepUp],
   );
 
   useEffect(() => {
@@ -124,6 +129,7 @@ export function useAuthPolicy() {
   return {
     authPolicyState,
     loadAuthPolicy,
+    stepUpState,
     updateAuthPolicy,
   };
 }

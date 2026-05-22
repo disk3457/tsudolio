@@ -1,6 +1,7 @@
 import {
   getClientIpAddress,
   getCurrentUserFromRequest,
+  requireRecentStepUp,
 } from "@/app/api/_shared/request-context";
 import { prismaRecoveryCodeRepository } from "@/infrastructure/prisma/recovery-code-repository";
 import {
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const currentUser = await getCurrentUserFromRequest(request);
+    requireRecentStepUp(request);
 
     return dataResponse(
       await prismaRecoveryCodeRepository.generateRecoveryCodes({

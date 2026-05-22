@@ -1,6 +1,7 @@
 import {
   getClientIpAddress,
   requirePermission,
+  requireRecentStepUp,
 } from "@/app/api/_shared/request-context";
 import { parseAuthPolicyUpdateInput } from "@/application/security/auth-policy-validation";
 import { permissions } from "@/application/security/permissions";
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     const currentUser = await requirePermission(request, permissions.manageTenant);
+    requireRecentStepUp(request);
     const input = parseAuthPolicyUpdateInput(
       await readRequestJson(
         request,

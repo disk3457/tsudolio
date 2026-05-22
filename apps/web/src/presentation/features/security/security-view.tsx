@@ -20,6 +20,7 @@ import type {
   AuthPolicyLoadState,
 } from "@/application/security/types";
 import { EmptyState } from "@/presentation/components/empty-state";
+import type { PasskeyStepUpState } from "@/presentation/features/auth/use-passkey-step-up";
 import { securityItems } from "@/presentation/features/security/security-static-data";
 import { useAuthPolicy } from "@/presentation/features/security/use-auth-policy";
 import { useAuditEvents } from "@/presentation/features/security/use-audit-events";
@@ -70,7 +71,7 @@ export function SecurityView({
     setSelectedEventId,
     updateFilter,
   } = useAuditEvents();
-  const { authPolicyState, updateAuthPolicy } = useAuthPolicy();
+  const { authPolicyState, stepUpState, updateAuthPolicy } = useAuthPolicy();
   const timezone =
     auditState.snapshot?.tenant.timezone ??
     dashboardState.snapshot?.tenant.timezone ??
@@ -179,6 +180,7 @@ export function SecurityView({
         <AuthPolicyControl
           onToggle={updateAuthPolicy}
           state={authPolicyState}
+          stepUpState={stepUpState}
         />
         <ul className="securityList">
           {securityItems.map((item) => (
@@ -196,13 +198,18 @@ export function SecurityView({
 function AuthPolicyControl({
   onToggle,
   state,
+  stepUpState,
 }: {
   onToggle: (requirePasskeyForPrivilegedUsers: boolean) => Promise<void>;
   state: AuthPolicyLoadState;
+  stepUpState: PasskeyStepUpState;
 }) {
   const policy = state.snapshot;
   const enabled = Boolean(policy?.requirePasskeyForPrivilegedUsers);
-  const busy = state.status === "loading" || state.status === "saving";
+  const busy =
+    state.status === "loading" ||
+    state.status === "saving" ||
+    stepUpState.status === "verifying";
 
   return (
     <div className="authPolicyCard">
@@ -234,6 +241,16 @@ function AuthPolicyControl({
           role={state.status === "error" ? "alert" : "status"}
         >
           {state.message}
+        </p>
+      )}
+      {stepUpState.message && (
+        <p
+          className={`settingsNotice ${
+            stepUpState.status === "error" ? "error" : "success"
+          }`}
+          role={stepUpState.status === "error" ? "alert" : "status"}
+        >
+          {stepUpState.message}
         </p>
       )}
     </div>

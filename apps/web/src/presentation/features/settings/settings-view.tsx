@@ -30,6 +30,7 @@ import type {
   RecoveryCodeListApiResponse,
   RecoveryCodeSummary,
 } from "@/application/security/types";
+import { usePasskeyStepUp } from "@/presentation/features/auth/use-passkey-step-up";
 import { useWebAuthnSupport } from "@/presentation/features/auth/use-webauthn-support";
 import { settingGroups } from "@/presentation/features/settings/settings-static-data";
 
@@ -79,6 +80,7 @@ export function SettingsView({
     string[]
   >([]);
   const webAuthnSupported = useWebAuthnSupport();
+  const { fetchJsonWithStepUp, stepUpState } = usePasskeyStepUp();
   const [passkeyState, setPasskeyState] = useState<PasskeySaveState>({
     status: "idle",
     message: null,
@@ -94,13 +96,15 @@ export function SettingsView({
   const passkeyBusy =
     passkeyState.status === "loading" ||
     passkeyState.status === "registering" ||
-    passkeyState.status === "deleting";
+    passkeyState.status === "deleting" ||
+    stepUpState.status === "verifying";
   const passkeysLoaded = passkeyState.status !== "loading";
   const passkeyRegistrationDisabled =
     !session || !webAuthnSupported || passkeyBusy;
   const recoveryCodeBusy =
     recoveryCodeState.status === "loading" ||
-    recoveryCodeState.status === "generating";
+    recoveryCodeState.status === "generating" ||
+    stepUpState.status === "verifying";
   const recoveryCodeGenerateDisabled =
     !session || !passkeysLoaded || passkeys.length === 0 || recoveryCodeBusy;
 
@@ -359,13 +363,16 @@ export function SettingsView({
     });
 
     try {
-      const response = await fetch(`/api/auth/passkeys/${passkey.id}`, {
-        method: "DELETE",
-        headers: {
-          Accept: "application/json",
-        },
-      });
-      const body = (await response.json()) as PasskeyDeleteApiResponse;
+      const { body, response } =
+        await fetchJsonWithStepUp<PasskeyDeleteApiResponse>(
+          `/api/auth/passkeys/${passkey.id}`,
+          {
+            method: "DELETE",
+            headers: {
+              Accept: "application/json",
+            },
+          },
+        );
 
       if (!response.ok || !("data" in body)) {
         throw new Error(
@@ -399,13 +406,16 @@ export function SettingsView({
     setGeneratedRecoveryCodes([]);
 
     try {
-      const response = await fetch("/api/auth/recovery-codes", {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-        },
-      });
-      const body = (await response.json()) as RecoveryCodeGenerateApiResponse;
+      const { body, response } =
+        await fetchJsonWithStepUp<RecoveryCodeGenerateApiResponse>(
+          "/api/auth/recovery-codes",
+          {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+            },
+          },
+        );
 
       if (!response.ok || !("data" in body)) {
         throw new Error(
@@ -453,6 +463,17 @@ export function SettingsView({
 
   return (
     <section className="settingsGrid" aria-label="共通設定">
+      {stepUpState.message && (
+        <div
+          className={`settingsStepUpNotice ${
+            stepUpState.status === "error" ? "error" : "success"
+          }`}
+          role={stepUpState.status === "error" ? "alert" : "status"}
+        >
+          <Fingerprint aria-hidden="true" size={17} />
+          <span>{stepUpState.message}</span>
+        </div>
+      )}
       <article className="panel settingCard passwordSettingsCard">
         <div className="panelHeader">
           <div>

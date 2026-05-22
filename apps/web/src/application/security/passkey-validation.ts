@@ -18,6 +18,10 @@ export type PasskeyAuthenticationVerifyInput = {
   response: unknown;
 };
 
+export type PasskeyStepUpVerifyInput = {
+  response: unknown;
+};
+
 export function parsePasskeyRegistrationOptionsInput(body: unknown) {
   if (!isRecord(body)) {
     return {
@@ -81,6 +85,22 @@ export function parsePasskeyAuthenticationVerifyInput(
     email: values.email,
     response: values.response,
     tenantCode: values.tenantCode,
+  };
+}
+
+export function parsePasskeyStepUpVerifyInput(
+  body: unknown,
+): PasskeyStepUpVerifyInput {
+  if (!isRecord(body) || !isRecord(body.response)) {
+    throw new ApplicationError(
+      "PASSKEY_STEP_UP_INPUT_INVALID",
+      "Passkey本人確認レスポンスを確認できません。",
+      400,
+    );
+  }
+
+  return {
+    response: body.response,
   };
 }
 
