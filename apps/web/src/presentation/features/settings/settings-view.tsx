@@ -2,22 +2,6 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import {
-  Check,
-  CircleCheckBig,
-  Copy,
-  Fingerprint,
-  KeyRound,
-  LogIn,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Save,
-  Send,
-  ShieldCheck,
-  Trash2,
-  X,
-} from "lucide-react";
-import {
   startRegistration,
   type PublicKeyCredentialCreationOptionsJSON,
 } from "@simplewebauthn/browser";
@@ -36,41 +20,18 @@ import type {
 } from "@/application/security/types";
 import { usePasskeyStepUp } from "@/presentation/features/auth/use-passkey-step-up";
 import { useWebAuthnSupport } from "@/presentation/features/auth/use-webauthn-support";
-import { settingGroups } from "@/presentation/features/settings/settings-static-data";
-
-type PasswordFormState = {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-};
-
-type PasswordSaveState = {
-  status: "idle" | "saving" | "success" | "error";
-  message: string | null;
-};
-
-type PasskeySaveState = {
-  status:
-    | "idle"
-    | "loading"
-    | "registering"
-    | "renaming"
-    | "deleting"
-    | "success"
-    | "error";
-  message: string | null;
-};
-
-type RecoveryCodeSaveState = {
-  status: "idle" | "loading" | "generating" | "success" | "error";
-  message: string | null;
-};
-
-const defaultPasswordForm: PasswordFormState = {
-  currentPassword: "",
-  newPassword: "",
-  confirmPassword: "",
-};
+import { PasskeySettingsCard } from "@/presentation/features/settings/components/passkey-settings-card";
+import { PasswordSettingsCard } from "@/presentation/features/settings/components/password-settings-card";
+import { RecoveryCodeSettingsCard } from "@/presentation/features/settings/components/recovery-code-settings-card";
+import { SettingsSecondaryCards } from "@/presentation/features/settings/components/settings-secondary-cards";
+import { SettingsStepUpNotice } from "@/presentation/features/settings/components/settings-step-up-notice";
+import {
+  defaultPasswordForm,
+  type PasskeySaveState,
+  type PasswordFormState,
+  type PasswordSaveState,
+  type RecoveryCodeSaveState,
+} from "@/presentation/features/settings/settings-types";
 
 export function SettingsView({
   session,
@@ -557,396 +518,43 @@ export function SettingsView({
 
   return (
     <section className="settingsGrid" aria-label="共通設定">
-      {stepUpState.message && (
-        <div
-          className={`settingsStepUpNotice ${
-            stepUpState.status === "error" ? "error" : "success"
-          }`}
-          role={stepUpState.status === "error" ? "alert" : "status"}
-        >
-          <Fingerprint aria-hidden="true" size={17} />
-          <span>{stepUpState.message}</span>
-        </div>
-      )}
-      <article className="panel settingCard passwordSettingsCard">
-        <div className="panelHeader">
-          <div>
-            <p className="sectionLabel">認証</p>
-            <h2>パスワード変更</h2>
-          </div>
-          <KeyRound aria-hidden="true" className="panelIcon" size={21} />
-        </div>
-        <form className="passwordSettingsForm" onSubmit={submitPasswordChange}>
-          <div className="formGrid">
-            <label className="fieldControl wide">
-              <span>現在のパスワード</span>
-              <input
-                autoComplete="current-password"
-                disabled={passwordFormDisabled}
-                minLength={12}
-                onChange={(event) =>
-                  updatePasswordField("currentPassword", event.target.value)
-                }
-                required
-                type="password"
-                value={passwordForm.currentPassword}
-              />
-            </label>
-            <label className="fieldControl wide">
-              <span>新しいパスワード</span>
-              <input
-                autoComplete="new-password"
-                disabled={passwordFormDisabled}
-                maxLength={128}
-                minLength={12}
-                onChange={(event) =>
-                  updatePasswordField("newPassword", event.target.value)
-                }
-                required
-                type="password"
-                value={passwordForm.newPassword}
-              />
-            </label>
-            <label className="fieldControl wide">
-              <span>新しいパスワード（確認）</span>
-              <input
-                autoComplete="new-password"
-                disabled={passwordFormDisabled}
-                maxLength={128}
-                minLength={12}
-                onChange={(event) =>
-                  updatePasswordField("confirmPassword", event.target.value)
-                }
-                required
-                type="password"
-                value={passwordForm.confirmPassword}
-              />
-            </label>
-          </div>
-          {passwordState.message && (
-            <p
-              className={`settingsNotice ${passwordState.status}`}
-              role={passwordState.status === "error" ? "alert" : "status"}
-            >
-              {passwordState.message}
-            </p>
-          )}
-          {!passwordLoginEnabled && (
-            <p className="settingsNotice error" role="status">
-              通常ログイン用のパスワードが未設定です。
-            </p>
-          )}
-          <div className="formFooter">
-            <p>通常ログイン: {passwordLoginEnabled ? "有効" : "未設定"}</p>
-            <button
-              className="textButton primary"
-              disabled={passwordFormDisabled}
-              type="submit"
-            >
-              <Save aria-hidden="true" size={16} />
-              {passwordState.status === "saving" ? "変更中" : "変更"}
-            </button>
-          </div>
-        </form>
-      </article>
-
-      <article className="panel settingCard passkeySettingsCard">
-        <div className="panelHeader">
-          <div>
-            <p className="sectionLabel">認証</p>
-            <h2>Passkey</h2>
-          </div>
-          <Fingerprint aria-hidden="true" className="panelIcon" size={21} />
-        </div>
-        <div className="passkeyRegistrationControls">
-          <label className="fieldControl">
-            <span>表示名</span>
-            <input
-              disabled={passkeyRegistrationDisabled}
-              maxLength={120}
-              onChange={(event) => setPasskeyName(event.target.value)}
-              placeholder="この端末"
-              value={passkeyName}
-            />
-          </label>
-          <button
-            className="textButton primary"
-            disabled={passkeyRegistrationDisabled}
-            onClick={registerPasskey}
-            type="button"
-          >
-            <Plus aria-hidden="true" size={16} />
-            {passkeyState.status === "registering" ? "登録中" : "登録"}
-          </button>
-        </div>
-        {!webAuthnSupported && (
-          <p className="settingsNotice error" role="status">
-            このブラウザではPasskeyを利用できません。
-          </p>
-        )}
-        {passkeyState.message && (
-          <p
-            className={`settingsNotice ${passkeyState.status}`}
-            role={passkeyState.status === "error" ? "alert" : "status"}
-          >
-            {passkeyState.message}
-          </p>
-        )}
-        {passkeys.length > 0 ? (
-          <ul className="passkeyList">
-            {passkeys.map((passkey) => (
-              <li className="passkeyItem" key={passkey.id}>
-                {editingPasskeyId === passkey.id ? (
-                  <label className="passkeyEditControl">
-                    <span className="srOnly">Passkey表示名</span>
-                    <input
-                      autoFocus
-                      disabled={passkeyBusy}
-                      maxLength={120}
-                      onChange={(event) =>
-                        setEditingPasskeyName(event.target.value)
-                      }
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          void renamePasskey(passkey);
-                        }
-                        if (event.key === "Escape") {
-                          cancelPasskeyRename();
-                        }
-                      }}
-                      value={editingPasskeyName}
-                    />
-                  </label>
-                ) : (
-                  <span className="passkeySummary">
-                    <strong>{passkey.name}</strong>
-                    <small>登録: {formatPasskeyDate(passkey.createdAt)}</small>
-                    <small>最終利用: {formatOptionalDate(passkey.lastUsedAt)}</small>
-                    <small>
-                      {formatPasskeyDevice(passkey)} /{" "}
-                      {formatPasskeyTransports(passkey.transports)}
-                    </small>
-                  </span>
-                )}
-                <div className="passkeyActions">
-                  {editingPasskeyId === passkey.id ? (
-                    <>
-                      <button
-                        aria-label={`${passkey.name}の名前を保存`}
-                        className="iconButton"
-                        disabled={passkeyBusy}
-                        onClick={() => void renamePasskey(passkey)}
-                        title="保存"
-                        type="button"
-                      >
-                        <Check aria-hidden="true" size={16} />
-                      </button>
-                      <button
-                        aria-label={`${passkey.name}の編集をキャンセル`}
-                        className="iconButton"
-                        disabled={passkeyBusy}
-                        onClick={cancelPasskeyRename}
-                        title="キャンセル"
-                        type="button"
-                      >
-                        <X aria-hidden="true" size={16} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        aria-label={`${passkey.name}の名前を編集`}
-                        className="iconButton"
-                        disabled={passkeyBusy}
-                        onClick={() => startPasskeyRename(passkey)}
-                        title="名前を編集"
-                        type="button"
-                      >
-                        <Pencil aria-hidden="true" size={16} />
-                      </button>
-                      <button
-                        aria-label={`${passkey.name}を削除`}
-                        className="iconButton"
-                        disabled={passkeyBusy}
-                        onClick={() => void deletePasskey(passkey)}
-                        title="削除"
-                        type="button"
-                      >
-                        <Trash2 aria-hidden="true" size={16} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="passkeyEmpty">
-            {passkeyState.status === "loading" ? "確認中" : "未登録"}
-          </p>
-        )}
-      </article>
-
-      <article className="panel settingCard recoveryCodeSettingsCard">
-        <div className="panelHeader">
-          <div>
-            <p className="sectionLabel">認証</p>
-            <h2>リカバリーコード</h2>
-          </div>
-          <ShieldCheck aria-hidden="true" className="panelIcon" size={21} />
-        </div>
-        <div className="recoveryCodeMetrics">
-          <span>
-            <strong>{recoveryCodes?.activeCount ?? 0}</strong>
-            <small>未使用</small>
-          </span>
-          <span>
-            <strong>{recoveryCodes?.usedCount ?? 0}</strong>
-            <small>使用済み</small>
-          </span>
-          <span>
-            <strong>{recoveryCodes?.revokedCount ?? 0}</strong>
-            <small>失効</small>
-          </span>
-        </div>
-        {passkeysLoaded && passkeys.length === 0 && (
-          <p className="settingsNotice error" role="status">
-            Passkey登録後に発行できます。
-          </p>
-        )}
-        {recoveryCodeState.message && (
-          <p
-            className={`settingsNotice ${recoveryCodeState.status}`}
-            role={recoveryCodeState.status === "error" ? "alert" : "status"}
-          >
-            {recoveryCodeState.message}
-          </p>
-        )}
-        {generatedRecoveryCodes.length > 0 && (
-          <div className="recoveryCodeVault">
-            <ol>
-              {generatedRecoveryCodes.map((code) => (
-                <li key={code}>
-                  <code>{code}</code>
-                </li>
-              ))}
-            </ol>
-            <button
-              className="textButton"
-              onClick={() => void copyGeneratedRecoveryCodes()}
-              type="button"
-            >
-              <Copy aria-hidden="true" size={16} />
-              コピー
-            </button>
-          </div>
-        )}
-        <div className="formFooter">
-          <p>最終発行: {formatOptionalDate(recoveryCodes?.lastGeneratedAt)}</p>
-          <button
-            className="textButton primary"
-            disabled={recoveryCodeGenerateDisabled}
-            onClick={() => void generateRecoveryCodes()}
-            type="button"
-          >
-            <RefreshCw aria-hidden="true" size={16} />
-            {recoveryCodeState.status === "generating"
-              ? "発行中"
-              : recoveryCodes && recoveryCodes.activeCount > 0
-                ? "再発行"
-                : "発行"}
-          </button>
-        </div>
-      </article>
-
-      {settingGroups.map((group) => {
-        const Icon = group.icon;
-
-        return (
-          <article className="panel settingCard" key={group.title}>
-            <div className="panelHeader">
-              <div>
-                <p className="sectionLabel">設定</p>
-                <h2>{group.title}</h2>
-              </div>
-              <Icon aria-hidden="true" className="panelIcon" size={21} />
-            </div>
-            <ul>
-              {group.items.map((item) => (
-                <li key={item}>
-                  <CircleCheckBig aria-hidden="true" size={17} />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
-        );
-      })}
-      <article className="panel settingCard actionCard">
-        <div>
-          <p className="sectionLabel">認証</p>
-          <h2>ログイン方式</h2>
-          <p>通常ログインと OIDC SSO を同じセッション基盤で利用できます。</p>
-        </div>
-        <div className="actionRow">
-          <a className="textButton" href="/login">
-            <LogIn aria-hidden="true" size={17} />
-            通常ログイン
-          </a>
-          <a className="textButton" href="/api/auth/login">
-            <LogIn aria-hidden="true" size={17} />
-            SSO
-          </a>
-          <button className="textButton primary" type="button">
-            <Send aria-hidden="true" size={17} />
-            テスト通知
-          </button>
-        </div>
-      </article>
+      <SettingsStepUpNotice stepUpState={stepUpState} />
+      <PasswordSettingsCard
+        disabled={passwordFormDisabled}
+        form={passwordForm}
+        loginEnabled={passwordLoginEnabled}
+        onSubmit={submitPasswordChange}
+        onUpdateField={updatePasswordField}
+        state={passwordState}
+      />
+      <PasskeySettingsCard
+        busy={passkeyBusy}
+        editingPasskeyId={editingPasskeyId}
+        editingPasskeyName={editingPasskeyName}
+        passkeyName={passkeyName}
+        passkeys={passkeys}
+        passkeysLoaded={passkeysLoaded}
+        registrationDisabled={passkeyRegistrationDisabled}
+        state={passkeyState}
+        webAuthnSupported={webAuthnSupported}
+        onCancelRename={cancelPasskeyRename}
+        onDelete={(passkey) => void deletePasskey(passkey)}
+        onEditingNameChange={setEditingPasskeyName}
+        onRegister={() => void registerPasskey()}
+        onRegistrationNameChange={setPasskeyName}
+        onRename={(passkey) => void renamePasskey(passkey)}
+        onStartRename={startPasskeyRename}
+      />
+      <RecoveryCodeSettingsCard
+        generatedCodes={generatedRecoveryCodes}
+        generateDisabled={recoveryCodeGenerateDisabled}
+        passkeyRequired={passkeysLoaded && passkeys.length === 0}
+        recoveryCodes={recoveryCodes}
+        state={recoveryCodeState}
+        onCopy={() => void copyGeneratedRecoveryCodes()}
+        onGenerate={() => void generateRecoveryCodes()}
+      />
+      <SettingsSecondaryCards />
     </section>
   );
-}
-
-function formatPasskeyDate(value: string) {
-  return new Intl.DateTimeFormat("ja-JP", {
-    dateStyle: "medium",
-  }).format(new Date(value));
-}
-
-function formatOptionalDate(value: string | null | undefined) {
-  if (!value) {
-    return "なし";
-  }
-
-  return new Intl.DateTimeFormat("ja-JP", {
-    dateStyle: "medium",
-  }).format(new Date(value));
-}
-
-function formatPasskeyDevice(passkey: PasskeySummary) {
-  const deviceType =
-    passkey.deviceType === "multiDevice" ? "同期対応" : "端末固定";
-
-  return passkey.backedUp ? `${deviceType} / バックアップ済み` : deviceType;
-}
-
-function formatPasskeyTransports(transports: string[]) {
-  if (transports.length === 0) {
-    return "方式未記録";
-  }
-
-  const labels: Record<string, string> = {
-    ble: "BLE",
-    cable: "CA BLE",
-    hybrid: "ハイブリッド",
-    internal: "内蔵",
-    nfc: "NFC",
-    "smart-card": "スマートカード",
-    usb: "USB",
-  };
-
-  return transports
-    .map((transport) => labels[transport] ?? transport)
-    .join(" / ");
 }
