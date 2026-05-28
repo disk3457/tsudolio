@@ -26,6 +26,8 @@ export const defaultAuditEventFilters: AuditEventFilterState = {
   limit: 50,
 };
 
+export const auditEventExportLimit = 1000;
+
 export function parseAuditEventQuery(
   searchParams: URLSearchParams,
 ): AuditEventFilterState {
@@ -35,7 +37,20 @@ export function parseAuditEventQuery(
     targetType: readOption(searchParams.get("targetType"), 120),
     action: readOption(searchParams.get("action"), 160),
     range: readRange(searchParams.get("range")),
-    limit: readLimit(searchParams.get("limit")),
+    limit: readLimit(searchParams.get("limit"), defaultAuditEventFilters.limit),
+  };
+}
+
+export function parseAuditEventExportQuery(
+  searchParams: URLSearchParams,
+): AuditEventFilterState {
+  return {
+    ...parseAuditEventQuery(searchParams),
+    limit: readLimit(
+      searchParams.get("limit"),
+      auditEventExportLimit,
+      auditEventExportLimit,
+    ),
   };
 }
 
@@ -55,14 +70,14 @@ function readRange(value: string | null): AuditEventDateRange {
   return defaultAuditEventFilters.range;
 }
 
-function readLimit(value: string | null) {
+function readLimit(value: string | null, fallback: number, maxLimit = 100) {
   const parsed = Number.parseInt(value ?? "", 10);
 
   if (!Number.isFinite(parsed)) {
-    return defaultAuditEventFilters.limit;
+    return fallback;
   }
 
-  return Math.min(Math.max(parsed, 25), 100);
+  return Math.min(Math.max(parsed, 25), maxLimit);
 }
 
 function readOption(value: string | null, maxLength: number) {

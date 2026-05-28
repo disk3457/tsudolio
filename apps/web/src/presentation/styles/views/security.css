@@ -25,7 +25,8 @@
   grid-column: 2;
 }
 
-.authPolicyCard {
+.authPolicyCard,
+.auditRetentionCard {
   display: grid;
   gap: 12px;
   margin-bottom: 14px;
@@ -35,29 +36,34 @@
   background: #fbfdff;
 }
 
-.authPolicyHeader {
+.authPolicyHeader,
+.auditRetentionHeader {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.authPolicyHeader svg {
+.authPolicyHeader svg,
+.auditRetentionHeader svg {
   flex: 0 0 auto;
   color: var(--blue);
 }
 
-.authPolicyHeader span {
+.authPolicyHeader span,
+.auditRetentionHeader span {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
-.authPolicyHeader strong {
+.authPolicyHeader strong,
+.auditRetentionHeader strong {
   color: var(--blue-deep);
   line-height: 1.25;
 }
 
-.authPolicyHeader small {
+.authPolicyHeader small,
+.auditRetentionHeader small {
   color: var(--muted);
   font-weight: 800;
 }
@@ -102,6 +108,64 @@
   font-size: 0.78rem;
   font-weight: 800;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.auditRetentionMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.auditRetentionMetrics span {
+  display: grid;
+  gap: 3px;
+  min-height: 58px;
+  padding: 9px;
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.auditRetentionMetrics strong {
+  color: var(--blue-deep);
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+
+.auditRetentionMetrics small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.auditRetentionDates {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.auditRetentionDates div {
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.auditRetentionDates dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.auditRetentionDates dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 

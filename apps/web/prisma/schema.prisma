@@ -79,6 +79,7 @@ model Tenant {
   displayName                      String?                           @map("display_name") @db.VarChar(160)
   type                             TenantType                        @default(HYBRID)
   timezone                         String                            @default("Asia/Tokyo") @db.VarChar(80)
+  auditLogRetentionDays            Int                               @default(365) @map("audit_log_retention_days")
   requirePasskeyForPrivilegedUsers Boolean                           @default(false) @map("require_passkey_for_privileged_users")
   createdAt                        DateTime                          @default(now()) @map("created_at")
   updatedAt                        DateTime                          @updatedAt @map("updated_at")
