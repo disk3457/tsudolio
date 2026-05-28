@@ -6,7 +6,10 @@ import type {
   AuditEventFilterState,
   AuditEventLoadState,
 } from "@/application/audit/types";
-import { defaultAuditEventFilters } from "@/application/audit/audit-query";
+import {
+  auditEventExportLimit,
+  defaultAuditEventFilters,
+} from "@/application/audit/audit-query";
 
 export function useAuditEvents() {
   const [filters, setFilters] = useState<AuditEventFilterState>(
@@ -20,7 +23,18 @@ export function useAuditEvents() {
   });
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-  const requestPath = useMemo(() => buildAuditRequestPath(filters), [filters]);
+  const requestPath = useMemo(
+    () => buildAuditRequestPath("/api/security/audit-events", filters),
+    [filters],
+  );
+  const exportRequestPath = useMemo(
+    () =>
+      buildAuditRequestPath("/api/security/audit-events/export", {
+        ...filters,
+        limit: auditEventExportLimit,
+      }),
+    [filters],
+  );
 
   const loadAuditEvents = useCallback(
     async (signal?: AbortSignal) => {
@@ -124,6 +138,7 @@ export function useAuditEvents() {
 
   return {
     auditState,
+    exportRequestPath,
     filters,
     loadAuditEvents,
     resetFilters,
@@ -134,7 +149,10 @@ export function useAuditEvents() {
   };
 }
 
-function buildAuditRequestPath(filters: AuditEventFilterState) {
+function buildAuditRequestPath(
+  basePath: string,
+  filters: AuditEventFilterState,
+) {
   const params = new URLSearchParams();
 
   if (filters.query) {
@@ -159,5 +177,5 @@ function buildAuditRequestPath(filters: AuditEventFilterState) {
 
   params.set("limit", String(filters.limit));
 
-  return `/api/security/audit-events?${params.toString()}`;
+  return `${basePath}?${params.toString()}`;
 }

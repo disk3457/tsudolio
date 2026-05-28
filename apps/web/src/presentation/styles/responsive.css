@@ -191,7 +191,8 @@
     grid-template-columns: 1fr;
   }
 
-  .authPolicyMetrics {
+  .authPolicyMetrics,
+  .auditRetentionMetrics {
     grid-template-columns: 1fr;
   }
 

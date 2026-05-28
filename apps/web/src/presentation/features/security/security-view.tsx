@@ -3,6 +3,7 @@
 import {
   AlertCircle,
   CircleCheckBig,
+  Download,
   Fingerprint,
   History,
   RefreshCw,
@@ -21,12 +22,15 @@ import type {
 } from "@/application/security/types";
 import { EmptyState } from "@/presentation/components/empty-state";
 import type { PasskeyStepUpState } from "@/presentation/features/auth/use-passkey-step-up";
+import { AuditRetentionControl } from "@/presentation/features/security/components/audit-retention-control";
+import { useAuditRetention } from "@/presentation/features/security/use-audit-retention";
 import { securityItems } from "@/presentation/features/security/security-static-data";
 import { useAuthPolicy } from "@/presentation/features/security/use-auth-policy";
 import { useAuditEvents } from "@/presentation/features/security/use-audit-events";
 import {
   formatDateTime,
   formatFullDateTime,
+  formatNumber,
   getSeverityMeta,
 } from "@/shared/formatters";
 
@@ -63,6 +67,7 @@ export function SecurityView({
 }) {
   const {
     auditState,
+    exportRequestPath,
     filters,
     loadAuditEvents,
     resetFilters,
@@ -71,7 +76,16 @@ export function SecurityView({
     setSelectedEventId,
     updateFilter,
   } = useAuditEvents();
-  const { authPolicyState, stepUpState, updateAuthPolicy } = useAuthPolicy();
+  const {
+    authPolicyState,
+    stepUpState: authPolicyStepUpState,
+    updateAuthPolicy,
+  } = useAuthPolicy();
+  const {
+    auditRetentionState,
+    stepUpState: auditRetentionStepUpState,
+    updateAuditRetentionPolicy,
+  } = useAuditRetention();
   const timezone =
     auditState.snapshot?.tenant.timezone ??
     dashboardState.snapshot?.tenant.timezone ??
@@ -99,15 +113,25 @@ export function SecurityView({
             <p className="sectionLabel">監査</p>
             <h2 id="audit-heading">監査イベント</h2>
           </div>
-          <button
-            aria-label="監査イベントを更新"
-            className="iconButton"
-            onClick={() => void loadAuditEvents()}
-            title="監査イベントを更新"
-            type="button"
-          >
-            <RefreshCw aria-hidden="true" size={18} />
-          </button>
+          <div className="toolbarActions">
+            <a
+              aria-label="監査イベントをCSVでエクスポート"
+              className="iconButton"
+              href={exportRequestPath}
+              title="CSVエクスポート"
+            >
+              <Download aria-hidden="true" size={18} />
+            </a>
+            <button
+              aria-label="監査イベントを更新"
+              className="iconButton"
+              onClick={() => void loadAuditEvents()}
+              title="監査イベントを更新"
+              type="button"
+            >
+              <RefreshCw aria-hidden="true" size={18} />
+            </button>
+          </div>
         </div>
 
         <AuditFilters
@@ -127,8 +151,17 @@ export function SecurityView({
         )}
 
         <div className="auditLogSummary">
-          <span>{auditState.snapshot?.total ?? auditRows.length} 件</span>
+          <span>
+            {formatNumber(auditState.snapshot?.total ?? auditRows.length)} 件
+          </span>
           <span>{filters.limit} 件まで表示</span>
+          <span>CSV {formatNumber(1000)} 件まで</span>
+          {auditState.snapshot && (
+            <span>
+              保持開始{" "}
+              {formatDateTime(auditState.snapshot.retainedSince, timezone)}
+            </span>
+          )}
         </div>
 
         {auditRows.length === 0 ? (
@@ -180,7 +213,13 @@ export function SecurityView({
         <AuthPolicyControl
           onToggle={updateAuthPolicy}
           state={authPolicyState}
-          stepUpState={stepUpState}
+          stepUpState={authPolicyStepUpState}
+        />
+        <AuditRetentionControl
+          onChange={updateAuditRetentionPolicy}
+          state={auditRetentionState}
+          stepUpState={auditRetentionStepUpState}
+          timezone={timezone}
         />
         <ul className="securityList">
           {securityItems.map((item) => (
