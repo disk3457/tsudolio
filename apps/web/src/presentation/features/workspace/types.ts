@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 export type ViewKey =
   | "dashboard"
   | "schedule"
+  | "notices"
   | "organization"
   | "documents"
   | "security"

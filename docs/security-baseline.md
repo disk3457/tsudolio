@@ -83,6 +83,8 @@
   actor or attempted identity, and request IP where available.
 - Mutating schedule, organization, and document APIs require explicit
   permissions before calling application use cases.
+- Mutating notice APIs require `notice.manage`; user acknowledgements and
+  notification read state are scoped to the authenticated tenant and user.
 - Creating or updating a system administrator requires `tenant.manage` in
   addition to organization user-management permission.
 - Successful schedule, organization, and document mutations write
@@ -99,6 +101,7 @@ Permission codes currently used by the API boundary:
 
 - `schedule.manage`: create, update, and delete schedules and facility
   reservations
+- `notice.manage`: create, update, and delete notices
 - `organization.manage`: create, update, and delete organization units and
   users
 - `document.manage`: create, update, and delete document registry records

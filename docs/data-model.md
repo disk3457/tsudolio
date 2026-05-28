@@ -24,6 +24,7 @@
 - `facility`: 会議室、公用車、設備などの予約対象
 - `facility_reservation`: 施設予約
 - `notice`: 掲示、回覧
+- `notice_acknowledgement`: 確認必須掲示に対する利用者ごとの確認記録
 - `workflow_request`: 申請、承認待ち、決裁済みの案件
 - `document`: 文書台帳とストレージ参照
 - `notification`: 個人向け通知
