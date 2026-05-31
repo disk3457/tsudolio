@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { EmptyState } from "@/presentation/components/empty-state";
+import { FacilityManagementPanel } from "@/presentation/features/facilities/facility-management-panel";
 import type {
   ScheduleApiResponse,
   ScheduleEventInput,
@@ -564,6 +565,8 @@ export function ScheduleView() {
           </article>
         ))}
       </section>
+
+      <FacilityManagementPanel />
     </section>
   );
 }
