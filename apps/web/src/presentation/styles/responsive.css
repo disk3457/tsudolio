@@ -22,6 +22,7 @@
 
   .scheduleBoard,
   .quickCards,
+  .noticeStats,
   .orgGrid,
   .settingsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -33,6 +34,14 @@
 
   .viewGrid {
     grid-template-columns: 1fr;
+  }
+
+  .noticeWorkspace {
+    grid-template-columns: 1fr;
+  }
+
+  .notificationPanel {
+    position: static;
   }
 
   .auditFilters {
@@ -123,6 +132,7 @@
   .moduleGrid,
   .scheduleBoard,
   .quickCards,
+  .noticeStats,
   .orgGrid,
   .settingsGrid {
     grid-template-columns: 1fr;
@@ -162,6 +172,26 @@
 
   .fieldControl.wide {
     grid-column: auto;
+  }
+
+  .noticeBodyField,
+  .noticeAckControl {
+    grid-column: auto;
+  }
+
+  .noticeMeta {
+    grid-template-columns: 1fr;
+  }
+
+  .noticeCardHeader,
+  .noticeActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notificationItem {
+    align-items: stretch;
+    grid-template-columns: 1fr;
   }
 
   .roleChoiceGroup,

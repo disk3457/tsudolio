@@ -2,6 +2,7 @@ import {
   CalendarDays,
   FileText,
   LayoutDashboard,
+  MessageSquareText,
   Settings,
   ShieldCheck,
   UsersRound,
@@ -22,6 +23,13 @@ export const navItems: NavItem[] = [
     description: "個人、部署、施設の予定を同じ流れで管理します。",
     label: "予定",
     icon: CalendarDays,
+  },
+  {
+    key: "notices",
+    title: "掲示・通知",
+    description: "全体連絡、確認必須の回覧、個人通知を一か所で確認します。",
+    label: "掲示",
+    icon: MessageSquareText,
   },
   {
     key: "organization",

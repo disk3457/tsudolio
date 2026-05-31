@@ -26,7 +26,7 @@ export const modulePresentation: Record<string, ModulePresentation> = {
   notices: {
     icon: MessageSquareText,
     label: "お知らせ",
-    target: "dashboard",
+    target: "notices",
     tone: "cyan",
   },
   workflow: {

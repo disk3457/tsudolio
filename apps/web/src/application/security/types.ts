@@ -2,6 +2,7 @@ export type PermissionCode =
   | "tenant.manage"
   | "organization.manage"
   | "schedule.manage"
+  | "notice.manage"
   | "document.manage"
   | "document.read"
   | "workflow.approve";

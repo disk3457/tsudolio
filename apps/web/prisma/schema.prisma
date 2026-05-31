@@ -96,6 +96,7 @@ model Tenant {
   documents                        Document[]
   auditEvents                      AuditEvent[]
   notifications                    Notification[]
+  noticeAcknowledgements           NoticeAcknowledgement[]
   passwordResetTokens              PasswordResetToken[]
   recoveryCodes                    RecoveryCode[]
   webAuthnCredentials              WebAuthnCredential[]
@@ -150,6 +151,7 @@ model User {
   uploadedDocuments                Document[]                        @relation("DocumentUploader")
   auditEvents                      AuditEvent[]
   notifications                    Notification[]
+  noticeAcknowledgements           NoticeAcknowledgement[]
   credential                       UserCredential?
   passwordResetTokens              PasswordResetToken[]
   recoveryCodes                    RecoveryCode[]
@@ -392,19 +394,37 @@ model FacilityReservation {
 }
 
 model Notice {
-  id                 String            @id @default(uuid()) @db.Uuid
-  tenantId           String            @map("tenant_id") @db.Uuid
-  organizationUnitId String?           @map("organization_unit_id") @db.Uuid
-  title              String            @db.VarChar(200)
-  body               String            @db.Text
-  requiresAck        Boolean           @default(false) @map("requires_ack")
-  publishedAt        DateTime          @default(now()) @map("published_at")
-  expiresAt          DateTime?         @map("expires_at")
-  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  organizationUnit   OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  id                 String                  @id @default(uuid()) @db.Uuid
+  tenantId           String                  @map("tenant_id") @db.Uuid
+  organizationUnitId String?                 @map("organization_unit_id") @db.Uuid
+  title              String                  @db.VarChar(200)
+  body               String                  @db.Text
+  requiresAck        Boolean                 @default(false) @map("requires_ack")
+  publishedAt        DateTime                @default(now()) @map("published_at")
+  expiresAt          DateTime?               @map("expires_at")
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
+  tenant             Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit?       @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  acknowledgements   NoticeAcknowledgement[]
 
   @@index([tenantId, publishedAt])
   @@map("notices")
+}
+
+model NoticeAcknowledgement {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  noticeId       String   @map("notice_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  acknowledgedAt DateTime @default(now()) @map("acknowledged_at")
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  notice         Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, noticeId, userId])
+  @@index([tenantId, userId, acknowledgedAt])
+  @@map("notice_acknowledgements")
 }
 
 model WorkflowRequest {

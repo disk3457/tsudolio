@@ -118,6 +118,7 @@ async function main() {
     manageTenant,
     manageOrganization,
     manageSchedule,
+    manageNotices,
     manageDocuments,
     approveWorkflow,
     readDocuments,
@@ -125,6 +126,7 @@ async function main() {
     upsertPermission("tenant.manage", "テナント設定を管理"),
     upsertPermission("organization.manage", "組織・利用者を管理"),
     upsertPermission("schedule.manage", "予定・施設予約を管理"),
+    upsertPermission("notice.manage", "掲示・通知を管理"),
     upsertPermission("document.manage", "文書を管理"),
     upsertPermission("workflow.approve", "申請を承認"),
     upsertPermission("document.read", "文書を閲覧"),
@@ -145,6 +147,7 @@ async function main() {
     attachPermission(adminRole.id, manageTenant.id),
     attachPermission(adminRole.id, manageOrganization.id),
     attachPermission(adminRole.id, manageSchedule.id),
+    attachPermission(adminRole.id, manageNotices.id),
     attachPermission(adminRole.id, manageDocuments.id),
     attachPermission(adminRole.id, approveWorkflow.id),
     attachPermission(adminRole.id, readDocuments.id),
@@ -183,6 +186,7 @@ async function main() {
     prisma.calendarEvent.deleteMany({ where: { tenantId: tenant.id } }),
     prisma.workflowRequest.deleteMany({ where: { tenantId: tenant.id } }),
     prisma.document.deleteMany({ where: { tenantId: tenant.id } }),
+    prisma.noticeAcknowledgement.deleteMany({ where: { tenantId: tenant.id } }),
     prisma.notice.deleteMany({ where: { tenantId: tenant.id } }),
   ]);
 
