@@ -22,10 +22,15 @@
 
   .scheduleBoard,
   .quickCards,
+  .facilityMetrics,
   .noticeStats,
   .orgGrid,
   .settingsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .facilityAdminGrid {
+    grid-template-columns: 1fr;
   }
 
   .contentGrid {
@@ -132,6 +137,7 @@
   .moduleGrid,
   .scheduleBoard,
   .quickCards,
+  .facilityMetrics,
   .noticeStats,
   .orgGrid,
   .settingsGrid {
@@ -160,9 +166,18 @@
   .viewToolbar,
   .toolbarActions,
   .facilityCard,
+  .facilityAdminItem,
   .formFooter,
   .actionCard {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .facilityAdminItem {
+    grid-template-columns: 1fr;
+  }
+
+  .reservationDecisionActions {
     flex-direction: column;
   }
 
@@ -240,6 +255,7 @@
 
   .actionRow,
   .actionRow .textButton,
+  .reservationDecisionActions .textButton,
   .passkeyRegistrationControls,
   .passkeyRegistrationControls .textButton,
   .recoveryCodeVault .textButton,

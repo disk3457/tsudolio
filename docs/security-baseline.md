@@ -81,8 +81,10 @@
 - Password and OIDC sign-ins, password login failures, lockout rejections, and
   logout requests write tenant-scoped audit events with provider, outcome,
   actor or attempted identity, and request IP where available.
-- Mutating schedule, organization, and document APIs require explicit
-  permissions before calling application use cases.
+- Mutating schedule, facility, organization, and document APIs require
+  explicit permissions before calling application use cases.
+- Facility master changes and facility reservation decisions require
+  `schedule.manage`, are tenant-scoped, and write audit events.
 - Mutating notice APIs require `notice.manage`; user acknowledgements and
   notification read state are scoped to the authenticated tenant and user.
 - Creating or updating a system administrator requires `tenant.manage` in
@@ -99,8 +101,8 @@
 
 Permission codes currently used by the API boundary:
 
-- `schedule.manage`: create, update, and delete schedules and facility
-  reservations
+- `schedule.manage`: create, update, and delete schedules, facility master
+  records, and facility reservations
 - `notice.manage`: create, update, and delete notices
 - `organization.manage`: create, update, and delete organization units and
   users
