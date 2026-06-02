@@ -22,10 +22,11 @@
 
   .scheduleBoard,
   .quickCards,
-  .facilityMetrics,
-  .noticeStats,
-  .orgGrid,
-  .settingsGrid {
+    .facilityMetrics,
+    .noticeStats,
+    .workflowStats,
+    .orgGrid,
+    .settingsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -45,7 +46,12 @@
     grid-template-columns: 1fr;
   }
 
-  .notificationPanel {
+  .workflowBoard {
+    grid-template-columns: 1fr;
+  }
+
+  .notificationPanel,
+  .workflowHistoryPanel {
     position: static;
   }
 
@@ -137,10 +143,11 @@
   .moduleGrid,
   .scheduleBoard,
   .quickCards,
-  .facilityMetrics,
-  .noticeStats,
-  .orgGrid,
-  .settingsGrid {
+    .facilityMetrics,
+    .noticeStats,
+    .workflowStats,
+    .orgGrid,
+    .settingsGrid {
     grid-template-columns: 1fr;
   }
 
@@ -199,9 +206,16 @@
   }
 
   .noticeCardHeader,
-  .noticeActions {
+  .noticeActions,
+  .workflowRequestHeader,
+  .workflowDecisionActions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .workflowMeta,
+  .workflowHistoryItem {
+    grid-template-columns: 1fr;
   }
 
   .notificationItem {
@@ -256,6 +270,7 @@
   .actionRow,
   .actionRow .textButton,
   .reservationDecisionActions .textButton,
+  .workflowDecisionActions .textButton,
   .passkeyRegistrationControls,
   .passkeyRegistrationControls .textButton,
   .recoveryCodeVault .textButton,

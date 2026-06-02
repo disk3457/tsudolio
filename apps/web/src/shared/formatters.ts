@@ -45,7 +45,7 @@ export function getPriorityMeta(priority: string) {
     return { label: "重要", level: "high" };
   }
 
-  if (priority === "MEDIUM") {
+  if (priority === "NORMAL" || priority === "MEDIUM") {
     return { label: "通常", level: "medium" };
   }
 

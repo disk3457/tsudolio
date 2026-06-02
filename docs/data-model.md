@@ -39,6 +39,8 @@
 - Facility API: `GET /api/facilities`, `POST /api/facilities`,
   `PATCH /api/facilities/:facilityId`, `DELETE /api/facilities/:facilityId`,
   `PATCH /api/facilities/reservations/:reservationId`
+- Workflow API: `GET /api/workflows`,
+  `PATCH /api/workflows/:requestId`
 
 ## Required Columns
 

@@ -32,7 +32,7 @@ export const modulePresentation: Record<string, ModulePresentation> = {
   workflow: {
     icon: ClipboardList,
     label: "ワークフロー",
-    target: "dashboard",
+    target: "workflow",
     tone: "rose",
   },
   documents: {

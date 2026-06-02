@@ -4,6 +4,7 @@ export type ViewKey =
   | "dashboard"
   | "schedule"
   | "notices"
+  | "workflow"
   | "organization"
   | "documents"
   | "security"
