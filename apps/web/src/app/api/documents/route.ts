@@ -7,7 +7,7 @@ import {
   readRequestJson,
 } from "@/presentation/http/json-response";
 import {
-  getCurrentUserFromRequest,
+  requirePermission,
   requireMutationContext,
 } from "@/app/api/_shared/request-context";
 import { permissions } from "@/application/security/permissions";
@@ -19,7 +19,10 @@ const documentUseCases = createDocumentUseCases(prismaDocumentRepository);
 
 export async function GET(request: Request) {
   try {
-    const currentUser = await getCurrentUserFromRequest(request);
+    const currentUser = await requirePermission(
+      request,
+      permissions.readDocuments,
+    );
     const snapshot = await documentUseCases.getDocumentSnapshot(
       currentUser.tenantCode,
     );

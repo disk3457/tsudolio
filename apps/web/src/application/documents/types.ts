@@ -19,6 +19,33 @@ export type DocumentSummary = {
   updatedAt: string;
   organizationUnit: DocumentOption | null;
   uploadedBy: DocumentOption;
+  versions: DocumentVersionSummary[];
+  versionCount: number;
+};
+
+export type DocumentVersionSummary = {
+  id: string;
+  title: string;
+  category: string;
+  version: string;
+  status: DocumentStatus;
+  statusLabel: string;
+  tone: "open" | "busy" | "wait";
+  storageKey: string;
+  retentionUntil: string | null;
+  changeNote: string | null;
+  createdAt: string;
+  organizationUnit: DocumentOption | null;
+  createdBy: DocumentOption;
+};
+
+export type DocumentAccessSummary = {
+  documentId: string;
+  title: string;
+  version: string;
+  storageKey: string;
+  filename: string;
+  accessedAt: string;
 };
 
 export type DocumentSnapshot = {
@@ -55,6 +82,16 @@ export type DocumentsApiResponse =
 export type DocumentMutationResponse =
   | {
       data: DocumentSummary;
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type DocumentAccessResponse =
+  | {
+      data: DocumentAccessSummary;
       source: "database";
     }
   | {

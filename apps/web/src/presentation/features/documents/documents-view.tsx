@@ -1,6 +1,10 @@
 "use client";
 
 import { AlertCircle } from "lucide-react";
+import {
+  DocumentAccessPanel,
+  DocumentHistoryPanel,
+} from "@/presentation/features/documents/document-detail-panels";
 import { DocumentForm } from "@/presentation/features/documents/document-form";
 import { DocumentStats } from "@/presentation/features/documents/document-stats";
 import { DocumentTable } from "@/presentation/features/documents/document-table";
@@ -11,12 +15,17 @@ export function DocumentsView() {
   const {
     activeCategory,
     activeDocuments,
+    accessingId,
+    accessResult,
     categories,
+    closeAccessResult,
     closeForm,
+    closeHistory,
     deletingId,
     documentState,
     documents,
     formState,
+    handleAccess,
     handleDelete,
     handleSubmit,
     loadDocuments,
@@ -25,9 +34,13 @@ export function DocumentsView() {
     organizationUnits,
     reviewDocuments,
     saving,
+    selectedHistoryDocument,
+    selectedHistoryDocumentId,
     setActiveCategory,
+    toggleHistory,
     updateForm,
     visibleDocuments,
+    versionCount,
   } = useDocumentDirectory();
 
   return (
@@ -58,18 +71,29 @@ export function DocumentsView() {
 
       <DocumentStats
         activeCount={activeDocuments.length}
-        categoryCount={categories.length}
         documentCount={documents.length}
         reviewCount={reviewDocuments.length}
+        versionCount={versionCount}
       />
 
       <DocumentTable
         activeCategory={activeCategory}
+        accessingId={accessingId}
         deletingId={deletingId}
         documents={visibleDocuments}
+        onAccess={(document) => void handleAccess(document)}
         onDelete={(document) => void handleDelete(document)}
         onEdit={openEditForm}
+        onToggleHistory={toggleHistory}
+        selectedHistoryDocumentId={selectedHistoryDocumentId}
         status={documentState.status}
+      />
+
+      <DocumentAccessPanel access={accessResult} onClose={closeAccessResult} />
+
+      <DocumentHistoryPanel
+        document={selectedHistoryDocument}
+        onClose={closeHistory}
       />
     </section>
   );

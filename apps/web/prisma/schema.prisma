@@ -94,6 +94,7 @@ model Tenant {
   notices                          Notice[]
   workflowRequests                 WorkflowRequest[]
   documents                        Document[]
+  documentVersions                 DocumentVersion[]
   auditEvents                      AuditEvent[]
   notifications                    Notification[]
   noticeAcknowledgements           NoticeAcknowledgement[]
@@ -126,6 +127,7 @@ model OrganizationUnit {
   notices          Notice[]
   workflowRequests WorkflowRequest[]
   documents        Document[]
+  documentVersions DocumentVersion[]
 
   @@unique([tenantId, code])
   @@index([tenantId, parentId])
@@ -149,6 +151,7 @@ model User {
   createdEvents                    CalendarEvent[]                   @relation("CalendarEventCreator")
   requestedWorkflows               WorkflowRequest[]                 @relation("WorkflowRequester")
   uploadedDocuments                Document[]                        @relation("DocumentUploader")
+  createdDocumentVersions          DocumentVersion[]                 @relation("DocumentVersionCreator")
   auditEvents                      AuditEvent[]
   notifications                    Notification[]
   noticeAcknowledgements           NoticeAcknowledgement[]
@@ -465,10 +468,35 @@ model Document {
   tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   organizationUnit   OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
   uploadedBy         User              @relation("DocumentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+  versions           DocumentVersion[]
 
   @@index([tenantId, category])
   @@index([tenantId, status])
   @@map("documents")
+}
+
+model DocumentVersion {
+  id                 String            @id @default(uuid()) @db.Uuid
+  tenantId           String            @map("tenant_id") @db.Uuid
+  documentId         String            @map("document_id") @db.Uuid
+  organizationUnitId String?           @map("organization_unit_id") @db.Uuid
+  createdById        String            @map("created_by_id") @db.Uuid
+  title              String            @db.VarChar(220)
+  category           String            @db.VarChar(120)
+  version            String            @db.VarChar(40)
+  status             DocumentStatus    @default(DRAFT)
+  storageKey         String            @map("storage_key") @db.VarChar(500)
+  retentionUntil     DateTime?         @map("retention_until")
+  changeNote         String?           @map("change_note") @db.VarChar(500)
+  createdAt          DateTime          @default(now()) @map("created_at")
+  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document           Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit? @relation(fields: [organizationUnitId], references: [id], onDelete: SetNull)
+  createdBy          User              @relation("DocumentVersionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, documentId, createdAt])
+  @@index([tenantId, status])
+  @@map("document_versions")
 }
 
 model AuditEvent {

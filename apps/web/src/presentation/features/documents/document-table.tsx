@@ -1,23 +1,31 @@
-import { FileText, Pencil, Trash2 } from "lucide-react";
+import { Eye, FileText, History, Pencil, Trash2 } from "lucide-react";
 import { EmptyState } from "@/presentation/components/empty-state";
 import type { DocumentSummary } from "@/application/documents/types";
 import { allDocumentCategoryKey, type DocumentLoadState } from "./view-types";
 
 type DocumentTableProps = {
   activeCategory: string;
+  accessingId: string | null;
   deletingId: string | null;
   documents: DocumentSummary[];
+  onAccess: (document: DocumentSummary) => void;
   onDelete: (document: DocumentSummary) => void;
   onEdit: (document: DocumentSummary) => void;
+  onToggleHistory: (document: DocumentSummary) => void;
+  selectedHistoryDocumentId: string | null;
   status: DocumentLoadState["status"];
 };
 
 export function DocumentTable({
   activeCategory,
+  accessingId,
   deletingId,
   documents,
+  onAccess,
   onDelete,
   onEdit,
+  onToggleHistory,
+  selectedHistoryDocumentId,
   status,
 }: DocumentTableProps) {
   return (
@@ -52,6 +60,7 @@ export function DocumentTable({
             <span>分類</span>
             <span>管理組織</span>
             <span>版</span>
+            <span>履歴</span>
             <span>保管期限</span>
             <span>状態</span>
             <span>操作</span>
@@ -62,11 +71,35 @@ export function DocumentTable({
               <span>{document.category}</span>
               <span>{document.organizationUnit?.name ?? "未指定"}</span>
               <span>{document.version}</span>
+              <span>{document.versionCount}</span>
               <span>{formatRetention(document.retentionUntil)}</span>
               <span className={`statusPill ${document.tone}`}>
                 {document.statusLabel}
               </span>
               <div className="documentActions">
+                <button
+                  className="iconButton compact"
+                  aria-label={`${document.title}のアクセスを記録`}
+                  disabled={accessingId === document.id}
+                  onClick={() => onAccess(document)}
+                  title="アクセス記録"
+                  type="button"
+                >
+                  <Eye aria-hidden="true" size={15} />
+                </button>
+                <button
+                  className={
+                    selectedHistoryDocumentId === document.id
+                      ? "iconButton compact active"
+                      : "iconButton compact"
+                  }
+                  aria-label={`${document.title}の履歴を表示`}
+                  onClick={() => onToggleHistory(document)}
+                  title="履歴"
+                  type="button"
+                >
+                  <History aria-hidden="true" size={15} />
+                </button>
                 <button
                   className="iconButton compact"
                   aria-label={`${document.title}を編集`}

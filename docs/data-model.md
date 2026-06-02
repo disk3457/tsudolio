@@ -27,6 +27,7 @@
 - `notice_acknowledgement`: 確認必須掲示に対する利用者ごとの確認記録
 - `workflow_request`: 申請、承認待ち、決裁済みの案件
 - `document`: 文書台帳とストレージ参照
+- `document_version`: 文書の版履歴、保管キー、変更記録
 - `notification`: 個人向け通知
 
 ## Implementation
@@ -41,6 +42,9 @@
   `PATCH /api/facilities/reservations/:reservationId`
 - Workflow API: `GET /api/workflows`,
   `PATCH /api/workflows/:requestId`
+- Document API: `GET /api/documents`, `POST /api/documents`,
+  `PATCH /api/documents/:documentId`, `DELETE /api/documents/:documentId`,
+  `POST /api/documents/:documentId/access`
 
 ## Required Columns
 

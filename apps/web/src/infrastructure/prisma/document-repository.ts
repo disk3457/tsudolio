@@ -1,9 +1,11 @@
 import { prisma } from "@/infrastructure/prisma/prisma-client";
 import type { DocumentRepository } from "@/application/documents/use-cases";
 import type {
+  DocumentAccessSummary,
   DocumentInput,
   DocumentSnapshot,
   DocumentSummary,
+  DocumentVersionSummary,
 } from "@/application/documents/types";
 import type { MutationContext } from "@/application/security/types";
 import { DocumentApplicationError } from "@/application/documents/errors";
@@ -77,6 +79,14 @@ export async function createDocument(
       },
     });
 
+    await createDocumentVersion(tx, {
+      tenantId: tenant.id,
+      documentId: document.id,
+      input,
+      actorUserId: context.actorUserId,
+      changeNote: "文書を登録",
+    });
+
     await recordAuditEvent(tx, {
       tenantId: tenant.id,
       context,
@@ -115,6 +125,13 @@ export async function updateDocument(
       },
       select: {
         id: true,
+        title: true,
+        category: true,
+        version: true,
+        status: true,
+        storageKey: true,
+        retentionUntil: true,
+        organizationUnitId: true,
       },
     });
 
@@ -145,6 +162,14 @@ export async function updateDocument(
           ? new Date(input.retentionUntil)
           : null,
       },
+    });
+
+    await createDocumentVersion(tx, {
+      tenantId: tenant.id,
+      documentId,
+      input,
+      actorUserId: context.actorUserId,
+      changeNote: createDocumentChangeNote(existingDocument, input),
     });
 
     await recordAuditEvent(tx, {
@@ -223,6 +248,67 @@ export async function deleteDocument(
   });
 }
 
+export async function accessDocument(
+  documentId: string,
+  context: MutationContext,
+): Promise<DocumentAccessSummary> {
+  const tenant = await getTenantOrThrow(context.tenantCode);
+
+  return prisma.$transaction(async (tx) => {
+    await assertUserBelongsToTenant(tx, tenant.id, context.actorUserId);
+
+    const document = await tx.document.findFirst({
+      where: {
+        id: documentId,
+        tenantId: tenant.id,
+      },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        version: true,
+        status: true,
+        storageKey: true,
+      },
+    });
+
+    if (!document) {
+      throw new DocumentApplicationError(
+        "DOCUMENT_NOT_FOUND",
+        "指定された文書が見つかりません。",
+        404,
+      );
+    }
+
+    const accessedAt = new Date();
+
+    await recordAuditEvent(tx, {
+      tenantId: tenant.id,
+      context,
+      action: "文書にアクセス",
+      targetType: "document",
+      targetId: document.id,
+      severity: AuditSeverity.INFO,
+      metadata: {
+        title: document.title,
+        category: document.category,
+        version: document.version,
+        status: document.status,
+        storageKey: document.storageKey,
+      },
+    });
+
+    return {
+      documentId: document.id,
+      title: document.title,
+      version: document.version,
+      storageKey: document.storageKey,
+      filename: getStorageFilename(document.storageKey),
+      accessedAt: accessedAt.toISOString(),
+    };
+  });
+}
+
 async function getTenantOrThrow(tenantCode: string) {
   const tenant = await prisma.tenant.findUnique({
     where: {
@@ -273,6 +359,15 @@ async function findDocuments(tenantId: string) {
     include: {
       organizationUnit: true,
       uploadedBy: true,
+      versions: {
+        include: {
+          organizationUnit: true,
+          createdBy: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
     },
     orderBy: [{ updatedAt: "desc" }, { title: "asc" }],
   });
@@ -292,6 +387,15 @@ async function getDocumentSummary(
     include: {
       organizationUnit: true,
       uploadedBy: true,
+      versions: {
+        include: {
+          organizationUnit: true,
+          createdBy: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
     },
   });
 
@@ -329,7 +433,114 @@ function mapDocument(document: DocumentRecord): DocumentSummary {
       id: document.uploadedBy.id,
       name: document.uploadedBy.displayName,
     },
+    versions: document.versions.map(mapDocumentVersion),
+    versionCount: document.versions.length,
   };
+}
+
+function mapDocumentVersion(
+  version: DocumentRecord["versions"][number],
+): DocumentVersionSummary {
+  return {
+    id: version.id,
+    title: version.title,
+    category: version.category,
+    version: version.version,
+    status: version.status,
+    statusLabel: getDocumentStatusLabel(version.status),
+    tone: getDocumentTone(version.status),
+    storageKey: version.storageKey,
+    retentionUntil: version.retentionUntil?.toISOString() ?? null,
+    changeNote: version.changeNote,
+    createdAt: version.createdAt.toISOString(),
+    organizationUnit: version.organizationUnit
+      ? {
+          id: version.organizationUnit.id,
+          name: version.organizationUnit.name,
+        }
+      : null,
+    createdBy: {
+      id: version.createdBy.id,
+      name: version.createdBy.displayName,
+    },
+  };
+}
+
+function createDocumentVersion(
+  tx: Prisma.TransactionClient,
+  input: {
+    tenantId: string;
+    documentId: string;
+    input: DocumentInput;
+    actorUserId: string;
+    changeNote: string;
+  },
+) {
+  return tx.documentVersion.create({
+    data: {
+      tenantId: input.tenantId,
+      documentId: input.documentId,
+      organizationUnitId: input.input.organizationUnitId,
+      createdById: input.actorUserId,
+      title: input.input.title,
+      category: input.input.category,
+      version: input.input.version,
+      status: input.input.status,
+      storageKey: input.input.storageKey,
+      retentionUntil: input.input.retentionUntil
+        ? new Date(input.input.retentionUntil)
+        : null,
+      changeNote: input.changeNote,
+    },
+    select: {
+      id: true,
+    },
+  });
+}
+
+function createDocumentChangeNote(
+  before: {
+    title: string;
+    category: string;
+    version: string;
+    status: DocumentStatus;
+    storageKey: string;
+    retentionUntil: Date | null;
+    organizationUnitId: string | null;
+  },
+  after: DocumentInput,
+) {
+  const changes: string[] = [];
+
+  if (before.title !== after.title) {
+    changes.push("文書名");
+  }
+
+  if (before.category !== after.category) {
+    changes.push("分類");
+  }
+
+  if (before.version !== after.version) {
+    changes.push(`版 ${before.version} -> ${after.version}`);
+  }
+
+  if (before.status !== after.status) {
+    changes.push(`状態 ${getDocumentStatusLabel(before.status)} -> ${getDocumentStatusLabel(after.status)}`);
+  }
+
+  if (before.storageKey !== after.storageKey) {
+    changes.push("保管キー");
+  }
+
+  if (formatDateKey(before.retentionUntil) !== formatDateKey(after.retentionUntil)) {
+    changes.push("保管期限");
+  }
+
+  if (before.organizationUnitId !== after.organizationUnitId) {
+    changes.push("管理組織");
+  }
+
+  return changes.length > 0 ? changes.join("、") : "履歴を記録";
 }
 
 async function assertOrganizationBelongsToTenant(
@@ -383,9 +594,24 @@ function getDocumentTone(status: string): DocumentSummary["tone"] {
   return "wait";
 }
 
+function formatDateKey(value: Date | string | null) {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(value).toISOString().slice(0, 10);
+}
+
+function getStorageFilename(storageKey: string) {
+  const segments = storageKey.split("/").filter(Boolean);
+
+  return segments.at(-1) ?? storageKey;
+}
+
 export const prismaDocumentRepository = {
   getDocumentSnapshot,
   createDocument,
   updateDocument,
   deleteDocument,
+  accessDocument,
 } satisfies DocumentRepository;
