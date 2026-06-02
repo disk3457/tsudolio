@@ -123,3 +123,96 @@
   color: #08786f;
   background: var(--cyan-soft);
 }
+
+.facilityManagement {
+  display: grid;
+  gap: 16px;
+}
+
+.facilityMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.facilityMetrics div {
+  display: grid;
+  gap: 6px;
+  min-height: 82px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.facilityMetrics span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.facilityMetrics strong {
+  color: var(--blue-deep);
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.facilityAdminGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
+  gap: 18px;
+}
+
+.facilityDirectory,
+.reservationApprovalList {
+  display: grid;
+  gap: 12px;
+}
+
+.facilityAdminItem,
+.reservationApprovalItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.reservationApprovalItem {
+  grid-template-columns: 1fr;
+}
+
+.facilityAdminHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.facilityAdminHeader h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+
+.facilityAdminItem p,
+.reservationApprovalItem p,
+.facilityNextReservation {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.facilityActions {
+  margin-top: 0;
+}
+
+.reservationDecisionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

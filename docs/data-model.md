@@ -36,6 +36,9 @@
 - Local seed: `apps/web/prisma/seed.ts`
 - Dashboard API: `GET /api/dashboard`
 - Health API: `GET /api/health`
+- Facility API: `GET /api/facilities`, `POST /api/facilities`,
+  `PATCH /api/facilities/:facilityId`, `DELETE /api/facilities/:facilityId`,
+  `PATCH /api/facilities/reservations/:reservationId`
 
 ## Required Columns
 
