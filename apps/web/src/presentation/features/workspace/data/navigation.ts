@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  ClipboardList,
   FileText,
   LayoutDashboard,
   MessageSquareText,
@@ -30,6 +31,13 @@ export const navItems: NavItem[] = [
     description: "全体連絡、確認必須の回覧、個人通知を一か所で確認します。",
     label: "掲示",
     icon: MessageSquareText,
+  },
+  {
+    key: "workflow",
+    title: "申請・承認",
+    description: "承認待ちの申請を確認し、承認、差し戻し、却下を記録します。",
+    label: "申請",
+    icon: ClipboardList,
   },
   {
     key: "organization",

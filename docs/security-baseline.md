@@ -81,10 +81,13 @@
 - Password and OIDC sign-ins, password login failures, lockout rejections, and
   logout requests write tenant-scoped audit events with provider, outcome,
   actor or attempted identity, and request IP where available.
-- Mutating schedule, facility, organization, and document APIs require
+- Mutating schedule, facility, workflow, organization, and document APIs require
   explicit permissions before calling application use cases.
 - Facility master changes and facility reservation decisions require
   `schedule.manage`, are tenant-scoped, and write audit events.
+- Workflow approval queue access and approval decisions require
+  `workflow.approve`. Approval, rejection, and return decisions are restricted
+  to pending requests, are tenant-scoped, and write audit events.
 - Mutating notice APIs require `notice.manage`; user acknowledgements and
   notification read state are scoped to the authenticated tenant and user.
 - Creating or updating a system administrator requires `tenant.manage` in
@@ -107,8 +110,10 @@ Permission codes currently used by the API boundary:
 - `organization.manage`: create, update, and delete organization units and
   users
 - `document.manage`: create, update, and delete document registry records
-- `tenant.manage`, `document.read`, `workflow.approve`: seeded for the next
-  administration, document access, and workflow steps
+- `workflow.approve`: view the approval queue and approve, reject, or return
+  pending workflow requests
+- `tenant.manage`, `document.read`: seeded for the next administration and
+  document access steps
 
 ## Explicit Non-Goals for the First Public MVP
 

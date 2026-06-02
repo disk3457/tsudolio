@@ -1,0 +1,212 @@
+.workflowStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workflowStats article {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 82px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.workflowStats svg {
+  flex: 0 0 auto;
+  color: var(--blue);
+}
+
+.workflowStats span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.workflowStats strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--blue-deep);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.workflowBoard {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.workflowRequestList,
+.workflowHistoryList {
+  display: grid;
+  gap: 12px;
+}
+
+.workflowRequestCard {
+  display: grid;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--amber);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.workflowRequestCard.done {
+  border-left-color: var(--cyan);
+}
+
+.workflowRequestCard.danger {
+  border-left-color: var(--rose);
+}
+
+.workflowRequestCard.returned {
+  border-left-color: var(--blue);
+}
+
+.workflowRequestCard.draft {
+  border-left-color: var(--muted);
+}
+
+.workflowRequestHeader,
+.workflowDecisionActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.workflowRequestHeader > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.workflowStatus,
+.workflowCategory,
+.workflowOverdue {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.73rem;
+  font-weight: 800;
+}
+
+.workflowStatus.wait {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.workflowStatus.done {
+  color: #08786f;
+  background: var(--cyan-soft);
+}
+
+.workflowStatus.danger {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.workflowStatus.returned {
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+}
+
+.workflowStatus.draft {
+  color: var(--muted);
+  background: var(--surface-muted);
+}
+
+.workflowCategory {
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+}
+
+.workflowOverdue {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.workflowRequestBody {
+  display: grid;
+  gap: 7px;
+}
+
+.workflowRequestBody h3,
+.workflowRequestBody p,
+.workflowHistoryItem h3,
+.workflowHistoryItem p {
+  margin: 0;
+}
+
+.workflowRequestBody p,
+.workflowHistoryItem p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.workflowMeta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 0;
+}
+
+.workflowMeta div {
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.workflowMeta dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.workflowMeta dd {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.workflowDecisionActions {
+  justify-content: flex-end;
+}
+
+.textButton.danger {
+  color: var(--rose);
+  border-color: #f5c7d2;
+  background: #fff7f9;
+}
+
+.workflowHistoryPanel {
+  position: sticky;
+  top: 18px;
+}
+
+.workflowHistoryItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.workflowHistoryItem h3 {
+  font-size: 0.92rem;
+}

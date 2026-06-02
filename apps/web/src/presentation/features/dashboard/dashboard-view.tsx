@@ -2,8 +2,8 @@ import {
   Bell,
   CalendarDays,
   Clock3,
+  ClipboardList,
   LockKeyhole,
-  Settings,
   Smartphone,
 } from "lucide-react";
 import { AuditEventList } from "@/presentation/components/audit-event-list";
@@ -161,8 +161,13 @@ export function DashboardView({
               <p className="sectionLabel">ワークフロー</p>
               <h2 id="approval-heading">承認待ち</h2>
             </div>
-            <button className="iconButton" aria-label="承認設定" type="button">
-              <Settings aria-hidden="true" size={18} />
+            <button
+              className="textButton"
+              onClick={() => setActiveView("workflow")}
+              type="button"
+            >
+              <ClipboardList aria-hidden="true" size={17} />
+              承認一覧
             </button>
           </div>
           <div className="approvalList">

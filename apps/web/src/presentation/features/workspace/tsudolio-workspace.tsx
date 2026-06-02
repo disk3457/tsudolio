@@ -20,6 +20,7 @@ import { OrganizationView } from "@/presentation/features/organization/organizat
 import { ScheduleView } from "@/presentation/features/schedule/schedule-view";
 import { SecurityView } from "@/presentation/features/security/security-view";
 import { SettingsView } from "@/presentation/features/settings/settings-view";
+import { WorkflowView } from "@/presentation/features/workflows/workflow-view";
 
 export function TsudolioWorkspace() {
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
@@ -216,7 +217,7 @@ export function TsudolioWorkspace() {
             <label className="searchBox">
               <Search aria-hidden="true" size={18} />
               <span className="srOnly">検索</span>
-              <input placeholder="予定・掲示・文書を検索" />
+              <input placeholder="予定・掲示・申請・文書を検索" />
             </label>
             <button className="iconButton" aria-label="通知" type="button">
               <Bell aria-hidden="true" size={19} />
@@ -237,6 +238,7 @@ export function TsudolioWorkspace() {
         )}
         {activeView === "schedule" && <ScheduleView />}
         {activeView === "notices" && <NoticesView />}
+        {activeView === "workflow" && <WorkflowView />}
         {activeView === "organization" && <OrganizationView />}
         {activeView === "documents" && <DocumentsView />}
         {activeView === "security" && (
