@@ -1,16 +1,132 @@
 .documentTable .dataRow {
   grid-template-columns:
-    minmax(220px, 1.7fr)
-    minmax(90px, 0.7fr)
-    minmax(130px, 1fr)
-    minmax(70px, 0.55fr)
-    minmax(116px, 0.85fr)
-    minmax(96px, 0.7fr)
-    minmax(78px, 0.55fr);
+    minmax(180px, 1.6fr)
+    minmax(76px, 0.55fr)
+    minmax(108px, 0.85fr)
+    minmax(52px, 0.45fr)
+    minmax(46px, 0.35fr)
+    minmax(92px, 0.65fr)
+    minmax(82px, 0.6fr)
+    minmax(150px, 0.9fr);
+  gap: 8px;
+  padding-inline: 10px;
 }
 
 .documentActions {
   display: flex;
   align-items: center;
   gap: 7px;
+}
+
+.documentActions .iconButton.active {
+  border-color: #8ec5ff;
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+}
+
+.documentAccessPanel,
+.documentHistoryPanel {
+  display: grid;
+  gap: 14px;
+}
+
+.documentAccessBody {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid #cfe8d9;
+  border-radius: 8px;
+  color: #14532d;
+  background: #f3fbf6;
+}
+
+.documentAccessBody svg {
+  margin-top: 2px;
+}
+
+.documentAccessBody strong,
+.documentAccessBody code,
+.documentVersionItem code {
+  overflow-wrap: anywhere;
+}
+
+.documentAccessBody p {
+  margin: 5px 0 9px;
+  color: #2f6d45;
+  line-height: 1.5;
+}
+
+.documentAccessBody code,
+.documentVersionItem code {
+  display: block;
+  padding: 8px 9px;
+  border: 1px solid #d9e5ef;
+  border-radius: 8px;
+  color: var(--blue-deep);
+  background: #ffffff;
+}
+
+.documentVersionList {
+  display: grid;
+  gap: 10px;
+}
+
+.documentVersionItem {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 11px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.documentVersionItem > svg {
+  margin-top: 3px;
+  color: var(--blue);
+}
+
+.documentVersionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.documentVersionHeading strong {
+  color: var(--blue-deep);
+}
+
+.documentVersionItem p {
+  margin: 6px 0 10px;
+  color: var(--ink);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.documentVersionMeta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.documentVersionMeta div {
+  min-width: 0;
+}
+
+.documentVersionMeta dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.documentVersionMeta dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 800;
 }

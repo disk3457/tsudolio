@@ -214,6 +214,7 @@
   }
 
   .workflowMeta,
+  .documentVersionMeta,
   .workflowHistoryItem {
     grid-template-columns: 1fr;
   }

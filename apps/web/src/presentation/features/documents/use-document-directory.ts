@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type {
+  DocumentAccessResponse,
+  DocumentAccessSummary,
   DocumentDeleteResponse,
   DocumentMutationResponse,
   DocumentsApiResponse,
@@ -30,6 +32,12 @@ export function useDocumentDirectory() {
   const [formState, setFormState] = useState<DocumentFormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [accessingId, setAccessingId] = useState<string | null>(null);
+  const [accessResult, setAccessResult] =
+    useState<DocumentAccessSummary | null>(null);
+  const [selectedHistoryDocumentId, setSelectedHistoryDocumentId] = useState<
+    string | null
+  >(null);
 
   const loadDocuments = useCallback(async (signal?: AbortSignal) => {
     setDocumentState((current) => ({
@@ -108,6 +116,17 @@ export function useDocumentDirectory() {
   const reviewDocuments = useMemo(
     () => documents.filter((document) => document.status === "REVIEW"),
     [documents],
+  );
+  const versionCount = useMemo(
+    () =>
+      documents.reduce((count, document) => count + document.versionCount, 0),
+    [documents],
+  );
+  const selectedHistoryDocument = useMemo(
+    () =>
+      documents.find((document) => document.id === selectedHistoryDocumentId) ??
+      null,
+    [documents, selectedHistoryDocumentId],
   );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -196,6 +215,40 @@ export function useDocumentDirectory() {
     }
   }
 
+  async function handleAccess(document: DocumentSummary) {
+    setAccessingId(document.id);
+    setDocumentState((current) => ({ ...current, message: null }));
+
+    try {
+      const response = await fetch(`/api/documents/${document.id}/access`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      const body = (await response.json()) as DocumentAccessResponse;
+
+      if (!response.ok || !("data" in body)) {
+        throw new Error(
+          "message" in body ? body.message : "文書アクセスを記録できませんでした",
+        );
+      }
+
+      setAccessResult(body.data);
+    } catch (error) {
+      setDocumentState((current) => ({
+        ...current,
+        status: current.snapshot ? "ready" : "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "文書アクセスを記録できませんでした",
+      }));
+    } finally {
+      setAccessingId(null);
+    }
+  }
+
   function openCreateForm() {
     setFormState(createDefaultDocumentFormState());
   }
@@ -206,6 +259,20 @@ export function useDocumentDirectory() {
 
   function closeForm() {
     setFormState(null);
+  }
+
+  function closeAccessResult() {
+    setAccessResult(null);
+  }
+
+  function toggleHistory(document: DocumentSummary) {
+    setSelectedHistoryDocumentId((current) =>
+      current === document.id ? null : document.id,
+    );
+  }
+
+  function closeHistory() {
+    setSelectedHistoryDocumentId(null);
   }
 
   function updateForm<Field extends keyof DocumentFormState>(
@@ -225,12 +292,17 @@ export function useDocumentDirectory() {
   return {
     activeCategory,
     activeDocuments,
+    accessingId,
+    accessResult,
     categories,
+    closeAccessResult,
     closeForm,
+    closeHistory,
     deletingId,
     documentState,
     documents,
     formState,
+    handleAccess,
     handleDelete,
     handleSubmit,
     loadDocuments,
@@ -239,8 +311,12 @@ export function useDocumentDirectory() {
     organizationUnits: documentState.snapshot?.organizationUnits ?? [],
     reviewDocuments,
     saving,
+    selectedHistoryDocument,
+    selectedHistoryDocumentId,
     setActiveCategory,
+    toggleHistory,
     updateForm,
     visibleDocuments,
+    versionCount,
   };
 }

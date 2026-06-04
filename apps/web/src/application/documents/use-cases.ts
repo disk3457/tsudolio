@@ -1,4 +1,5 @@
 import type {
+  DocumentAccessSummary,
   DocumentInput,
   DocumentSnapshot,
   DocumentSummary,
@@ -20,6 +21,10 @@ export type DocumentRepository = {
     documentId: string,
     context: MutationContext,
   ) => Promise<void>;
+  accessDocument: (
+    documentId: string,
+    context: MutationContext,
+  ) => Promise<DocumentAccessSummary>;
 };
 
 export function createDocumentUseCases(repository: DocumentRepository) {
@@ -28,5 +33,6 @@ export function createDocumentUseCases(repository: DocumentRepository) {
     createDocument: repository.createDocument,
     updateDocument: repository.updateDocument,
     deleteDocument: repository.deleteDocument,
+    accessDocument: repository.accessDocument,
   };
 }

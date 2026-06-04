@@ -1,15 +1,15 @@
 type DocumentStatsProps = {
   activeCount: number;
-  categoryCount: number;
   documentCount: number;
   reviewCount: number;
+  versionCount: number;
 };
 
 export function DocumentStats({
   activeCount,
-  categoryCount,
   documentCount,
   reviewCount,
+  versionCount,
 }: DocumentStatsProps) {
   return (
     <section className="statusStrip organizationStats" aria-label="文書概要">
@@ -26,8 +26,8 @@ export function DocumentStats({
         <strong>{reviewCount}</strong>
       </div>
       <div>
-        <p className="metricLabel">分類</p>
-        <strong>{categoryCount}</strong>
+        <p className="metricLabel">履歴</p>
+        <strong>{versionCount}</strong>
       </div>
     </section>
   );
