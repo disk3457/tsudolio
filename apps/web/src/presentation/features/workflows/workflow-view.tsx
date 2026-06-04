@@ -5,7 +5,10 @@ import {
   Check,
   Clock3,
   ClipboardCheck,
+  FilePlus2,
   FileCheck2,
+  FileText,
+  Plus,
   RefreshCcw,
   RotateCcw,
   X,
@@ -14,6 +17,7 @@ import type { WorkflowRequestSummary } from "@/application/workflows/types";
 import { EmptyState } from "@/presentation/components/empty-state";
 import { useWorkflowApprovals } from "@/presentation/features/workflows/use-workflow-approvals";
 import type { WorkflowTab } from "@/presentation/features/workflows/view-types";
+import { WorkflowForm } from "@/presentation/features/workflows/workflow-form";
 import {
   formatDateTime,
   formatDue,
@@ -23,17 +27,25 @@ import {
 
 const tabOptions: Array<{ key: WorkflowTab; label: string }> = [
   { key: "pending", label: "承認待ち" },
+  { key: "mine", label: "自分の申請" },
   { key: "recent", label: "処理済み" },
 ];
 
 export function WorkflowView() {
   const {
     activeTab,
+    closeForm,
     decidingId,
+    formState,
+    handleCreateRequest,
     handleDecision,
     loadWorkflows,
+    myRequests,
+    openCreateForm,
     recentRequests,
+    savingAction,
     setActiveTab,
+    updateForm,
     visibleRequests,
     workflowState,
   } = useWorkflowApprovals();
@@ -64,6 +76,14 @@ export function WorkflowView() {
           >
             <RefreshCcw aria-hidden="true" size={18} />
           </button>
+          <button
+            className="textButton primary"
+            onClick={openCreateForm}
+            type="button"
+          >
+            <Plus aria-hidden="true" size={17} />
+            申請を作成
+          </button>
         </div>
       </div>
 
@@ -73,6 +93,16 @@ export function WorkflowView() {
           <p>{workflowState.message}</p>
         </div>
       )}
+
+      <WorkflowForm
+        categories={snapshot?.categories ?? ["その他"]}
+        form={formState}
+        onCancel={closeForm}
+        onSubmit={(action) => void handleCreateRequest(action)}
+        onUpdateField={updateForm}
+        organizationUnits={snapshot?.organizationUnits ?? []}
+        savingAction={savingAction}
+      />
 
       <section className="workflowStats" aria-label="申請承認の状態">
         <article>
@@ -103,6 +133,13 @@ export function WorkflowView() {
             <strong>{formatNumber(snapshot?.stats.decidedToday ?? 0)}</strong>
           </div>
         </article>
+        <article>
+          <FileText aria-hidden="true" size={22} />
+          <div>
+            <span>下書き</span>
+            <strong>{formatNumber(snapshot?.stats.myDrafts ?? 0)}</strong>
+          </div>
+        </article>
       </section>
 
       <section className="workflowBoard">
@@ -110,10 +147,18 @@ export function WorkflowView() {
           <div className="panelHeader">
             <div>
               <p className="sectionLabel">
-                {activeTab === "pending" ? "待ち行列" : "処理履歴"}
+                {activeTab === "pending"
+                  ? "待ち行列"
+                  : activeTab === "mine"
+                    ? "申請控え"
+                    : "処理履歴"}
               </p>
               <h2 id="workflow-list-heading">
-                {activeTab === "pending" ? "承認待ち申請" : "処理済み申請"}
+                {activeTab === "pending"
+                  ? "承認待ち申請"
+                  : activeTab === "mine"
+                    ? "自分の申請"
+                    : "処理済み申請"}
               </h2>
             </div>
             <span className="statusPill wait">
@@ -129,14 +174,16 @@ export function WorkflowView() {
                 title={
                   activeTab === "pending"
                     ? "承認待ちはありません"
-                    : "処理済み申請はありません"
+                    : activeTab === "mine"
+                      ? "自分の申請はありません"
+                      : "処理済み申請はありません"
                 }
                 description="決裁が必要な申請が入るとここに表示されます。"
               />
             )}
             {visibleRequests.map((request) => (
               <WorkflowRequestCard
-                canApprove={snapshot?.canApprove ?? false}
+                canApprove={activeTab === "pending" && (snapshot?.canApprove ?? false)}
                 deciding={decidingId === request.id}
                 key={request.id}
                 onDecision={(status) => void handleDecision(request, status)}
@@ -177,6 +224,32 @@ export function WorkflowView() {
                       ? formatDateTime(request.decidedAt, timezone)
                       : "処理日時なし"}
                   </p>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="workflowHistoryList workflowMyList">
+            <div className="panelHeader compact">
+              <div>
+                <p className="sectionLabel">作成</p>
+                <h2>自分の申請</h2>
+              </div>
+              <FilePlus2 aria-hidden="true" className="panelIcon" size={20} />
+            </div>
+            {workflowState.status !== "loading" && myRequests.length === 0 && (
+              <EmptyState
+                title="申請なし"
+                description="作成した申請がここに並びます。"
+              />
+            )}
+            {myRequests.slice(0, 4).map((request) => (
+              <article className="workflowHistoryItem" key={request.id}>
+                <span className={`workflowStatus ${request.tone}`}>
+                  {request.statusLabel}
+                </span>
+                <div>
+                  <h3>{request.title}</h3>
+                  <p>{request.category}</p>
                 </div>
               </article>
             ))}
@@ -224,6 +297,7 @@ function WorkflowRequestCard({
           {request.organizationUnit?.name ?? "組織未指定"} /{" "}
           {request.requester.name}
         </p>
+        {request.description && <p>{request.description}</p>}
       </div>
 
       <dl className="workflowMeta">

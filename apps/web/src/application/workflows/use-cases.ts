@@ -1,5 +1,6 @@
 import type {
   WorkflowDecisionInput,
+  WorkflowRequestInput,
   WorkflowRequestSummary,
   WorkflowSnapshot,
 } from "@/application/workflows/types";
@@ -17,10 +18,15 @@ export type WorkflowRepository = {
     input: WorkflowDecisionInput,
     context: MutationContext,
   ) => Promise<WorkflowRequestSummary>;
+  createWorkflowRequest: (
+    input: WorkflowRequestInput,
+    context: MutationContext,
+  ) => Promise<WorkflowRequestSummary>;
 };
 
 export function createWorkflowUseCases(repository: WorkflowRepository) {
   return {
+    createWorkflowRequest: repository.createWorkflowRequest,
     getWorkflowSnapshot: repository.getWorkflowSnapshot,
     updateWorkflowRequestStatus: repository.updateWorkflowRequestStatus,
   };

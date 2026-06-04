@@ -1,6 +1,6 @@
 .workflowStats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
 }
 
@@ -46,6 +46,10 @@
 .workflowHistoryList {
   display: grid;
   gap: 12px;
+}
+
+.workflowDescriptionField {
+  grid-column: span 4;
 }
 
 .workflowRequestCard {
@@ -192,8 +196,15 @@
 }
 
 .workflowHistoryPanel {
+  display: grid;
+  gap: 14px;
   position: sticky;
   top: 18px;
+}
+
+.workflowMyList {
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
 }
 
 .workflowHistoryItem {

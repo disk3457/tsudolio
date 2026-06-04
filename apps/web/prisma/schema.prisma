@@ -437,6 +437,7 @@ model WorkflowRequest {
   requesterId        String            @map("requester_id") @db.Uuid
   title              String            @db.VarChar(220)
   category           String            @db.VarChar(120)
+  description        String?           @db.Text
   status             WorkflowStatus    @default(PENDING)
   priority           WorkflowPriority  @default(NORMAL)
   dueAt              DateTime?         @map("due_at")

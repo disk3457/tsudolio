@@ -7,8 +7,14 @@ import type {
   WorkflowRequestSummary,
   WorkflowsApiResponse,
 } from "@/application/workflows/types";
+import {
+  createDefaultWorkflowFormState,
+  workflowFormToInput,
+} from "@/presentation/features/workflows/form-state";
 import type {
+  WorkflowFormState,
   WorkflowLoadState,
+  WorkflowSaveAction,
   WorkflowTab,
 } from "@/presentation/features/workflows/view-types";
 
@@ -27,6 +33,10 @@ export function useWorkflowApprovals() {
     updatedAt: null,
   });
   const [decidingId, setDecidingId] = useState<string | null>(null);
+  const [formState, setFormState] = useState<WorkflowFormState | null>(null);
+  const [savingAction, setSavingAction] = useState<WorkflowSaveAction | null>(
+    null,
+  );
 
   const loadWorkflows = useCallback(async (signal?: AbortSignal) => {
     setWorkflowState((current) => ({
@@ -91,7 +101,16 @@ export function useWorkflowApprovals() {
     () => workflowState.snapshot?.recentRequests ?? [],
     [workflowState.snapshot?.recentRequests],
   );
-  const visibleRequests = activeTab === "pending" ? pendingRequests : recentRequests;
+  const myRequests = useMemo(
+    () => workflowState.snapshot?.myRequests ?? [],
+    [workflowState.snapshot?.myRequests],
+  );
+  const visibleRequests =
+    activeTab === "pending"
+      ? pendingRequests
+      : activeTab === "mine"
+        ? myRequests
+        : recentRequests;
 
   async function handleDecision(
     request: WorkflowRequestSummary,
@@ -140,14 +159,87 @@ export function useWorkflowApprovals() {
     }
   }
 
+  async function handleCreateRequest(action: WorkflowSaveAction) {
+    if (!formState) {
+      return;
+    }
+
+    setSavingAction(action);
+    setWorkflowState((current) => ({ ...current, message: null }));
+
+    try {
+      const response = await fetch("/api/workflows", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(workflowFormToInput(formState, action)),
+      });
+      const body = (await response.json()) as WorkflowMutationResponse;
+
+      if (!response.ok || !("data" in body)) {
+        throw new Error(
+          "message" in body ? body.message : "申請を保存できませんでした",
+        );
+      }
+
+      setFormState(null);
+      setActiveTab("mine");
+      await loadWorkflows();
+    } catch (error) {
+      setWorkflowState((current) => ({
+        ...current,
+        status: current.snapshot ? "ready" : "error",
+        message:
+          error instanceof Error ? error.message : "申請を保存できませんでした",
+      }));
+    } finally {
+      setSavingAction(null);
+    }
+  }
+
+  function openCreateForm() {
+    setFormState(
+      createDefaultWorkflowFormState(
+        workflowState.snapshot?.categories[0] ?? "その他",
+      ),
+    );
+  }
+
+  function closeForm() {
+    setFormState(null);
+  }
+
+  function updateForm<Field extends keyof WorkflowFormState>(
+    field: Field,
+    value: WorkflowFormState[Field],
+  ) {
+    setFormState((current) =>
+      current
+        ? {
+            ...current,
+            [field]: value,
+          }
+        : current,
+    );
+  }
+
   return {
     activeTab,
+    closeForm,
     decidingId,
+    formState,
+    handleCreateRequest,
     handleDecision,
     loadWorkflows,
+    myRequests,
+    openCreateForm,
     pendingRequests,
     recentRequests,
+    savingAction,
     setActiveTab,
+    updateForm,
     visibleRequests,
     workflowState,
   };
