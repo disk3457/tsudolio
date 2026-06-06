@@ -138,6 +138,250 @@
   background: var(--blue-soft);
 }
 
+.operationImportBox {
+  display: grid;
+  gap: 12px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+
+.operationImportHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.operationImportHeader h3 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.operationImportUpload {
+  cursor: pointer;
+}
+
+.operationImportUpload.disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  pointer-events: none;
+}
+
+.operationImportAlert {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 9px;
+  padding: 10px;
+  border: 1px solid #ffd2d7;
+  border-radius: 8px;
+  color: var(--rose);
+  background: #fff6f7;
+}
+
+.operationImportAlert p {
+  margin: 0;
+  color: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.operationImportReport {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.operationImportReport.ready {
+  border-color: #ccefe9;
+  background: #f7fffd;
+}
+
+.operationImportReport.warning {
+  border-color: #f3dda3;
+  background: #fffaf0;
+}
+
+.operationImportReport.blocked {
+  border-color: #ffd2d7;
+  background: #fff8f8;
+}
+
+.operationImportStatus {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.operationImportStatus svg {
+  margin-top: 2px;
+  color: var(--blue);
+}
+
+.operationImportReport.ready .operationImportStatus svg {
+  color: #08786f;
+}
+
+.operationImportReport.warning .operationImportStatus svg {
+  color: var(--amber);
+}
+
+.operationImportReport.blocked .operationImportStatus svg {
+  color: var(--rose);
+}
+
+.operationImportStatus span,
+.operationImportTotals span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.operationImportStatus strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.operationImportStatus p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.operationImportTotals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.operationImportTotals div {
+  min-height: 72px;
+  padding: 10px;
+  border: 1px solid #d9e5ef;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.operationImportTotals strong {
+  display: block;
+  margin-top: 7px;
+  color: var(--blue-deep);
+  font-size: 1.28rem;
+  line-height: 1;
+}
+
+.operationImportIssues {
+  display: grid;
+  gap: 8px;
+}
+
+.operationImportIssue {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 9px;
+  min-height: 64px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.operationImportIssue > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  min-height: 26px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.operationImportIssue.info > span {
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+}
+
+.operationImportIssue.warning > span {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.operationImportIssue.error > span {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.operationImportIssue strong {
+  color: var(--ink);
+  font-size: 0.84rem;
+}
+
+.operationImportIssue p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.operationImportTables {
+  display: grid;
+  gap: 7px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.operationImportTableRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 92px;
+  gap: 8px;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 9px;
+  border: 1px solid #e5edf4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.operationImportTableRow span,
+.operationImportTableRow strong,
+.operationImportTableRow small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.operationImportTableRow span {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.operationImportTableRow strong {
+  color: var(--blue-deep);
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.operationImportTableRow small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-align: right;
+}
+
 .operationHealthList,
 .operationEventList {
   display: grid;
@@ -255,4 +499,22 @@
   border-color: #ccefe9;
   color: #08786f;
   background: #f1fffc;
+}
+
+@media (max-width: 720px) {
+  .operationImportHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .operationImportTotals,
+  .operationImportIssue,
+  .operationImportTableRow {
+    grid-template-columns: 1fr;
+  }
+
+  .operationImportTableRow strong,
+  .operationImportTableRow small {
+    text-align: left;
+  }
 }

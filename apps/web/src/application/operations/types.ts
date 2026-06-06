@@ -56,6 +56,27 @@ export type OperationBackupSummary = {
   generatedAt: string;
 };
 
+export const operationsBackupDataSetDefinitions = [
+  { key: "organizationUnits", label: "組織単位" },
+  { key: "users", label: "利用者" },
+  { key: "memberships", label: "所属" },
+  { key: "roles", label: "ロール" },
+  { key: "permissions", label: "権限" },
+  { key: "rolePermissions", label: "ロール権限" },
+  { key: "roleAssignments", label: "権限割当" },
+  { key: "facilities", label: "施設" },
+  { key: "calendarEvents", label: "予定" },
+  { key: "facilityReservations", label: "施設予約" },
+  { key: "notices", label: "掲示・回覧" },
+  { key: "noticeAcknowledgements", label: "既読確認" },
+  { key: "workflowRequests", label: "申請" },
+  { key: "documents", label: "文書" },
+  { key: "documentVersions", label: "文書版履歴" },
+] as const;
+
+export type OperationsBackupDataKey =
+  (typeof operationsBackupDataSetDefinitions)[number]["key"];
+
 export type OperationAuditEventSummary = {
   id: string;
   action: string;
@@ -82,9 +103,79 @@ export type OperationsBackupSnapshot = {
   data: Record<string, unknown[]>;
 };
 
+export type OperationImportIssueSeverity = "INFO" | "WARNING" | "ERROR";
+
+export type OperationImportIssue = {
+  key: string;
+  label: string;
+  detail: string;
+  severity: OperationImportIssueSeverity;
+};
+
+export type OperationImportValidationStatus =
+  | "READY"
+  | "WARNING"
+  | "BLOCKED";
+
+export type OperationImportTableStatus =
+  | "MATCH"
+  | "CHANGED"
+  | "MISSING";
+
+export type OperationImportTableSummary = {
+  key: OperationsBackupDataKey;
+  label: string;
+  incomingCount: number;
+  currentCount: number;
+  declaredCount: number | null;
+  status: OperationImportTableStatus;
+};
+
+export type OperationsImportCandidate = {
+  schemaVersion: number | null;
+  exportedAt: string | null;
+  tenant: {
+    code: string | null;
+    name: string | null;
+    displayName: string | null;
+    timezone: string | null;
+    type: TenantTypeValue | null;
+  };
+  counts: Record<string, number>;
+  data: Record<string, unknown[]>;
+  unknownDataKeys: string[];
+  validationIssues: OperationImportIssue[];
+};
+
+export type OperationsImportValidationReport = {
+  status: OperationImportValidationStatus;
+  generatedAt: string;
+  schemaVersion: number | null;
+  exportedAt: string | null;
+  tenant: OperationsImportCandidate["tenant"];
+  currentTenant: {
+    code: string;
+    name: string;
+  };
+  totalIncomingRecords: number;
+  totalCurrentRecords: number;
+  issues: OperationImportIssue[];
+  tables: OperationImportTableSummary[];
+};
+
 export type OperationsApiResponse =
   | {
       data: OperationsSnapshot;
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type OperationsImportValidationApiResponse =
+  | {
+      data: OperationsImportValidationReport;
       source: "database";
     }
   | {

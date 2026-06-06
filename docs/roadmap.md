@@ -40,6 +40,6 @@
 - Operations health console
 - Tenant operations export
 - Backup and restore
-- Import/export
+- Import/export validation
 - Monitoring
 - Security hardening checklist

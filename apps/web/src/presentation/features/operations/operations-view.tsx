@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import {
   Activity,
   AlertCircle,
@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock3,
   Database,
+  FileCheck2,
   FileDown,
   History,
   RefreshCw,
@@ -15,6 +16,7 @@ import {
   ServerCog,
   ShieldCheck,
   TriangleAlert,
+  Upload,
   UsersRound,
   XCircle,
 } from "lucide-react";
@@ -22,7 +24,10 @@ import type {
   OperationAuditEventSummary,
   OperationHealthCheck,
   OperationHealthStatus,
+  OperationImportIssue,
+  OperationImportTableStatus,
   OperationMetric,
+  OperationsImportValidationReport,
   OperationsSnapshot,
 } from "@/application/operations/types";
 import { EmptyState } from "@/presentation/components/empty-state";
@@ -40,11 +45,13 @@ import {
 export function OperationsView() {
   const {
     exportPath,
+    importValidationState,
     loadOperations,
     operationsState,
     saveTenantProfile,
     tenantForm,
     updateTenantForm,
+    validateImportFile,
   } = useOperationsConsole();
   const snapshot = operationsState.snapshot;
   const timezone = snapshot?.tenant.timezone ?? "Asia/Tokyo";
@@ -204,7 +211,12 @@ export function OperationsView() {
           )}
         </section>
 
-        <OperationBackupPanel snapshot={snapshot} />
+        <OperationBackupPanel
+          importValidationState={importValidationState}
+          onValidateImportFile={validateImportFile}
+          snapshot={snapshot}
+          timezone={timezone}
+        />
 
         <section className="panel operationsHealthPanel">
           <div className="panelHeader">
@@ -279,10 +291,27 @@ function OperationMetricCard({ metric }: { metric: OperationMetric }) {
 }
 
 function OperationBackupPanel({
+  importValidationState,
+  onValidateImportFile,
   snapshot,
+  timezone,
 }: {
+  importValidationState: ReturnType<
+    typeof useOperationsConsole
+  >["importValidationState"];
+  onValidateImportFile: (file: File) => Promise<void>;
   snapshot: OperationsSnapshot | null;
+  timezone: string;
 }) {
+  async function selectImportFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      await onValidateImportFile(file);
+      event.currentTarget.value = "";
+    }
+  }
+
   return (
     <section className="panel operationsBackupPanel">
       <div className="panelHeader">
@@ -316,6 +345,52 @@ function OperationBackupPanel({
             <FileDown aria-hidden="true" size={17} />
             <span>ダウンロード</span>
           </a>
+
+          <div className="operationImportBox">
+            <div className="operationImportHeader">
+              <div>
+                <p className="sectionLabel">Restore</p>
+                <h3>復元前チェック</h3>
+              </div>
+              <label
+                className={`textButton operationImportUpload ${
+                  importValidationState.status === "validating"
+                    ? "disabled"
+                    : ""
+                }`}
+              >
+                <Upload aria-hidden="true" size={17} />
+                <span>
+                  {importValidationState.status === "validating"
+                    ? "検査中"
+                    : "JSONを選択"}
+                </span>
+                <input
+                  accept="application/json,.json"
+                  className="srOnly"
+                  disabled={importValidationState.status === "validating"}
+                  onChange={selectImportFile}
+                  type="file"
+                />
+              </label>
+            </div>
+
+            {importValidationState.status === "error" &&
+              importValidationState.message && (
+                <div className="operationImportAlert" role="alert">
+                  <AlertCircle aria-hidden="true" size={17} />
+                  <p>{importValidationState.message}</p>
+                </div>
+              )}
+
+            {importValidationState.report && (
+              <OperationImportReport
+                fileName={importValidationState.fileName}
+                report={importValidationState.report}
+                timezone={timezone}
+              />
+            )}
+          </div>
         </div>
       ) : (
         <EmptyState
@@ -324,6 +399,84 @@ function OperationBackupPanel({
         />
       )}
     </section>
+  );
+}
+
+function OperationImportReport({
+  fileName,
+  report,
+  timezone,
+}: {
+  fileName: string | null;
+  report: OperationsImportValidationReport;
+  timezone: string;
+}) {
+  const status = getImportStatusMeta(report.status);
+
+  return (
+    <div className={`operationImportReport ${status.level}`}>
+      <div className="operationImportStatus">
+        <FileCheck2 aria-hidden="true" size={20} />
+        <div>
+          <span>{fileName ?? "選択ファイル"}</span>
+          <strong>{status.label}</strong>
+          <p>
+            {report.tenant.code ?? "tenant未設定"} /{" "}
+            {formatFullDateTime(report.generatedAt, timezone)}
+          </p>
+        </div>
+      </div>
+
+      <div className="operationImportTotals" aria-label="インポート件数">
+        <div>
+          <span>読込対象</span>
+          <strong>{formatNumber(report.totalIncomingRecords)}</strong>
+        </div>
+        <div>
+          <span>現在件数</span>
+          <strong>{formatNumber(report.totalCurrentRecords)}</strong>
+        </div>
+      </div>
+
+      {report.issues.length > 0 && (
+        <div className="operationImportIssues">
+          {report.issues.map((issue) => (
+            <OperationImportIssueItem issue={issue} key={issue.key} />
+          ))}
+        </div>
+      )}
+
+      <div className="operationImportTables">
+        {report.tables.map((table) => (
+          <div className="operationImportTableRow" key={table.key}>
+            <span>{table.label}</span>
+            <strong>{getImportTableStatusLabel(table.status)}</strong>
+            <small>
+              {formatNumber(table.incomingCount)} /{" "}
+              {formatNumber(table.currentCount)}
+            </small>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OperationImportIssueItem({
+  issue,
+}: {
+  issue: OperationImportIssue;
+}) {
+  const severity = getImportIssueMeta(issue.severity);
+
+  return (
+    <article className={`operationImportIssue ${severity.level}`}>
+      <span>{severity.label}</span>
+      <div>
+        <strong>{issue.label}</strong>
+        <p>{issue.detail}</p>
+      </div>
+    </article>
   );
 }
 
@@ -433,6 +586,62 @@ function getHealthLabel(status: OperationHealthStatus) {
   }
 
   return "確認";
+}
+
+function getImportStatusMeta(
+  status: OperationsImportValidationReport["status"],
+) {
+  if (status === "READY") {
+    return {
+      label: "検査OK",
+      level: "ready",
+    };
+  }
+
+  if (status === "WARNING") {
+    return {
+      label: "注意あり",
+      level: "warning",
+    };
+  }
+
+  return {
+    label: "ブロック",
+    level: "blocked",
+  };
+}
+
+function getImportIssueMeta(severity: OperationImportIssue["severity"]) {
+  if (severity === "ERROR") {
+    return {
+      label: "ERROR",
+      level: "error",
+    };
+  }
+
+  if (severity === "WARNING") {
+    return {
+      label: "WARN",
+      level: "warning",
+    };
+  }
+
+  return {
+    label: "INFO",
+    level: "info",
+  };
+}
+
+function getImportTableStatusLabel(status: OperationImportTableStatus) {
+  if (status === "MATCH") {
+    return "一致";
+  }
+
+  if (status === "MISSING") {
+    return "不足";
+  }
+
+  return "差分";
 }
 
 function createLoadingMetrics(): OperationMetric[] {
