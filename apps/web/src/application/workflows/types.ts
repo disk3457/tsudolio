@@ -24,6 +24,7 @@ export type WorkflowRequestSummary = {
   id: string;
   title: string;
   category: string;
+  description: string | null;
   status: WorkflowStatusValue;
   statusLabel: string;
   tone: WorkflowStatusTone;
@@ -46,18 +47,32 @@ export type WorkflowSnapshot = {
     timezone: string;
   };
   canApprove: boolean;
+  categories: string[];
+  organizationUnits: WorkflowOption[];
   pendingRequests: WorkflowRequestSummary[];
   recentRequests: WorkflowRequestSummary[];
+  myRequests: WorkflowRequestSummary[];
   stats: {
     pending: number;
     overdue: number;
     highPriority: number;
     decidedToday: number;
+    myDrafts: number;
   };
 };
 
 export type WorkflowDecisionInput = {
   status: "APPROVED" | "REJECTED" | "RETURNED";
+};
+
+export type WorkflowRequestInput = {
+  title: string;
+  category: string;
+  description: string | null;
+  organizationUnitId: string | null;
+  priority: WorkflowPriorityValue;
+  dueAt: string | null;
+  action: "DRAFT" | "SUBMIT";
 };
 
 export type WorkflowsApiResponse =

@@ -1,4 +1,7 @@
-import type { WorkflowSnapshot } from "@/application/workflows/types";
+import type {
+  WorkflowPriorityValue,
+  WorkflowSnapshot,
+} from "@/application/workflows/types";
 
 export type WorkflowLoadState = {
   snapshot: WorkflowSnapshot | null;
@@ -7,4 +10,15 @@ export type WorkflowLoadState = {
   updatedAt: string | null;
 };
 
-export type WorkflowTab = "pending" | "recent";
+export type WorkflowTab = "pending" | "mine" | "recent";
+
+export type WorkflowFormState = {
+  title: string;
+  category: string;
+  description: string;
+  organizationUnitId: string;
+  priority: WorkflowPriorityValue;
+  dueAt: string;
+};
+
+export type WorkflowSaveAction = "DRAFT" | "SUBMIT";

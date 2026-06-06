@@ -197,6 +197,7 @@
   }
 
   .noticeBodyField,
+  .workflowDescriptionField,
   .noticeAckControl {
     grid-column: auto;
   }
