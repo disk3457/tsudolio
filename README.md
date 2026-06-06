@@ -80,4 +80,4 @@ docker-compose.yml     local PostgreSQL, MinIO, and Mailpit
 
 ## Current Status
 
-This repository is moving from project bootstrap into the persistence layer. The web dashboard exists, and PostgreSQL/Prisma now provide the first database schema, seed tenant, health check, and dashboard data API.
+This repository now includes the core groupware workflows, document registry, audit trail, and the first operations console. PostgreSQL/Prisma back the local tenant, organization, workflow, document, security, and operations APIs.

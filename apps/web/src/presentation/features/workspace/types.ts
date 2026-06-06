@@ -7,6 +7,7 @@ export type ViewKey =
   | "workflow"
   | "organization"
   | "documents"
+  | "operations"
   | "security"
   | "settings";
 

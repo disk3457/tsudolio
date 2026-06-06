@@ -37,6 +37,8 @@
 ## Milestone 4: Operations
 
 - Admin console
+- Operations health console
+- Tenant operations export
 - Backup and restore
 - Import/export
 - Monitoring

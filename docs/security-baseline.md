@@ -94,6 +94,9 @@
 - Document directory and access recording require `document.read`; document
   create, update, and delete require `document.manage`. Document access records
   tenant-scoped audit events and returns storage metadata only.
+- Operations console and tenant profile changes require `tenant.manage`. Tenant
+  profile changes write tenant-scoped audit events, and the JSON operations
+  export excludes credentials, Passkeys, recovery codes, and reset tokens.
 - Creating or updating a system administrator requires `tenant.manage` in
   addition to organization user-management permission.
 - Successful schedule, organization, and document mutations write
@@ -117,7 +120,8 @@ Permission codes currently used by the API boundary:
 - `document.read`: view document registry records and record document access
 - `workflow.approve`: view the full approval queue and approve, reject, or
   return pending workflow requests
-- `tenant.manage`: seeded for the next administration steps
+- `tenant.manage`: tenant-wide policy, high privilege user administration,
+  audit log operations, and operations console administration
 
 ## Explicit Non-Goals for the First Public MVP
 

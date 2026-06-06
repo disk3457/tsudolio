@@ -1,0 +1,258 @@
+.operationsWorkspace {
+  align-content: start;
+}
+
+.operationsStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.operationMetric {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 126px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow);
+}
+
+.operationMetric svg {
+  flex: 0 0 auto;
+  color: var(--blue);
+}
+
+.operationMetric.good svg {
+  color: var(--cyan);
+}
+
+.operationMetric.warning svg {
+  color: var(--amber);
+}
+
+.operationMetric.danger svg {
+  color: var(--rose);
+}
+
+.operationMetric span,
+.operationBackupMetric span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.operationMetric strong,
+.operationBackupMetric strong {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 8px;
+  color: var(--blue-deep);
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.operationMetric small,
+.operationBackupMetric small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.operationMetric p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.operationsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.operationsTenantPanel {
+  grid-column: span 2;
+}
+
+.operationsBackupPanel,
+.operationsHealthPanel,
+.operationsEventsPanel {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.operationBackupBody {
+  display: grid;
+  gap: 13px;
+}
+
+.operationBackupMetric {
+  min-height: 86px;
+  padding: 13px;
+  border: 1px solid #cfe8d9;
+  border-radius: 8px;
+  background: #f3fbf6;
+}
+
+.operationBackupBody code {
+  display: block;
+  padding: 9px 10px;
+  border: 1px solid #d9e5ef;
+  border-radius: 8px;
+  color: var(--blue-deep);
+  background: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.operationBackupIncludes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.operationBackupIncludes span,
+.operationSeverity,
+.operationHealthHeading span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.operationBackupIncludes span {
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+}
+
+.operationHealthList,
+.operationEventList {
+  display: grid;
+  gap: 10px;
+}
+
+.operationHealthItem {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.operationHealthItem svg {
+  margin-top: 2px;
+}
+
+.operationHealthItem.ok svg,
+.operationHealthItem.ok .operationHealthHeading span {
+  color: #08786f;
+}
+
+.operationHealthItem.warning svg,
+.operationHealthItem.warning .operationHealthHeading span {
+  color: var(--amber);
+}
+
+.operationHealthItem.critical svg,
+.operationHealthItem.critical .operationHealthHeading span {
+  color: var(--rose);
+}
+
+.operationHealthHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.operationHealthHeading strong {
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.operationHealthHeading span {
+  background: #ffffff;
+}
+
+.operationHealthItem p,
+.operationEventItem p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.operationHealthItem small {
+  display: block;
+  margin-top: 8px;
+  color: var(--blue-deep);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.operationEventItem {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) minmax(118px, auto);
+  gap: 11px;
+  align-items: start;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.operationEventItem strong {
+  color: var(--ink);
+}
+
+.operationEventItem time {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.operationSeverity.notice {
+  color: #08786f;
+  background: var(--cyan-soft);
+}
+
+.operationSeverity.info {
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+}
+
+.operationSeverity.warning {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.operationSeverity.critical {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.viewAlert.success {
+  border-color: #ccefe9;
+  color: #08786f;
+  background: #f1fffc;
+}

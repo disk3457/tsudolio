@@ -4,6 +4,7 @@ import {
   FileText,
   LayoutDashboard,
   MessageSquareText,
+  ServerCog,
   Settings,
   ShieldCheck,
   UsersRound,
@@ -52,6 +53,13 @@ export const navItems: NavItem[] = [
     description: "共有文書、規程、申請添付を版管理と保管期限つきで扱います。",
     label: "文書",
     icon: FileText,
+  },
+  {
+    key: "operations",
+    title: "運用管理",
+    description: "テナント設定、バックアップ、運用ヘルスを管理します。",
+    label: "運用",
+    icon: ServerCog,
   },
   {
     key: "security",
