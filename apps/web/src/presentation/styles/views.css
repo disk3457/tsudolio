@@ -4,5 +4,6 @@
 @import "./views/workflows.css";
 @import "./views/organization.css";
 @import "./views/documents.css";
+@import "./views/operations.css";
 @import "./views/security.css";
 @import "./views/settings.css";

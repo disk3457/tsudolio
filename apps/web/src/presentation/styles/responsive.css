@@ -25,6 +25,7 @@
     .facilityMetrics,
     .noticeStats,
     .workflowStats,
+    .operationsStats,
     .orgGrid,
     .settingsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -40,6 +41,12 @@
 
   .viewGrid {
     grid-template-columns: 1fr;
+  }
+
+  .operationsGrid,
+  .operationsTenantPanel {
+    grid-template-columns: 1fr;
+    grid-column: auto;
   }
 
   .noticeWorkspace {
@@ -146,6 +153,7 @@
     .facilityMetrics,
     .noticeStats,
     .workflowStats,
+    .operationsStats,
     .orgGrid,
     .settingsGrid {
     grid-template-columns: 1fr;
@@ -216,8 +224,14 @@
 
   .workflowMeta,
   .documentVersionMeta,
-  .workflowHistoryItem {
+  .workflowHistoryItem,
+  .operationHealthItem,
+  .operationEventItem {
     grid-template-columns: 1fr;
+  }
+
+  .operationEventItem time {
+    text-align: left;
   }
 
   .notificationItem {
@@ -278,7 +292,8 @@
   .recoveryCodeVault .textButton,
   .toolbarActions .textButton,
   .toolbarActions .iconButton,
-  .viewToolbar .textButton {
+  .viewToolbar .textButton,
+  .operationBackupBody .textButton {
     width: 100%;
   }
 

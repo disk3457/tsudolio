@@ -16,6 +16,7 @@ import type { ViewKey } from "@/presentation/features/workspace/types";
 import { DashboardView } from "@/presentation/features/dashboard/dashboard-view";
 import { DocumentsView } from "@/presentation/features/documents/documents-view";
 import { NoticesView } from "@/presentation/features/notices/notices-view";
+import { OperationsView } from "@/presentation/features/operations/operations-view";
 import { OrganizationView } from "@/presentation/features/organization/organization-view";
 import { ScheduleView } from "@/presentation/features/schedule/schedule-view";
 import { SecurityView } from "@/presentation/features/security/security-view";
@@ -241,6 +242,7 @@ export function TsudolioWorkspace() {
         {activeView === "workflow" && <WorkflowView />}
         {activeView === "organization" && <OrganizationView />}
         {activeView === "documents" && <DocumentsView />}
+        {activeView === "operations" && <OperationsView />}
         {activeView === "security" && (
           <SecurityView dashboardState={dashboardState} />
         )}
