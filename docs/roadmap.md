@@ -42,4 +42,4 @@
 - Backup and restore
 - Import/export validation
 - Monitoring
-- Security hardening checklist
+- Security hardening checklist view

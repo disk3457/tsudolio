@@ -44,7 +44,8 @@
   }
 
   .operationsGrid,
-  .operationsTenantPanel {
+  .operationsTenantPanel,
+  .operationsHardeningPanel {
     grid-template-columns: 1fr;
     grid-column: auto;
   }
