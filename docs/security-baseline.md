@@ -97,6 +97,12 @@
 - Operations console and tenant profile changes require `tenant.manage`. Tenant
   profile changes write tenant-scoped audit events, and the JSON operations
   export excludes credentials, Passkeys, recovery codes, and reset tokens.
+- The operations console includes a security hardening checklist for
+  `tenant.manage` users. It evaluates session-secret readiness, administrator
+  count, privileged Passkey policy and coverage, audit retention, backup
+  export readiness, password-reset mail delivery settings, OIDC provider
+  configuration, and recent warning-or-higher audit events without exposing
+  secret values.
 - Creating or updating a system administrator requires `tenant.manage` in
   addition to organization user-management permission.
 - Successful schedule, organization, and document mutations write

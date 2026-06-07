@@ -48,6 +48,30 @@ export type OperationHealthCheck = {
   checkedAt: string;
 };
 
+export type OperationHardeningStatus =
+  | "OK"
+  | "ATTENTION"
+  | "ACTION_REQUIRED";
+
+export type OperationHardeningItem = {
+  key: string;
+  label: string;
+  status: OperationHardeningStatus;
+  detail: string;
+  evidence: string;
+};
+
+export type OperationHardeningChecklist = {
+  status: OperationHardeningStatus;
+  score: number;
+  completedCount: number;
+  attentionCount: number;
+  actionRequiredCount: number;
+  totalCount: number;
+  generatedAt: string;
+  items: OperationHardeningItem[];
+};
+
 export type OperationBackupSummary = {
   endpoint: string;
   filename: string;
@@ -91,6 +115,7 @@ export type OperationsSnapshot = {
   tenant: TenantProfile;
   metrics: OperationMetric[];
   healthChecks: OperationHealthCheck[];
+  hardening: OperationHardeningChecklist;
   backup: OperationBackupSummary;
   recentEvents: OperationAuditEventSummary[];
 };

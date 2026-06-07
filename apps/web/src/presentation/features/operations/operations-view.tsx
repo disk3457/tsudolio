@@ -11,6 +11,7 @@ import {
   FileCheck2,
   FileDown,
   History,
+  ListChecks,
   RefreshCw,
   Save,
   ServerCog,
@@ -22,6 +23,9 @@ import {
 } from "lucide-react";
 import type {
   OperationAuditEventSummary,
+  OperationHardeningChecklist,
+  OperationHardeningItem,
+  OperationHardeningStatus,
   OperationHealthCheck,
   OperationHealthStatus,
   OperationImportIssue,
@@ -243,6 +247,12 @@ export function OperationsView() {
             )}
           </div>
         </section>
+
+        <OperationHardeningPanel
+          checklist={snapshot?.hardening ?? null}
+          isLoading={operationsState.status === "loading"}
+          timezone={timezone}
+        />
 
         <section className="panel operationsEventsPanel">
           <div className="panelHeader">
@@ -504,6 +514,92 @@ function OperationHealthItem({
   );
 }
 
+function OperationHardeningPanel({
+  checklist,
+  isLoading,
+  timezone,
+}: {
+  checklist: OperationHardeningChecklist | null;
+  isLoading: boolean;
+  timezone: string;
+}) {
+  const status = getHardeningStatusMeta(checklist?.status ?? "ATTENTION");
+
+  return (
+    <section className="panel operationsHardeningPanel">
+      <div className="panelHeader">
+        <div>
+          <p className="sectionLabel">Hardening</p>
+          <h2>セキュリティ強化チェックリスト</h2>
+        </div>
+        <ListChecks aria-hidden="true" className="panelIcon" size={21} />
+      </div>
+
+      {checklist ? (
+        <>
+          <div className={`operationHardeningSummary ${status.level}`}>
+            <div className="operationHardeningScore">
+              <span>{status.label}</span>
+              <strong>
+                {checklist.score}
+                <small>%</small>
+              </strong>
+              <p>{formatFullDateTime(checklist.generatedAt, timezone)}</p>
+            </div>
+            <div className="operationHardeningCounts">
+              <div>
+                <span>完了</span>
+                <strong>{formatNumber(checklist.completedCount)}</strong>
+              </div>
+              <div>
+                <span>確認</span>
+                <strong>{formatNumber(checklist.attentionCount)}</strong>
+              </div>
+              <div>
+                <span>要対応</span>
+                <strong>{formatNumber(checklist.actionRequiredCount)}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="operationHardeningList">
+            {checklist.items.map((item) => (
+              <OperationHardeningChecklistItem item={item} key={item.key} />
+            ))}
+          </div>
+        </>
+      ) : (
+        <EmptyState
+          description="強化項目を集計しています。"
+          title={isLoading ? "確認中" : "表示できるチェック項目がありません"}
+        />
+      )}
+    </section>
+  );
+}
+
+function OperationHardeningChecklistItem({
+  item,
+}: {
+  item: OperationHardeningItem;
+}) {
+  const status = getHardeningStatusMeta(item.status);
+
+  return (
+    <article className={`operationHardeningItem ${status.level}`}>
+      <OperationHardeningIcon status={item.status} />
+      <div>
+        <div className="operationHardeningHeading">
+          <strong>{item.label}</strong>
+          <span>{status.label}</span>
+        </div>
+        <p>{item.detail}</p>
+        <small>{item.evidence}</small>
+      </div>
+    </article>
+  );
+}
+
 function OperationEventItem({
   event,
   timezone,
@@ -576,6 +672,22 @@ function OperationHealthIcon({ status }: { status: OperationHealthStatus }) {
   return <TriangleAlert aria-hidden="true" size={19} />;
 }
 
+function OperationHardeningIcon({
+  status,
+}: {
+  status: OperationHardeningStatus;
+}) {
+  if (status === "OK") {
+    return <CheckCircle2 aria-hidden="true" size={19} />;
+  }
+
+  if (status === "ACTION_REQUIRED") {
+    return <XCircle aria-hidden="true" size={19} />;
+  }
+
+  return <TriangleAlert aria-hidden="true" size={19} />;
+}
+
 function getHealthLabel(status: OperationHealthStatus) {
   if (status === "OK") {
     return "OK";
@@ -586,6 +698,27 @@ function getHealthLabel(status: OperationHealthStatus) {
   }
 
   return "確認";
+}
+
+function getHardeningStatusMeta(status: OperationHardeningStatus) {
+  if (status === "OK") {
+    return {
+      label: "OK",
+      level: "ok",
+    };
+  }
+
+  if (status === "ACTION_REQUIRED") {
+    return {
+      label: "要対応",
+      level: "action-required",
+    };
+  }
+
+  return {
+    label: "確認",
+    level: "attention",
+  };
 }
 
 function getImportStatusMeta(
