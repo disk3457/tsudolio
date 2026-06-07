@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type {
   OperationsApiResponse,
+  OperationsImportValidationApiResponse,
+  OperationsImportValidationReport,
   OperationsLoadState,
 } from "@/application/operations/types";
 import {
@@ -23,6 +25,13 @@ export function useOperationsConsole() {
   const [tenantForm, setTenantForm] = useState<TenantProfileFormState>(
     defaultTenantProfileForm,
   );
+  const [importValidationState, setImportValidationState] =
+    useState<OperationImportValidationState>({
+      fileName: null,
+      message: null,
+      report: null,
+      status: "idle",
+    });
 
   const loadOperations = useCallback(async (signal?: AbortSignal) => {
     setOperationsState((current) => ({
@@ -113,6 +122,66 @@ export function useOperationsConsole() {
     }
   }, [tenantForm]);
 
+  const validateImportFile = useCallback(
+    async (file: File) => {
+      setImportValidationState({
+        fileName: file.name,
+        message: null,
+        report: null,
+        status: "validating",
+      });
+
+      try {
+        const text = await file.text();
+        let payload: unknown;
+
+        try {
+          payload = JSON.parse(text);
+        } catch {
+          throw new Error("JSONファイルの形式が正しくありません。");
+        }
+
+        const response = await fetch("/api/operations/import", {
+          body: JSON.stringify(payload),
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          method: "POST",
+        });
+        const body =
+          (await response.json()) as OperationsImportValidationApiResponse;
+
+        if (!response.ok || !("data" in body)) {
+          throw new Error(
+            "message" in body
+              ? body.message
+              : "運用エクスポートJSONを検査できませんでした。",
+          );
+        }
+
+        setImportValidationState({
+          fileName: file.name,
+          message: getImportValidationMessage(body.data.status),
+          report: body.data,
+          status: "ready",
+        });
+        void loadOperations();
+      } catch (error) {
+        setImportValidationState((current) => ({
+          ...current,
+          message:
+            error instanceof Error
+              ? error.message
+              : "運用エクスポートJSONを検査できませんでした。",
+          report: null,
+          status: "error",
+        }));
+      }
+    },
+    [loadOperations],
+  );
+
   function updateTenantForm<Field extends keyof TenantProfileFormState>(
     field: Field,
     value: TenantProfileFormState[Field],
@@ -135,10 +204,33 @@ export function useOperationsConsole() {
 
   return {
     exportPath: operationsState.snapshot?.backup.endpoint ?? "/api/operations/export",
+    importValidationState,
     loadOperations,
     operationsState,
     saveTenantProfile,
     tenantForm,
     updateTenantForm,
+    validateImportFile,
   };
+}
+
+type OperationImportValidationState = {
+  fileName: string | null;
+  message: string | null;
+  report: OperationsImportValidationReport | null;
+  status: "idle" | "validating" | "ready" | "error";
+};
+
+function getImportValidationMessage(
+  status: OperationsImportValidationReport["status"],
+) {
+  if (status === "READY") {
+    return "復元前チェックは完了しました。";
+  }
+
+  if (status === "WARNING") {
+    return "復元前チェックは完了しました。注意事項を確認してください。";
+  }
+
+  return "復元前チェックでブロック項目が見つかりました。";
 }
