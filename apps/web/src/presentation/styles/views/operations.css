@@ -286,6 +286,182 @@
   line-height: 1;
 }
 
+.operationRestorePlan {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #d9e5ef;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.operationRestorePlan.ready {
+  border-color: #ccefe9;
+  background: #f7fffd;
+}
+
+.operationRestorePlan.warning {
+  border-color: #f3dda3;
+  background: #fffaf0;
+}
+
+.operationRestorePlan.blocked {
+  border-color: #ffd2d7;
+  background: #fff8f8;
+}
+
+.operationRestorePlanHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.operationRestorePlanHeader > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--blue-deep);
+  background: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.operationRestorePlan.blocked .operationRestorePlanHeader > span {
+  color: var(--rose);
+}
+
+.operationRestorePlanHeader div > span,
+.operationRestorePlanFacts span {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.operationRestorePlanHeader strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.operationRestorePlanHeader p {
+  margin: 6px 0 0;
+  color: var(--rose);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.operationRestorePlanFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.operationRestorePlanFacts div {
+  min-height: 58px;
+  padding: 9px;
+  border: 1px solid #d9e5ef;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.operationRestorePlanFacts strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--blue-deep);
+  font-size: 1rem;
+}
+
+.operationRestoreSteps {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.operationRestoreStep {
+  display: grid;
+  gap: 7px;
+  min-height: 84px;
+  padding: 10px;
+  border: 1px solid #e5edf4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.operationRestoreStep.ready {
+  border-color: #ccefe9;
+}
+
+.operationRestoreStep.review {
+  border-color: #f3dda3;
+}
+
+.operationRestoreStep.blocked {
+  border-color: #ffd2d7;
+}
+
+.operationRestoreStepHeading {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.operationRestoreStepHeading span,
+.operationRestoreStepMeta span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.operationRestoreStep.review .operationRestoreStepMeta span:nth-child(2) {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.operationRestoreStep.blocked .operationRestoreStepMeta span:nth-child(2) {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.operationRestoreStepHeading strong {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.operationRestoreStep p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.operationRestoreStepMeta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, auto));
+  gap: 6px;
+  justify-content: start;
+}
+
 .operationImportIssues {
   display: grid;
   gap: 8px;
@@ -679,8 +855,15 @@
 
   .operationImportTotals,
   .operationImportIssue,
+  .operationRestorePlanHeader,
+  .operationRestorePlanFacts,
+  .operationRestoreStepHeading,
   .operationImportTableRow {
     grid-template-columns: 1fr;
+  }
+
+  .operationRestoreStepMeta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .operationImportTableRow strong,

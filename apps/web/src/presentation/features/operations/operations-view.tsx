@@ -31,6 +31,7 @@ import type {
   OperationImportIssue,
   OperationImportTableStatus,
   OperationMetric,
+  OperationRestorePlanStep,
   OperationsImportValidationReport,
   OperationsSnapshot,
 } from "@/application/operations/types";
@@ -448,6 +449,11 @@ function OperationImportReport({
         </div>
       </div>
 
+      <OperationRestorePlanView
+        report={report}
+        steps={report.restorePlan.steps}
+      />
+
       {report.issues.length > 0 && (
         <div className="operationImportIssues">
           {report.issues.map((issue) => (
@@ -469,6 +475,71 @@ function OperationImportReport({
         ))}
       </div>
     </div>
+  );
+}
+
+function OperationRestorePlanView({
+  report,
+  steps,
+}: {
+  report: OperationsImportValidationReport;
+  steps: OperationRestorePlanStep[];
+}) {
+  const status = getImportStatusMeta(report.restorePlan.status);
+
+  return (
+    <div className={`operationRestorePlan ${status.level}`}>
+      <div className="operationRestorePlanHeader">
+        <div>
+          <span>復元計画</span>
+          <strong>{report.restorePlan.summary}</strong>
+          {report.restorePlan.blockedReason && (
+            <p>{report.restorePlan.blockedReason}</p>
+          )}
+        </div>
+        <span>{report.restorePlan.canRestore ? "実行可能" : "停止"}</span>
+      </div>
+
+      <div className="operationRestorePlanFacts">
+        <div>
+          <span>予定件数</span>
+          <strong>{formatNumber(report.restorePlan.estimatedRecordCount)}</strong>
+        </div>
+        <div>
+          <span>置換</span>
+          <strong>{report.restorePlan.destructive ? "あり" : "なし"}</strong>
+        </div>
+      </div>
+
+      <div className="operationRestoreSteps">
+        {steps.map((step) => (
+          <OperationRestorePlanStepItem key={step.key} step={step} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OperationRestorePlanStepItem({
+  step,
+}: {
+  step: OperationRestorePlanStep;
+}) {
+  const status = getRestorePlanStepStatusMeta(step.status);
+
+  return (
+    <article className={`operationRestoreStep ${status.level}`}>
+      <div className="operationRestoreStepHeading">
+        <span>{getRestorePlanPhaseLabel(step.phase)}</span>
+        <strong>{step.label}</strong>
+      </div>
+      <p>{step.detail}</p>
+      <div className="operationRestoreStepMeta">
+        <span>{getRestorePlanActionLabel(step.action)}</span>
+        <span>{status.label}</span>
+        <span>{formatNumber(step.recordCount)}件</span>
+      </div>
+    </article>
   );
 }
 
@@ -775,6 +846,63 @@ function getImportTableStatusLabel(status: OperationImportTableStatus) {
   }
 
   return "差分";
+}
+
+function getRestorePlanPhaseLabel(phase: OperationRestorePlanStep["phase"]) {
+  if (phase === "PRECHECK") {
+    return "検査";
+  }
+
+  if (phase === "PREPARE") {
+    return "準備";
+  }
+
+  if (phase === "VERIFY") {
+    return "検証";
+  }
+
+  return "復元";
+}
+
+function getRestorePlanActionLabel(
+  action: OperationRestorePlanStep["action"],
+) {
+  if (action === "REPLACE") {
+    return "置換";
+  }
+
+  if (action === "REVIEW") {
+    return "確認";
+  }
+
+  if (action === "SKIP") {
+    return "保持";
+  }
+
+  return "反映";
+}
+
+function getRestorePlanStepStatusMeta(
+  status: OperationRestorePlanStep["status"],
+) {
+  if (status === "READY") {
+    return {
+      label: "OK",
+      level: "ready",
+    };
+  }
+
+  if (status === "BLOCKED") {
+    return {
+      label: "停止",
+      level: "blocked",
+    };
+  }
+
+  return {
+    label: "確認",
+    level: "review",
+  };
 }
 
 function createLoadingMetrics(): OperationMetric[] {

@@ -80,4 +80,4 @@ docker-compose.yml     local PostgreSQL, MinIO, and Mailpit
 
 ## Current Status
 
-This repository now includes the core groupware workflows, document registry, audit trail, the first operations console, operations backup import validation, and an operations security hardening checklist. PostgreSQL/Prisma back the local tenant, organization, workflow, document, security, and operations APIs.
+This repository now includes the core groupware workflows, document registry, audit trail, the first operations console, operations backup import validation with restore planning, and an operations security hardening checklist. PostgreSQL/Prisma back the local tenant, organization, workflow, document, security, and operations APIs.

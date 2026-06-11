@@ -156,6 +156,44 @@ export type OperationImportTableSummary = {
   status: OperationImportTableStatus;
 };
 
+export type OperationRestorePlanPhase =
+  | "PRECHECK"
+  | "PREPARE"
+  | "RESTORE"
+  | "VERIFY";
+
+export type OperationRestorePlanAction =
+  | "SKIP"
+  | "UPSERT"
+  | "REPLACE"
+  | "REVIEW";
+
+export type OperationRestorePlanStepStatus =
+  | "READY"
+  | "REVIEW_REQUIRED"
+  | "BLOCKED";
+
+export type OperationRestorePlanStep = {
+  key: string;
+  phase: OperationRestorePlanPhase;
+  label: string;
+  detail: string;
+  action: OperationRestorePlanAction;
+  status: OperationRestorePlanStepStatus;
+  tableKey: OperationsBackupDataKey | null;
+  recordCount: number;
+};
+
+export type OperationRestorePlan = {
+  status: OperationImportValidationStatus;
+  summary: string;
+  canRestore: boolean;
+  destructive: boolean;
+  estimatedRecordCount: number;
+  blockedReason: string | null;
+  steps: OperationRestorePlanStep[];
+};
+
 export type OperationsImportCandidate = {
   schemaVersion: number | null;
   exportedAt: string | null;
@@ -186,6 +224,7 @@ export type OperationsImportValidationReport = {
   totalCurrentRecords: number;
   issues: OperationImportIssue[];
   tables: OperationImportTableSummary[];
+  restorePlan: OperationRestorePlan;
 };
 
 export type OperationsApiResponse =
