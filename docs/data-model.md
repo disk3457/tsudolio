@@ -46,7 +46,7 @@
   `PATCH /api/documents/:documentId`, `DELETE /api/documents/:documentId`,
   `POST /api/documents/:documentId/access`
 - Operations API: `GET /api/operations`, `PUT /api/operations`,
-  `GET /api/operations/export`
+  `GET /api/operations/export`, `POST /api/operations/import`
 
 ## Required Columns
 
