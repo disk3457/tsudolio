@@ -16,9 +16,13 @@ export function OperationsView() {
     importValidationState,
     loadOperations,
     operationsState,
+    restoreDryRunState,
+    runRestoreDryRun,
     saveTenantProfile,
+    selectCurrentBackupFile,
     tenantForm,
     updateTenantForm,
+    updateRestoreConfirmationToken,
     validateImportFile,
   } = useOperationsConsole();
   const snapshot = operationsState.snapshot;
@@ -81,7 +85,11 @@ export function OperationsView() {
 
         <OperationBackupPanel
           importValidationState={importValidationState}
+          onRunRestoreDryRun={runRestoreDryRun}
+          onSelectCurrentBackupFile={selectCurrentBackupFile}
+          onUpdateRestoreConfirmationToken={updateRestoreConfirmationToken}
           onValidateImportFile={validateImportFile}
+          restoreDryRunState={restoreDryRunState}
           snapshot={snapshot}
           timezone={timezone}
         />

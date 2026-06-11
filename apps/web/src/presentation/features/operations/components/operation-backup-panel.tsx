@@ -1,9 +1,18 @@
 import type { ChangeEvent } from "react";
-import { AlertCircle, Database, FileCheck2, FileDown, Upload } from "lucide-react";
+import {
+  AlertCircle,
+  Database,
+  FileCheck2,
+  FileDown,
+  PlayCircle,
+  ShieldCheck,
+  Upload,
+} from "lucide-react";
 import type {
   OperationImportIssue,
   OperationRestorePlanStep,
   OperationsImportValidationReport,
+  OperationsRestoreDryRunReport,
   OperationsSnapshot,
 } from "@/application/operations/types";
 import { EmptyState } from "@/presentation/components/empty-state";
@@ -21,15 +30,26 @@ import { formatFullDateTime, formatNumber } from "@/shared/formatters";
 type ImportValidationState = ReturnType<
   typeof useOperationsConsole
 >["importValidationState"];
+type RestoreDryRunState = ReturnType<
+  typeof useOperationsConsole
+>["restoreDryRunState"];
 
 export function OperationBackupPanel({
   importValidationState,
+  onRunRestoreDryRun,
+  onSelectCurrentBackupFile,
+  onUpdateRestoreConfirmationToken,
   onValidateImportFile,
+  restoreDryRunState,
   snapshot,
   timezone,
 }: {
   importValidationState: ImportValidationState;
+  onRunRestoreDryRun: () => Promise<void>;
+  onSelectCurrentBackupFile: (file: File) => Promise<void>;
+  onUpdateRestoreConfirmationToken: (value: string) => void;
   onValidateImportFile: (file: File) => Promise<void>;
+  restoreDryRunState: RestoreDryRunState;
   snapshot: OperationsSnapshot | null;
   timezone: string;
 }) {
@@ -38,6 +58,17 @@ export function OperationBackupPanel({
 
     if (file) {
       await onValidateImportFile(file);
+      event.currentTarget.value = "";
+    }
+  }
+
+  async function selectCurrentBackupFile(
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      await onSelectCurrentBackupFile(file);
       event.currentTarget.value = "";
     }
   }
@@ -116,7 +147,13 @@ export function OperationBackupPanel({
             {importValidationState.report && (
               <OperationImportReport
                 fileName={importValidationState.fileName}
+                onRunRestoreDryRun={onRunRestoreDryRun}
+                onSelectCurrentBackupFile={selectCurrentBackupFile}
+                onUpdateRestoreConfirmationToken={
+                  onUpdateRestoreConfirmationToken
+                }
                 report={importValidationState.report}
+                restoreDryRunState={restoreDryRunState}
                 timezone={timezone}
               />
             )}
@@ -134,11 +171,21 @@ export function OperationBackupPanel({
 
 function OperationImportReport({
   fileName,
+  onRunRestoreDryRun,
+  onSelectCurrentBackupFile,
+  onUpdateRestoreConfirmationToken,
   report,
+  restoreDryRunState,
   timezone,
 }: {
   fileName: string | null;
+  onRunRestoreDryRun: () => Promise<void>;
+  onSelectCurrentBackupFile: (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => Promise<void>;
+  onUpdateRestoreConfirmationToken: (value: string) => void;
   report: OperationsImportValidationReport;
+  restoreDryRunState: RestoreDryRunState;
   timezone: string;
 }) {
   const status = getImportStatusMeta(report.status);
@@ -173,6 +220,15 @@ function OperationImportReport({
         steps={report.restorePlan.steps}
       />
 
+      <OperationRestoreDryRunPanel
+        onRunRestoreDryRun={onRunRestoreDryRun}
+        onSelectCurrentBackupFile={onSelectCurrentBackupFile}
+        onUpdateRestoreConfirmationToken={onUpdateRestoreConfirmationToken}
+        report={report}
+        restoreDryRunState={restoreDryRunState}
+        timezone={timezone}
+      />
+
       {report.issues.length > 0 && (
         <div className="operationImportIssues">
           {report.issues.map((issue) => (
@@ -193,6 +249,166 @@ function OperationImportReport({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function OperationRestoreDryRunPanel({
+  onRunRestoreDryRun,
+  onSelectCurrentBackupFile,
+  onUpdateRestoreConfirmationToken,
+  report,
+  restoreDryRunState,
+  timezone,
+}: {
+  onRunRestoreDryRun: () => Promise<void>;
+  onSelectCurrentBackupFile: (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => Promise<void>;
+  onUpdateRestoreConfirmationToken: (value: string) => void;
+  report: OperationsImportValidationReport;
+  restoreDryRunState: RestoreDryRunState;
+  timezone: string;
+}) {
+  const expectedToken = createRestoreConfirmationToken(report);
+  const isRunning = restoreDryRunState.status === "running";
+  const canRun =
+    Boolean(expectedToken) &&
+    Boolean(restoreDryRunState.currentBackupPayload) &&
+    Boolean(restoreDryRunState.confirmationToken.trim()) &&
+    !isRunning;
+  const messageClass = getRestoreDryRunMessageClass(restoreDryRunState);
+
+  return (
+    <div className="operationRestoreDryRun">
+      <div className="operationRestoreDryRunHeader">
+        <ShieldCheck aria-hidden="true" size={20} />
+        <div>
+          <span>Dry-run</span>
+          <strong>復元実行前の安全確認</strong>
+          <p>
+            確認トークン <code>{expectedToken || "生成不可"}</code>
+          </p>
+        </div>
+      </div>
+
+      <div className="operationRestoreDryRunControls">
+        <label
+          className={`textButton operationImportUpload ${
+            isRunning ? "disabled" : ""
+          }`}
+        >
+          <Upload aria-hidden="true" size={17} />
+          <span>
+            {restoreDryRunState.currentBackupFileName ??
+              "現行JSONを選択"}
+          </span>
+          <input
+            accept="application/json,.json"
+            className="srOnly"
+            disabled={isRunning}
+            onChange={onSelectCurrentBackupFile}
+            type="file"
+          />
+        </label>
+
+        <label className="operationRestoreTokenField">
+          <span>確認トークン</span>
+          <input
+            autoCapitalize="off"
+            autoComplete="off"
+            disabled={isRunning}
+            onChange={(event) =>
+              onUpdateRestoreConfirmationToken(event.currentTarget.value)
+            }
+            placeholder={expectedToken}
+            spellCheck={false}
+            type="text"
+            value={restoreDryRunState.confirmationToken}
+          />
+        </label>
+
+        <button
+          className="textButton primary"
+          disabled={!canRun}
+          onClick={() => void onRunRestoreDryRun()}
+          type="button"
+        >
+          <PlayCircle aria-hidden="true" size={17} />
+          <span>{isRunning ? "実行中" : "ドライラン"}</span>
+        </button>
+      </div>
+
+      {restoreDryRunState.message && (
+        <div
+          className={`operationImportAlert ${messageClass}`}
+          role="status"
+        >
+          <AlertCircle aria-hidden="true" size={17} />
+          <p>{restoreDryRunState.message}</p>
+        </div>
+      )}
+
+      {restoreDryRunState.report && (
+        <OperationRestoreDryRunResult
+          report={restoreDryRunState.report}
+          timezone={timezone}
+        />
+      )}
+    </div>
+  );
+}
+
+function OperationRestoreDryRunResult({
+  report,
+  timezone,
+}: {
+  report: OperationsRestoreDryRunReport;
+  timezone: string;
+}) {
+  const status = getImportStatusMeta(report.currentBackup.status);
+
+  return (
+    <div
+      className={`operationRestoreDryRunResult ${
+        report.canProceed ? "ready" : "blocked"
+      }`}
+    >
+      <div className="operationRestoreDryRunFacts">
+        <div>
+          <span>実行判定</span>
+          <strong>{report.canProceed ? "通過" : "停止"}</strong>
+        </div>
+        <div>
+          <span>現行バックアップ</span>
+          <strong>{status.label}</strong>
+        </div>
+        <div>
+          <span>確認時刻</span>
+          <strong>{formatFullDateTime(report.generatedAt, timezone)}</strong>
+        </div>
+      </div>
+
+      <div className="operationRestoreDryRunGuards">
+        <span>確認トークン</span>
+        <strong>受理</strong>
+        <span>現在件数</span>
+        <strong>
+          {report.currentBackup.matchesCurrentState ? "一致" : "差分"}
+        </strong>
+        <span>実復元</span>
+        <strong>
+          {report.guardrails.destructiveRestoreBlocked ? "未実行" : "許可"}
+        </strong>
+      </div>
+
+      {report.currentBackup.issues.length > 0 && (
+        <div className="operationImportIssues">
+          {report.currentBackup.issues.map((issue) => (
+            <OperationImportIssueItem issue={issue} key={issue.key} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -237,6 +453,36 @@ function OperationRestorePlanView({
       </div>
     </div>
   );
+}
+
+function createRestoreConfirmationToken(
+  report: OperationsImportValidationReport,
+) {
+  if (!report.exportedAt) {
+    return "";
+  }
+
+  const exportedAt = new Date(report.exportedAt);
+
+  if (Number.isNaN(exportedAt.getTime())) {
+    return "";
+  }
+
+  const dateToken = exportedAt.toISOString().slice(0, 10).replaceAll("-", "");
+
+  return `RESTORE:${report.currentTenant.code}:${dateToken}`;
+}
+
+function getRestoreDryRunMessageClass(state: RestoreDryRunState) {
+  if (state.status === "ready") {
+    return "success";
+  }
+
+  if (state.status === "success" && state.report?.canProceed) {
+    return "success";
+  }
+
+  return "";
 }
 
 function OperationRestorePlanStepItem({
