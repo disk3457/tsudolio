@@ -4,6 +4,7 @@ import {
   tenantTypeValues,
   type OperationImportIssue,
   type OperationsImportCandidate,
+  type OperationsRestoreDryRunInput,
   type TenantProfileInput,
   type TenantTypeValue,
 } from "@/application/operations/types";
@@ -112,6 +113,45 @@ export function parseOperationsImportCandidate(
     tenant,
     unknownDataKeys,
     validationIssues,
+  };
+}
+
+export function parseOperationsRestoreDryRunInput(
+  body: unknown,
+): OperationsRestoreDryRunInput {
+  if (!isRecord(body)) {
+    throw new OperationsApplicationError(
+      "INVALID_JSON",
+      "復元リクエストJSONの形式が正しくありません。",
+    );
+  }
+
+  if (body.mode !== "DRY_RUN") {
+    throw new OperationsApplicationError(
+      "UNSUPPORTED_RESTORE_MODE",
+      "現時点では復元の dry-run のみ実行できます。",
+    );
+  }
+
+  if (!isRecord(body.backup)) {
+    throw new OperationsApplicationError(
+      "RESTORE_BACKUP_REQUIRED",
+      "復元対象の運用エクスポートJSONを指定してください。",
+    );
+  }
+
+  if (!isRecord(body.currentBackup)) {
+    throw new OperationsApplicationError(
+      "CURRENT_BACKUP_REQUIRED",
+      "復元前に取得した現行バックアップJSONを指定してください。",
+    );
+  }
+
+  return {
+    backup: parseOperationsImportCandidate(body.backup),
+    confirmationToken: readRequiredText(body.confirmationToken, "確認トークン", 120),
+    currentBackup: parseOperationsImportCandidate(body.currentBackup),
+    mode: "DRY_RUN",
   };
 }
 
