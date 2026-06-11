@@ -227,6 +227,36 @@ export type OperationsImportValidationReport = {
   restorePlan: OperationRestorePlan;
 };
 
+export type OperationsRestoreDryRunInput = {
+  mode: "DRY_RUN";
+  confirmationToken: string;
+  backup: OperationsImportCandidate;
+  currentBackup: OperationsImportCandidate;
+};
+
+export type OperationsRestoreCurrentBackupCheck = {
+  exportedAt: string | null;
+  status: OperationImportValidationStatus;
+  totalRecords: number;
+  matchesCurrentState: boolean;
+  issues: OperationImportIssue[];
+};
+
+export type OperationsRestoreDryRunReport = {
+  mode: "DRY_RUN";
+  dryRun: true;
+  generatedAt: string;
+  canProceed: boolean;
+  restore: OperationsImportValidationReport;
+  currentBackup: OperationsRestoreCurrentBackupCheck;
+  guardrails: {
+    confirmationTokenAccepted: true;
+    currentBackupRequired: true;
+    currentBackupMatchesCurrentState: boolean;
+    destructiveRestoreBlocked: true;
+  };
+};
+
 export type OperationsApiResponse =
   | {
       data: OperationsSnapshot;
@@ -240,6 +270,16 @@ export type OperationsApiResponse =
 export type OperationsImportValidationApiResponse =
   | {
       data: OperationsImportValidationReport;
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type OperationsRestoreDryRunApiResponse =
+  | {
+      data: OperationsRestoreDryRunReport;
       source: "database";
     }
   | {

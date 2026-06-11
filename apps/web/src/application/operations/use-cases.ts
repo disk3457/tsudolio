@@ -2,6 +2,8 @@ import type {
   OperationsImportCandidate,
   OperationsBackupSnapshot,
   OperationsImportValidationReport,
+  OperationsRestoreDryRunInput,
+  OperationsRestoreDryRunReport,
   OperationsSnapshot,
   TenantProfileInput,
 } from "@/application/operations/types";
@@ -25,6 +27,10 @@ export type OperationsRepository = {
     input: OperationsImportCandidate,
     context: MutationContext,
   ) => Promise<OperationsImportValidationReport>;
+  previewOperationsRestore: (
+    input: OperationsRestoreDryRunInput,
+    context: MutationContext,
+  ) => Promise<OperationsRestoreDryRunReport>;
 };
 
 export function createOperationsUseCases(repository: OperationsRepository) {
@@ -34,5 +40,6 @@ export function createOperationsUseCases(repository: OperationsRepository) {
     updateTenantProfile: repository.updateTenantProfile,
     validateOperationsImportCandidate:
       repository.validateOperationsImportCandidate,
+    previewOperationsRestore: repository.previewOperationsRestore,
   };
 }

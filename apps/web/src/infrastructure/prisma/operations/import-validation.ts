@@ -7,8 +7,12 @@ import type {
   OperationsBackupDataKey,
   OperationsImportCandidate,
   OperationsImportValidationReport,
+  OperationsRestoreCurrentBackupCheck,
+  OperationsRestoreDryRunInput,
+  OperationsRestoreDryRunReport,
 } from "@/application/operations/types";
 import { operationsBackupDataSetDefinitions } from "@/application/operations/types";
+import { OperationsApplicationError } from "@/application/operations/errors";
 import type { MutationContext } from "@/application/security/types";
 import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import { getCurrentBackupTableCounts } from "@/infrastructure/prisma/operations/backup-counts";
@@ -22,6 +26,92 @@ export async function validateOperationsImportCandidate(
 ): Promise<OperationsImportValidationReport> {
   const tenant = await getTenantByCodeOrThrow(context.tenantCode);
   const currentCounts = await getCurrentBackupTableCounts(tenant.id);
+  const report = buildOperationsImportValidationReport(input, {
+    currentCounts,
+    generatedAt: new Date().toISOString(),
+    tenant,
+  });
+
+  await recordOperationsImportValidationAudit({
+    context,
+    report,
+    tenantId: tenant.id,
+  });
+
+  return report;
+}
+
+export async function previewOperationsRestore(
+  input: OperationsRestoreDryRunInput,
+  context: MutationContext,
+): Promise<OperationsRestoreDryRunReport> {
+  const tenant = await getTenantByCodeOrThrow(context.tenantCode);
+  const currentCounts = await getCurrentBackupTableCounts(tenant.id);
+  const generatedAt = new Date().toISOString();
+  const restore = buildOperationsImportValidationReport(input.backup, {
+    currentCounts,
+    generatedAt,
+    tenant,
+  });
+
+  await assertRestoreConfirmationToken({
+    context,
+    restore,
+    tenant,
+    token: input.confirmationToken,
+  });
+
+  const currentBackupReport = buildOperationsImportValidationReport(
+    input.currentBackup,
+    {
+      currentCounts,
+      generatedAt,
+      tenant,
+    },
+  );
+  const currentBackup = buildCurrentBackupCheck(currentBackupReport);
+  const canProceed =
+    restore.restorePlan.canRestore &&
+    currentBackup.matchesCurrentState &&
+    currentBackup.status !== "BLOCKED";
+  const report = {
+    canProceed,
+    currentBackup,
+    dryRun: true,
+    generatedAt,
+    guardrails: {
+      confirmationTokenAccepted: true,
+      currentBackupMatchesCurrentState: currentBackup.matchesCurrentState,
+      currentBackupRequired: true,
+      destructiveRestoreBlocked: true,
+    },
+    mode: "DRY_RUN",
+    restore,
+  } satisfies OperationsRestoreDryRunReport;
+
+  await recordOperationsRestoreDryRunAudit({
+    context,
+    report,
+    tenantId: tenant.id,
+  });
+
+  return report;
+}
+
+function buildOperationsImportValidationReport(
+  input: OperationsImportCandidate,
+  options: {
+    currentCounts: Record<OperationsBackupDataKey, number>;
+    generatedAt: string;
+    tenant: {
+      code: string;
+      displayName: string | null;
+      id: string;
+      name: string;
+    };
+  },
+): OperationsImportValidationReport {
+  const { currentCounts, generatedAt, tenant } = options;
   const issues: OperationImportIssue[] = [...input.validationIssues];
 
   if (input.tenant.code && input.tenant.code !== tenant.code) {
@@ -94,7 +184,7 @@ export async function validateOperationsImportCandidate(
       name: tenant.displayName ?? tenant.name,
     },
     exportedAt: input.exportedAt,
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     issues,
     restorePlan,
     schemaVersion: input.schemaVersion,
@@ -105,29 +195,197 @@ export async function validateOperationsImportCandidate(
     totalIncomingRecords,
   } satisfies OperationsImportValidationReport;
 
+  return report;
+}
+
+async function assertRestoreConfirmationToken(input: {
+  context: MutationContext;
+  restore: OperationsImportValidationReport;
+  tenant: { code: string; id: string };
+  token: string;
+}) {
+  const expectedToken = createRestoreConfirmationToken(
+    input.tenant.code,
+    input.restore.exportedAt,
+  );
+
+  if (!expectedToken) {
+    await recordRestoreRejectionAudit({
+      context: input.context,
+      reason: "missing-exported-at",
+      restore: input.restore,
+      tenantId: input.tenant.id,
+    });
+    throw new OperationsApplicationError(
+      "RESTORE_CONFIRMATION_UNAVAILABLE",
+      "バックアップの exportedAt が有効でないため確認トークンを検証できません。",
+      409,
+    );
+  }
+
+  if (input.token !== expectedToken) {
+    await recordRestoreRejectionAudit({
+      context: input.context,
+      reason: "confirmation-token-mismatch",
+      restore: input.restore,
+      tenantId: input.tenant.id,
+    });
+    throw new OperationsApplicationError(
+      "RESTORE_CONFIRMATION_TOKEN_MISMATCH",
+      `確認トークンが一致しません。${expectedToken} を入力してください。`,
+      409,
+    );
+  }
+}
+
+function createRestoreConfirmationToken(
+  tenantCode: string,
+  exportedAt: string | null,
+) {
+  if (!exportedAt) {
+    return null;
+  }
+
+  const exportedDate = new Date(exportedAt);
+
+  if (Number.isNaN(exportedDate.getTime())) {
+    return null;
+  }
+
+  const dateToken = exportedDate.toISOString().slice(0, 10).replaceAll("-", "");
+
+  return `RESTORE:${tenantCode}:${dateToken}`;
+}
+
+function buildCurrentBackupCheck(
+  report: OperationsImportValidationReport,
+): OperationsRestoreCurrentBackupCheck {
+  const countMismatches = report.tables.filter(
+    (table) =>
+      table.incomingCount !== table.currentCount ||
+      table.declaredCount !== table.currentCount,
+  );
+  const guardIssues: OperationImportIssue[] =
+    countMismatches.length > 0
+      ? [
+          {
+            detail: `現行バックアップと現在データの件数が一致しません: ${countMismatches
+              .map((table) => table.label)
+              .join(", ")}`,
+            key: "current-backup-count-mismatch",
+            label: "現行バックアップ",
+            severity: "ERROR",
+          },
+        ]
+      : [];
+  const issues = [...report.issues, ...guardIssues];
+  const status = getImportValidationStatus(issues);
+  const matchesCurrentState =
+    countMismatches.length === 0 &&
+    !issues.some((issue) => issue.severity === "ERROR");
+
+  return {
+    exportedAt: report.exportedAt,
+    issues,
+    matchesCurrentState,
+    status,
+    totalRecords: report.totalIncomingRecords,
+  };
+}
+
+async function recordOperationsImportValidationAudit(input: {
+  context: MutationContext;
+  report: OperationsImportValidationReport;
+  tenantId: string;
+}) {
   await prisma.$transaction(async (tx) => {
     await recordAuditEvent(tx, {
-      tenantId: tenant.id,
-      context,
+      tenantId: input.tenantId,
+      context: input.context,
       action: "運用バックアップのインポート検証",
       targetType: "operations-import",
-      targetId: input.tenant.code ?? tenant.code,
+      targetId: input.report.tenant.code ?? input.report.currentTenant.code,
       severity:
-        status === "BLOCKED" ? AuditSeverity.WARNING : AuditSeverity.NOTICE,
+        input.report.status === "BLOCKED"
+          ? AuditSeverity.WARNING
+          : AuditSeverity.NOTICE,
       metadata: {
-        exportedAt: input.exportedAt,
-        importedTenantCode: input.tenant.code,
-        issueCount: issues.length,
-        restorePlanStatus: restorePlan.status,
-        schemaVersion: input.schemaVersion,
-        status,
-        totalCurrentRecords,
-        totalIncomingRecords,
+        exportedAt: input.report.exportedAt,
+        importedTenantCode: input.report.tenant.code,
+        issueCount: input.report.issues.length,
+        restorePlanStatus: input.report.restorePlan.status,
+        schemaVersion: input.report.schemaVersion,
+        status: input.report.status,
+        totalCurrentRecords: input.report.totalCurrentRecords,
+        totalIncomingRecords: input.report.totalIncomingRecords,
       },
     });
   });
+}
 
-  return report;
+async function recordOperationsRestoreDryRunAudit(input: {
+  context: MutationContext;
+  report: OperationsRestoreDryRunReport;
+  tenantId: string;
+}) {
+  await prisma.$transaction(async (tx) => {
+    await recordAuditEvent(tx, {
+      tenantId: input.tenantId,
+      context: input.context,
+      action: "運用バックアップ復元のドライラン",
+      targetType: "operations-restore",
+      targetId:
+        input.report.restore.tenant.code ??
+        input.report.restore.currentTenant.code,
+      severity: input.report.canProceed
+        ? AuditSeverity.NOTICE
+        : AuditSeverity.WARNING,
+      metadata: {
+        canProceed: input.report.canProceed,
+        currentBackupExportedAt: input.report.currentBackup.exportedAt,
+        currentBackupIssueCount: input.report.currentBackup.issues.length,
+        currentBackupMatchesCurrentState:
+          input.report.currentBackup.matchesCurrentState,
+        destructive: input.report.restore.restorePlan.destructive,
+        dryRun: true,
+        exportedAt: input.report.restore.exportedAt,
+        guardrails: input.report.guardrails,
+        issueCount: input.report.restore.issues.length,
+        restorePlanStatus: input.report.restore.restorePlan.status,
+        schemaVersion: input.report.restore.schemaVersion,
+        status: input.report.restore.status,
+        totalIncomingRecords: input.report.restore.totalIncomingRecords,
+      },
+    });
+  });
+}
+
+async function recordRestoreRejectionAudit(input: {
+  context: MutationContext;
+  reason: string;
+  restore: OperationsImportValidationReport;
+  tenantId: string;
+}) {
+  await prisma.$transaction(async (tx) => {
+    await recordAuditEvent(tx, {
+      tenantId: input.tenantId,
+      context: input.context,
+      action: "運用バックアップ復元のドライラン拒否",
+      targetType: "operations-restore",
+      targetId: input.restore.tenant.code ?? input.restore.currentTenant.code,
+      severity: AuditSeverity.WARNING,
+      metadata: {
+        dryRun: true,
+        exportedAt: input.restore.exportedAt,
+        issueCount: input.restore.issues.length,
+        reason: input.reason,
+        restorePlanStatus: input.restore.restorePlan.status,
+        schemaVersion: input.restore.schemaVersion,
+        status: input.restore.status,
+        totalIncomingRecords: input.restore.totalIncomingRecords,
+      },
+    });
+  });
 }
 
 function buildRestorePlan(input: {
