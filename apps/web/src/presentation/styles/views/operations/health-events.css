@@ -1,0 +1,119 @@
+.operationHealthList,
+.operationEventList {
+  display: grid;
+  gap: 10px;
+}
+
+.operationHealthItem {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.operationHealthItem svg {
+  margin-top: 2px;
+}
+
+.operationHealthItem.ok svg,
+.operationHealthItem.ok .operationHealthHeading span {
+  color: #08786f;
+}
+
+.operationHealthItem.warning svg,
+.operationHealthItem.warning .operationHealthHeading span {
+  color: var(--amber);
+}
+
+.operationHealthItem.critical svg,
+.operationHealthItem.critical .operationHealthHeading span {
+  color: var(--rose);
+}
+
+.operationHealthHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.operationHealthHeading strong {
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.operationHealthHeading span {
+  background: #ffffff;
+}
+
+.operationHealthItem p,
+.operationEventItem p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.operationHealthItem small {
+  display: block;
+  margin-top: 8px;
+  color: var(--blue-deep);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.operationEventItem {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) minmax(118px, auto);
+  gap: 11px;
+  align-items: start;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.operationEventItem strong {
+  color: var(--ink);
+}
+
+.operationEventItem time {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.operationSeverity.notice {
+  color: #08786f;
+  background: var(--cyan-soft);
+}
+
+.operationSeverity.info {
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+}
+
+.operationSeverity.warning {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.operationSeverity.critical {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.viewAlert.success {
+  border-color: #ccefe9;
+  color: #08786f;
+  background: #f1fffc;
+}
+

@@ -1,0 +1,38 @@
+@media (max-width: 720px) {
+  .operationsHardeningPanel {
+    grid-column: auto;
+  }
+
+  .operationHardeningSummary,
+  .operationHardeningCounts,
+  .operationHardeningList,
+  .operationHardeningItem {
+    grid-template-columns: 1fr;
+  }
+
+  .operationImportHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .operationImportTotals,
+  .operationImportIssue,
+  .operationRestorePlanHeader,
+  .operationRestorePlanFacts,
+  .operationRestoreDryRunControls,
+  .operationRestoreDryRunFacts,
+  .operationRestoreDryRunGuards,
+  .operationRestoreStepHeading,
+  .operationImportTableRow {
+    grid-template-columns: 1fr;
+  }
+
+  .operationRestoreStepMeta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .operationImportTableRow strong,
+  .operationImportTableRow small {
+    text-align: left;
+  }
+}

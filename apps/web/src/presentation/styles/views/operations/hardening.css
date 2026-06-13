@@ -1,0 +1,154 @@
+.operationHardeningSummary {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.68fr) minmax(0, 1.32fr);
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.operationHardeningSummary.ok {
+  border-color: #ccefe9;
+  background: #f7fffd;
+}
+
+.operationHardeningSummary.attention {
+  border-color: #f3dda3;
+  background: #fffaf0;
+}
+
+.operationHardeningSummary.action-required {
+  border-color: #ffd2d7;
+  background: #fff8f8;
+}
+
+.operationHardeningScore,
+.operationHardeningCounts div {
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid #d9e5ef;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.operationHardeningScore span,
+.operationHardeningCounts span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.operationHardeningScore strong {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 8px;
+  color: var(--blue-deep);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.operationHardeningScore small {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.operationHardeningScore p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.operationHardeningCounts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.operationHardeningCounts strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--blue-deep);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.operationHardeningList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.operationHardeningItem {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 118px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.operationHardeningItem svg {
+  margin-top: 2px;
+}
+
+.operationHardeningItem.ok svg,
+.operationHardeningItem.ok .operationHardeningHeading span {
+  color: #08786f;
+}
+
+.operationHardeningItem.attention svg,
+.operationHardeningItem.attention .operationHardeningHeading span {
+  color: var(--amber);
+}
+
+.operationHardeningItem.action-required svg,
+.operationHardeningItem.action-required .operationHardeningHeading span {
+  color: var(--rose);
+}
+
+.operationHardeningHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.operationHardeningHeading strong {
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.operationHardeningHeading span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.operationHardeningItem p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.operationHardeningItem small {
+  display: block;
+  margin-top: 8px;
+  color: var(--blue-deep);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+

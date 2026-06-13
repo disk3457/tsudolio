@@ -1,0 +1,101 @@
+.operationImportIssues {
+  display: grid;
+  gap: 8px;
+}
+
+.operationImportIssue {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 9px;
+  min-height: 64px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.operationImportIssue > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  min-height: 26px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.operationImportIssue.info > span {
+  color: var(--blue-deep);
+  background: var(--blue-soft);
+}
+
+.operationImportIssue.warning > span {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.operationImportIssue.error > span {
+  color: var(--rose);
+  background: var(--rose-soft);
+}
+
+.operationImportIssue strong {
+  color: var(--ink);
+  font-size: 0.84rem;
+}
+
+.operationImportIssue p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.operationImportTables {
+  display: grid;
+  gap: 7px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.operationImportTableRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px 92px;
+  gap: 8px;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 9px;
+  border: 1px solid #e5edf4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.operationImportTableRow span,
+.operationImportTableRow strong,
+.operationImportTableRow small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.operationImportTableRow span {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.operationImportTableRow strong {
+  color: var(--blue-deep);
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.operationImportTableRow small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-align: right;
+}
+
