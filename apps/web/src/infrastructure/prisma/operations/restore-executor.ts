@@ -15,6 +15,7 @@ import type { Prisma } from "@generated/prisma/client";
 import {
   AuditSeverity,
   type FacilityStatus,
+  type MembershipStatus,
   type OrganizationUnitKind,
 } from "@generated/prisma/enums";
 
@@ -22,6 +23,7 @@ export const supportedOperationsRestoreDataSetKeys = [
   "permissions",
   "organizationUnits",
   "users",
+  "memberships",
   "roles",
   "rolePermissions",
   "facilities",
@@ -74,6 +76,16 @@ type UserRestoreRow = {
   lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+type MembershipRestoreRow = {
+  id: string;
+  tenantId: string;
+  userId: string;
+  organizationUnitId: string;
+  status: MembershipStatus;
+  joinedAt: Date;
+  leftAt: Date | null;
 };
 
 type RoleRestoreRow = {
@@ -139,6 +151,12 @@ const facilityStatuses = new Set<FacilityStatus>([
   "IN_USE",
   "MAINTENANCE",
   "APPROVAL_REQUIRED",
+]);
+const membershipStatuses = new Set<MembershipStatus>([
+  "ACTIVE",
+  "INVITED",
+  "SUSPENDED",
+  "LEFT",
 ]);
 
 export function getOperationsRestoreExecutorBlockedReason(
@@ -234,6 +252,7 @@ export async function executeOperationsRestoreTransaction(
     readOrganizationUnitRows(input.backup, input.tenant.id),
   );
   const users = readUserRows(input.backup, input.tenant.id);
+  const memberships = readMembershipRows(input.backup, input.tenant.id);
   const roles = readRoleRows(input.backup, input.tenant.id);
   const rolePermissions = readRolePermissionRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
@@ -243,6 +262,7 @@ export async function executeOperationsRestoreTransaction(
     await restorePermissions(tx, permissions);
     await restoreOrganizationUnits(tx, organizationUnits);
     await restoreUsers(tx, users);
+    await restoreMemberships(tx, memberships);
     await restoreRoles(tx, roles);
     await restoreRolePermissions(tx, rolePermissions);
     await restoreFacilities(tx, facilities);
@@ -292,6 +312,8 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
     organizationUnits.map((unit) => unit.id),
   );
   const users = readUserRows(input.backup, input.tenant.id);
+  const userIds = new Set(users.map((user) => user.id));
+  const memberships = readMembershipRows(input.backup, input.tenant.id);
   const roles = readRoleRows(input.backup, input.tenant.id);
   const roleIds = new Set(roles.map((role) => role.id));
   const rolePermissions = readRolePermissionRows(input.backup);
@@ -310,6 +332,9 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   sortOrganizationUnitRows(organizationUnits);
   assertUniqueUserEmails(users);
   assertAuthSensitiveUserFieldsUnchanged(input, users);
+  assertMembershipReferences(memberships, userIds, organizationUnitIds);
+  assertUniqueMembershipAssignments(memberships);
+  assertMembershipAssignmentsUnchanged(input, memberships);
 
   for (const rolePermission of rolePermissions) {
     if (!roleIds.has(rolePermission.roleId)) {
@@ -488,6 +513,34 @@ async function restoreUsers(tx: Prisma.TransactionClient, rows: UserRestoreRow[]
         lastLoginAt: row.lastLoginAt,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
+      },
+    });
+  }
+}
+
+async function restoreMemberships(
+  tx: Prisma.TransactionClient,
+  rows: MembershipRestoreRow[],
+) {
+  for (const row of rows) {
+    await tx.membership.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        tenantId: row.tenantId,
+        userId: row.userId,
+        organizationUnitId: row.organizationUnitId,
+        status: row.status,
+        joinedAt: row.joinedAt,
+        leftAt: row.leftAt,
+      },
+      update: {
+        tenantId: row.tenantId,
+        userId: row.userId,
+        organizationUnitId: row.organizationUnitId,
+        status: row.status,
+        joinedAt: row.joinedAt,
+        leftAt: row.leftAt,
       },
     });
   }
@@ -682,6 +735,31 @@ function readUserRows(
   });
 }
 
+function readMembershipRows(
+  backup: OperationsImportCandidate,
+  tenantId: string,
+): MembershipRestoreRow[] {
+  return getRestoreRows(backup, "memberships").map((row, index) => {
+    const rowTenantId = readRequiredString(row, "tenantId", "memberships", index);
+    assertRowTenant(rowTenantId, tenantId, "memberships", index);
+
+    return {
+      id: readRequiredString(row, "id", "memberships", index),
+      tenantId: rowTenantId,
+      userId: readRequiredString(row, "userId", "memberships", index),
+      organizationUnitId: readRequiredString(
+        row,
+        "organizationUnitId",
+        "memberships",
+        index,
+      ),
+      status: readMembershipStatus(row, index),
+      joinedAt: readDate(row, "joinedAt", "memberships", index),
+      leftAt: readNullableDate(row, "leftAt", "memberships", index),
+    };
+  });
+}
+
 function readPermissionRows(
   backup: OperationsImportCandidate,
 ): PermissionRestoreRow[] {
@@ -837,6 +915,75 @@ function assertAuthSensitiveUserFieldsUnchanged(
       throw createInvalidRestoreRowError(
         "users",
         `data.users の isSystemAdmin は特権フラグのため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
+}
+
+function assertMembershipReferences(
+  rows: MembershipRestoreRow[],
+  userIds: Set<string>,
+  organizationUnitIds: Set<string>,
+) {
+  for (const row of rows) {
+    if (!userIds.has(row.userId)) {
+      throw createInvalidRestoreRowError(
+        "memberships",
+        `data.memberships の userId ${row.userId} がバックアップ内の利用者に存在しません。`,
+      );
+    }
+
+    if (!organizationUnitIds.has(row.organizationUnitId)) {
+      throw createInvalidRestoreRowError(
+        "memberships",
+        `data.memberships の organizationUnitId ${row.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
+      );
+    }
+  }
+}
+
+function assertUniqueMembershipAssignments(rows: MembershipRestoreRow[]) {
+  const assignments = new Set<string>();
+
+  for (const row of rows) {
+    const key = `${row.userId}:${row.organizationUnitId}`;
+
+    if (assignments.has(key)) {
+      throw createInvalidRestoreRowError(
+        "memberships",
+        `data.memberships の所属 ${row.userId}/${row.organizationUnitId} が重複しています。`,
+      );
+    }
+
+    assignments.add(key);
+  }
+}
+
+function assertMembershipAssignmentsUnchanged(
+  input: RestoreExecutorInput,
+  rows: MembershipRestoreRow[],
+) {
+  const currentMemberships = new Map(
+    readMembershipRows(input.currentBackup, input.tenant.id).map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+
+  for (const row of rows) {
+    const currentMembership = currentMemberships.get(row.id);
+
+    if (!currentMembership) {
+      continue;
+    }
+
+    if (
+      currentMembership.userId !== row.userId ||
+      currentMembership.organizationUnitId !== row.organizationUnitId
+    ) {
+      throw createInvalidRestoreRowError(
+        "memberships",
+        `data.memberships の userId / organizationUnitId 変更は所属移動になるため、このPRでは変更できません: ${row.id}`,
       );
     }
   }
@@ -1047,6 +1194,25 @@ function readFacilityStatus(
   }
 
   return value as FacilityStatus;
+}
+
+function readMembershipStatus(
+  row: Record<string, unknown>,
+  index: number,
+): MembershipStatus {
+  const value = row.status;
+
+  if (
+    typeof value !== "string" ||
+    !membershipStatuses.has(value as MembershipStatus)
+  ) {
+    throw createInvalidRestoreRowError(
+      "memberships",
+      `data.memberships[${index}].status は対応している所属ステータスである必要があります。`,
+    );
+  }
+
+  return value as MembershipStatus;
 }
 
 function assertRowTenant(
