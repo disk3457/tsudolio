@@ -12,13 +12,18 @@ import type { MutationContext } from "@/application/security/types";
 import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import { prisma } from "@/infrastructure/prisma/prisma-client";
 import type { Prisma } from "@generated/prisma/client";
-import { AuditSeverity, type OrganizationUnitKind } from "@generated/prisma/enums";
+import {
+  AuditSeverity,
+  type FacilityStatus,
+  type OrganizationUnitKind,
+} from "@generated/prisma/enums";
 
 export const supportedOperationsRestoreDataSetKeys = [
   "permissions",
   "organizationUnits",
   "roles",
   "rolePermissions",
+  "facilities",
 ] as const satisfies OperationsBackupDataKey[];
 
 type SupportedOperationsRestoreDataSetKey =
@@ -77,6 +82,19 @@ type RolePermissionRestoreRow = {
   permissionId: string;
 };
 
+type FacilityRestoreRow = {
+  id: string;
+  tenantId: string;
+  organizationUnitId: string | null;
+  code: string;
+  name: string;
+  status: FacilityStatus;
+  capacity: number | null;
+  location: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 const supportedDataSetKeySet = new Set<OperationsBackupDataKey>(
   supportedOperationsRestoreDataSetKeys,
 );
@@ -86,6 +104,12 @@ const organizationUnitKinds = new Set<OrganizationUnitKind>([
   "BRANCH",
   "TEAM",
   "EXTERNAL_PARTNER",
+]);
+const facilityStatuses = new Set<FacilityStatus>([
+  "AVAILABLE",
+  "IN_USE",
+  "MAINTENANCE",
+  "APPROVAL_REQUIRED",
 ]);
 
 export function getOperationsRestoreExecutorBlockedReason(
@@ -182,12 +206,14 @@ export async function executeOperationsRestoreTransaction(
   );
   const roles = readRoleRows(input.backup, input.tenant.id);
   const rolePermissions = readRolePermissionRows(input.backup);
+  const facilities = readFacilityRows(input.backup, input.tenant.id);
 
   await prisma.$transaction(async (tx) => {
     await restorePermissions(tx, permissions);
     await restoreOrganizationUnits(tx, organizationUnits);
     await restoreRoles(tx, roles);
     await restoreRolePermissions(tx, rolePermissions);
+    await restoreFacilities(tx, facilities);
     await recordAuditEvent(tx, {
       tenantId: input.tenant.id,
       context: input.context,
@@ -235,6 +261,7 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   const roles = readRoleRows(input.backup, input.tenant.id);
   const roleIds = new Set(roles.map((role) => role.id));
   const rolePermissions = readRolePermissionRows(input.backup);
+  const facilities = readFacilityRows(input.backup, input.tenant.id);
 
   for (const unit of organizationUnits) {
     if (unit.parentId && !organizationUnitIds.has(unit.parentId)) {
@@ -259,6 +286,18 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
       throw createInvalidRestoreRowError(
         "rolePermissions",
         `data.rolePermissions の permissionId ${rolePermission.permissionId} がバックアップ内の権限に存在しません。`,
+      );
+    }
+  }
+
+  for (const facility of facilities) {
+    if (
+      facility.organizationUnitId &&
+      !organizationUnitIds.has(facility.organizationUnitId)
+    ) {
+      throw createInvalidRestoreRowError(
+        "facilities",
+        `data.facilities の organizationUnitId ${facility.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
       );
     }
   }
@@ -421,6 +460,40 @@ async function restoreRolePermissions(
   }
 }
 
+async function restoreFacilities(
+  tx: Prisma.TransactionClient,
+  rows: FacilityRestoreRow[],
+) {
+  for (const row of rows) {
+    await tx.facility.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        tenantId: row.tenantId,
+        organizationUnitId: row.organizationUnitId,
+        code: row.code,
+        name: row.name,
+        status: row.status,
+        capacity: row.capacity,
+        location: row.location,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+      update: {
+        tenantId: row.tenantId,
+        organizationUnitId: row.organizationUnitId,
+        code: row.code,
+        name: row.name,
+        status: row.status,
+        capacity: row.capacity,
+        location: row.location,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+    });
+  }
+}
+
 function readOrganizationUnitRows(
   backup: OperationsImportCandidate,
   tenantId: string,
@@ -492,6 +565,34 @@ function readRolePermissionRows(
       index,
     ),
   }));
+}
+
+function readFacilityRows(
+  backup: OperationsImportCandidate,
+  tenantId: string,
+): FacilityRestoreRow[] {
+  return getRestoreRows(backup, "facilities").map((row, index) => {
+    const rowTenantId = readRequiredString(row, "tenantId", "facilities", index);
+    assertRowTenant(rowTenantId, tenantId, "facilities", index);
+
+    return {
+      id: readRequiredString(row, "id", "facilities", index),
+      tenantId: rowTenantId,
+      organizationUnitId: readNullableString(
+        row,
+        "organizationUnitId",
+        "facilities",
+        index,
+      ),
+      code: readRequiredString(row, "code", "facilities", index),
+      name: readRequiredString(row, "name", "facilities", index),
+      status: readFacilityStatus(row, index),
+      capacity: readNullableInteger(row, "capacity", "facilities", index),
+      location: readNullableString(row, "location", "facilities", index),
+      createdAt: readDate(row, "createdAt", "facilities", index),
+      updatedAt: readDate(row, "updatedAt", "facilities", index),
+    };
+  });
 }
 
 function sortOrganizationUnitRows(rows: OrganizationUnitRestoreRow[]) {
@@ -596,6 +697,28 @@ function readInteger(
   return value as number;
 }
 
+function readNullableInteger(
+  row: Record<string, unknown>,
+  field: string,
+  dataSet: SupportedOperationsRestoreDataSetKey,
+  index: number,
+) {
+  const value = row[field];
+
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (!Number.isInteger(value)) {
+    throw createInvalidRestoreRowError(
+      dataSet,
+      `data.${dataSet}[${index}].${field} は整数または null である必要があります。`,
+    );
+  }
+
+  return value as number;
+}
+
 function readDate(
   row: Record<string, unknown>,
   field: string,
@@ -640,6 +763,22 @@ function readOrganizationUnitKind(
   }
 
   return value as OrganizationUnitKind;
+}
+
+function readFacilityStatus(
+  row: Record<string, unknown>,
+  index: number,
+): FacilityStatus {
+  const value = row.status;
+
+  if (typeof value !== "string" || !facilityStatuses.has(value as FacilityStatus)) {
+    throw createInvalidRestoreRowError(
+      "facilities",
+      `data.facilities[${index}].status は対応している施設ステータスである必要があります。`,
+    );
+  }
+
+  return value as FacilityStatus;
 }
 
 function assertRowTenant(
