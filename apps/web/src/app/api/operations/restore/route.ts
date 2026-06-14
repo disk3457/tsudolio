@@ -1,5 +1,5 @@
 import { requireMutationContext } from "@/app/api/_shared/request-context";
-import { parseOperationsRestoreDryRunInput } from "@/application/operations/operations-validation";
+import { parseOperationsRestoreInput } from "@/application/operations/operations-validation";
 import { createOperationsUseCases } from "@/application/operations/use-cases";
 import { permissions } from "@/application/security/permissions";
 import { prismaOperationsRepository } from "@/infrastructure/prisma/operations-repository";
@@ -22,13 +22,13 @@ export async function POST(request: Request) {
       request,
       permissions.manageTenant,
     );
-    const input = parseOperationsRestoreDryRunInput(
+    const input = parseOperationsRestoreInput(
       await readRequestJson(
         request,
         "復元リクエストJSONを読み取れませんでした。",
       ),
     );
-    const report = await operationsUseCases.previewOperationsRestore(
+    const report = await operationsUseCases.processOperationsRestore(
       input,
       context,
     );
@@ -37,8 +37,8 @@ export async function POST(request: Request) {
   } catch (error) {
     return applicationErrorResponse(
       error,
-      "OPERATIONS_RESTORE_DRY_RUN_UNAVAILABLE",
-      "復元ドライランを実行できませんでした。",
+      "OPERATIONS_RESTORE_UNAVAILABLE",
+      "復元リクエストを処理できませんでした。",
     );
   }
 }
