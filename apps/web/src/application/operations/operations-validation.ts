@@ -5,6 +5,8 @@ import {
   type OperationImportIssue,
   type OperationsImportCandidate,
   type OperationsRestoreDryRunInput,
+  type OperationsRestoreMode,
+  type OperationsRestoreRequestInput,
   type TenantProfileInput,
   type TenantTypeValue,
 } from "@/application/operations/types";
@@ -119,6 +121,21 @@ export function parseOperationsImportCandidate(
 export function parseOperationsRestoreDryRunInput(
   body: unknown,
 ): OperationsRestoreDryRunInput {
+  const input = parseOperationsRestoreInput(body);
+
+  if (input.mode !== "DRY_RUN") {
+    throw new OperationsApplicationError(
+      "UNSUPPORTED_RESTORE_MODE",
+      "現時点では復元の dry-run のみ実行できます。",
+    );
+  }
+
+  return input;
+}
+
+export function parseOperationsRestoreInput(
+  body: unknown,
+): OperationsRestoreRequestInput {
   if (!isRecord(body)) {
     throw new OperationsApplicationError(
       "INVALID_JSON",
@@ -126,12 +143,7 @@ export function parseOperationsRestoreDryRunInput(
     );
   }
 
-  if (body.mode !== "DRY_RUN") {
-    throw new OperationsApplicationError(
-      "UNSUPPORTED_RESTORE_MODE",
-      "現時点では復元の dry-run のみ実行できます。",
-    );
-  }
+  const mode = readRestoreMode(body.mode);
 
   if (!isRecord(body.backup)) {
     throw new OperationsApplicationError(
@@ -147,12 +159,34 @@ export function parseOperationsRestoreDryRunInput(
     );
   }
 
-  return {
+  const input = {
     backup: parseOperationsImportCandidate(body.backup),
     confirmationToken: readRequiredText(body.confirmationToken, "確認トークン", 120),
     currentBackup: parseOperationsImportCandidate(body.currentBackup),
-    mode: "DRY_RUN",
   };
+
+  if (mode === "DRY_RUN") {
+    return {
+      ...input,
+      mode: "DRY_RUN",
+    };
+  }
+
+  return {
+    ...input,
+    mode: "EXECUTE",
+  };
+}
+
+function readRestoreMode(value: unknown): OperationsRestoreMode {
+  if (value === "DRY_RUN" || value === "EXECUTE") {
+    return value;
+  }
+
+  throw new OperationsApplicationError(
+    "UNSUPPORTED_RESTORE_MODE",
+    "復元モードは DRY_RUN または EXECUTE を指定してください。",
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

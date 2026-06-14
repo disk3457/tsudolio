@@ -10,6 +10,11 @@ import type {
   OperationsRestoreCurrentBackupCheck,
   OperationsRestoreDryRunInput,
   OperationsRestoreDryRunReport,
+  OperationsRestoreExecutionInput,
+  OperationsRestoreExecutionReport,
+  OperationsRestoreMode,
+  OperationsRestoreReport,
+  OperationsRestoreRequestInput,
 } from "@/application/operations/types";
 import { operationsBackupDataSetDefinitions } from "@/application/operations/types";
 import { OperationsApplicationError } from "@/application/operations/errors";
@@ -45,6 +50,86 @@ export async function previewOperationsRestore(
   input: OperationsRestoreDryRunInput,
   context: MutationContext,
 ): Promise<OperationsRestoreDryRunReport> {
+  const restoreContext = await buildOperationsRestoreContext(input, context);
+  const canProceed =
+    restoreContext.restore.restorePlan.canRestore &&
+    restoreContext.currentBackup.matchesCurrentState &&
+    restoreContext.currentBackup.status !== "BLOCKED";
+  const report = {
+    canProceed,
+    currentBackup: restoreContext.currentBackup,
+    dryRun: true,
+    generatedAt: restoreContext.generatedAt,
+    guardrails: {
+      confirmationTokenAccepted: true,
+      currentBackupMatchesCurrentState:
+        restoreContext.currentBackup.matchesCurrentState,
+      currentBackupRequired: true,
+      destructiveRestoreBlocked: true,
+    },
+    mode: "DRY_RUN",
+    restore: restoreContext.restore,
+  } satisfies OperationsRestoreDryRunReport;
+
+  await recordOperationsRestoreDryRunAudit({
+    context,
+    report,
+    tenantId: restoreContext.tenant.id,
+  });
+
+  return report;
+}
+
+export async function processOperationsRestore(
+  input: OperationsRestoreRequestInput,
+  context: MutationContext,
+): Promise<OperationsRestoreReport> {
+  if (input.mode === "DRY_RUN") {
+    return previewOperationsRestore(input, context);
+  }
+
+  return blockOperationsRestoreExecution(input, context);
+}
+
+async function blockOperationsRestoreExecution(
+  input: OperationsRestoreExecutionInput,
+  context: MutationContext,
+): Promise<OperationsRestoreExecutionReport> {
+  const restoreContext = await buildOperationsRestoreContext(input, context);
+  const report = {
+    blockedReason: getRestoreExecutionBlockedReason(
+      restoreContext.restore,
+      restoreContext.currentBackup,
+    ),
+    currentBackup: restoreContext.currentBackup,
+    executed: false,
+    generatedAt: restoreContext.generatedAt,
+    guardrails: {
+      confirmationTokenAccepted: true,
+      currentBackupMatchesCurrentState:
+        restoreContext.currentBackup.matchesCurrentState,
+      currentBackupRequired: true,
+      destructiveRestoreBlocked: true,
+      transactionRestoreSupported: false,
+    },
+    mode: "EXECUTE",
+    restore: restoreContext.restore,
+    status: "BLOCKED",
+  } satisfies OperationsRestoreExecutionReport;
+
+  await recordOperationsRestoreExecutionBlockedAudit({
+    context,
+    report,
+    tenantId: restoreContext.tenant.id,
+  });
+
+  return report;
+}
+
+async function buildOperationsRestoreContext(
+  input: OperationsRestoreRequestInput,
+  context: MutationContext,
+) {
   const tenant = await getTenantByCodeOrThrow(context.tenantCode);
   const currentCounts = await getCurrentBackupTableCounts(tenant.id);
   const generatedAt = new Date().toISOString();
@@ -56,6 +141,7 @@ export async function previewOperationsRestore(
 
   await assertRestoreConfirmationToken({
     context,
+    mode: input.mode,
     restore,
     tenant,
     token: input.confirmationToken,
@@ -69,33 +155,13 @@ export async function previewOperationsRestore(
       tenant,
     },
   );
-  const currentBackup = buildCurrentBackupCheck(currentBackupReport);
-  const canProceed =
-    restore.restorePlan.canRestore &&
-    currentBackup.matchesCurrentState &&
-    currentBackup.status !== "BLOCKED";
-  const report = {
-    canProceed,
-    currentBackup,
-    dryRun: true,
+
+  return {
+    currentBackup: buildCurrentBackupCheck(currentBackupReport),
     generatedAt,
-    guardrails: {
-      confirmationTokenAccepted: true,
-      currentBackupMatchesCurrentState: currentBackup.matchesCurrentState,
-      currentBackupRequired: true,
-      destructiveRestoreBlocked: true,
-    },
-    mode: "DRY_RUN",
     restore,
-  } satisfies OperationsRestoreDryRunReport;
-
-  await recordOperationsRestoreDryRunAudit({
-    context,
-    report,
-    tenantId: tenant.id,
-  });
-
-  return report;
+    tenant,
+  };
 }
 
 function buildOperationsImportValidationReport(
@@ -200,6 +266,7 @@ function buildOperationsImportValidationReport(
 
 async function assertRestoreConfirmationToken(input: {
   context: MutationContext;
+  mode: OperationsRestoreMode;
   restore: OperationsImportValidationReport;
   tenant: { code: string; id: string };
   token: string;
@@ -212,6 +279,7 @@ async function assertRestoreConfirmationToken(input: {
   if (!expectedToken) {
     await recordRestoreRejectionAudit({
       context: input.context,
+      mode: input.mode,
       reason: "missing-exported-at",
       restore: input.restore,
       tenantId: input.tenant.id,
@@ -226,6 +294,7 @@ async function assertRestoreConfirmationToken(input: {
   if (input.token !== expectedToken) {
     await recordRestoreRejectionAudit({
       context: input.context,
+      mode: input.mode,
       reason: "confirmation-token-mismatch",
       restore: input.restore,
       tenantId: input.tenant.id,
@@ -236,6 +305,39 @@ async function assertRestoreConfirmationToken(input: {
       409,
     );
   }
+}
+
+function getRestoreExecutionBlockedReason(
+  restore: OperationsImportValidationReport,
+  currentBackup: OperationsRestoreCurrentBackupCheck,
+) {
+  if (!restore.restorePlan.canRestore) {
+    return (
+      restore.restorePlan.blockedReason ??
+      "復元計画にブロック項目があるため実復元を開始できません。"
+    );
+  }
+
+  if (
+    currentBackup.status === "BLOCKED" ||
+    !currentBackup.matchesCurrentState
+  ) {
+    return "現行バックアップが現在のデータ件数と一致しないため実復元を開始できません。";
+  }
+
+  const reviewStep = restore.restorePlan.steps.find(
+    (step) => step.status === "REVIEW_REQUIRED",
+  );
+
+  if (reviewStep) {
+    return `復元計画に確認が必要なステップがあります: ${reviewStep.label}`;
+  }
+
+  if (restore.restorePlan.destructive) {
+    return "既存データを変更する復元は transaction 実装が入るまで実行できません。";
+  }
+
+  return "実復元 transaction はまだ有効化されていません。次の実装でデータセット単位の反映処理を追加します。";
 }
 
 function createRestoreConfirmationToken(
@@ -360,8 +462,46 @@ async function recordOperationsRestoreDryRunAudit(input: {
   });
 }
 
+async function recordOperationsRestoreExecutionBlockedAudit(input: {
+  context: MutationContext;
+  report: OperationsRestoreExecutionReport;
+  tenantId: string;
+}) {
+  await prisma.$transaction(async (tx) => {
+    await recordAuditEvent(tx, {
+      tenantId: input.tenantId,
+      context: input.context,
+      action: "運用バックアップ復元の実行拒否",
+      targetType: "operations-restore",
+      targetId:
+        input.report.restore.tenant.code ??
+        input.report.restore.currentTenant.code,
+      severity: AuditSeverity.WARNING,
+      metadata: {
+        blockedReason: input.report.blockedReason,
+        currentBackupExportedAt: input.report.currentBackup.exportedAt,
+        currentBackupIssueCount: input.report.currentBackup.issues.length,
+        currentBackupMatchesCurrentState:
+          input.report.currentBackup.matchesCurrentState,
+        destructive: input.report.restore.restorePlan.destructive,
+        dryRun: false,
+        executed: false,
+        exportedAt: input.report.restore.exportedAt,
+        guardrails: input.report.guardrails,
+        issueCount: input.report.restore.issues.length,
+        mode: input.report.mode,
+        restorePlanStatus: input.report.restore.restorePlan.status,
+        schemaVersion: input.report.restore.schemaVersion,
+        status: input.report.restore.status,
+        totalIncomingRecords: input.report.restore.totalIncomingRecords,
+      },
+    });
+  });
+}
+
 async function recordRestoreRejectionAudit(input: {
   context: MutationContext;
+  mode: OperationsRestoreMode;
   reason: string;
   restore: OperationsImportValidationReport;
   tenantId: string;
@@ -370,14 +510,19 @@ async function recordRestoreRejectionAudit(input: {
     await recordAuditEvent(tx, {
       tenantId: input.tenantId,
       context: input.context,
-      action: "運用バックアップ復元のドライラン拒否",
+      action:
+        input.mode === "DRY_RUN"
+          ? "運用バックアップ復元のドライラン拒否"
+          : "運用バックアップ復元の実行拒否",
       targetType: "operations-restore",
       targetId: input.restore.tenant.code ?? input.restore.currentTenant.code,
       severity: AuditSeverity.WARNING,
       metadata: {
-        dryRun: true,
+        dryRun: input.mode === "DRY_RUN",
+        executed: false,
         exportedAt: input.restore.exportedAt,
         issueCount: input.restore.issues.length,
+        mode: input.mode,
         reason: input.reason,
         restorePlanStatus: input.restore.restorePlan.status,
         schemaVersion: input.restore.schemaVersion,

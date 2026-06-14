@@ -227,12 +227,25 @@ export type OperationsImportValidationReport = {
   restorePlan: OperationRestorePlan;
 };
 
-export type OperationsRestoreDryRunInput = {
-  mode: "DRY_RUN";
+export type OperationsRestoreMode = "DRY_RUN" | "EXECUTE";
+
+type OperationsRestoreInputBase = {
   confirmationToken: string;
   backup: OperationsImportCandidate;
   currentBackup: OperationsImportCandidate;
 };
+
+export type OperationsRestoreDryRunInput = OperationsRestoreInputBase & {
+  mode: "DRY_RUN";
+};
+
+export type OperationsRestoreExecutionInput = OperationsRestoreInputBase & {
+  mode: "EXECUTE";
+};
+
+export type OperationsRestoreRequestInput =
+  | OperationsRestoreDryRunInput
+  | OperationsRestoreExecutionInput;
 
 export type OperationsRestoreCurrentBackupCheck = {
   exportedAt: string | null;
@@ -257,6 +270,27 @@ export type OperationsRestoreDryRunReport = {
   };
 };
 
+export type OperationsRestoreExecutionReport = {
+  mode: "EXECUTE";
+  executed: false;
+  generatedAt: string;
+  status: "BLOCKED";
+  blockedReason: string;
+  restore: OperationsImportValidationReport;
+  currentBackup: OperationsRestoreCurrentBackupCheck;
+  guardrails: {
+    confirmationTokenAccepted: true;
+    currentBackupRequired: true;
+    currentBackupMatchesCurrentState: boolean;
+    destructiveRestoreBlocked: true;
+    transactionRestoreSupported: false;
+  };
+};
+
+export type OperationsRestoreReport =
+  | OperationsRestoreDryRunReport
+  | OperationsRestoreExecutionReport;
+
 export type OperationsApiResponse =
   | {
       data: OperationsSnapshot;
@@ -270,6 +304,16 @@ export type OperationsApiResponse =
 export type OperationsImportValidationApiResponse =
   | {
       data: OperationsImportValidationReport;
+      source: "database";
+    }
+  | {
+      error: string;
+      message: string;
+    };
+
+export type OperationsRestoreApiResponse =
+  | {
+      data: OperationsRestoreReport;
       source: "database";
     }
   | {
