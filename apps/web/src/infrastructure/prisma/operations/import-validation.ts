@@ -10,7 +10,7 @@ import type {
   OperationsRestoreCurrentBackupCheck,
   OperationsRestoreDryRunInput,
   OperationsRestoreDryRunReport,
-  OperationsRestoreExecutionInput,
+  OperationsRestoreExecutionGuardrails,
   OperationsRestoreExecutionReport,
   OperationsRestoreMode,
   OperationsRestoreReport,
@@ -21,6 +21,12 @@ import { OperationsApplicationError } from "@/application/operations/errors";
 import type { MutationContext } from "@/application/security/types";
 import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import { getCurrentBackupTableCounts } from "@/infrastructure/prisma/operations/backup-counts";
+import {
+  buildOperationsRestoreAppliedDataSets,
+  executeOperationsRestoreTransaction,
+  getOperationsRestoreExecutorBlockedReason,
+  supportedOperationsRestoreDataSetKeys,
+} from "@/infrastructure/prisma/operations/restore-executor";
 import { getTenantByCodeOrThrow } from "@/infrastructure/prisma/operations/tenant";
 import { prisma } from "@/infrastructure/prisma/prisma-client";
 import { AuditSeverity } from "@generated/prisma/enums";
@@ -88,39 +94,85 @@ export async function processOperationsRestore(
     return previewOperationsRestore(input, context);
   }
 
-  return blockOperationsRestoreExecution(input, context);
+  const restoreContext = await buildOperationsRestoreContext(input, context);
+  const blockedReason = getOperationsRestoreExecutorBlockedReason({
+    backup: restoreContext.restoreBackup,
+    currentBackup: restoreContext.currentBackupCandidate,
+    currentBackupCheck: restoreContext.currentBackup,
+    restore: restoreContext.restore,
+    tenant: restoreContext.tenant,
+  });
+
+  if (blockedReason) {
+    return blockOperationsRestoreExecution({
+      blockedReason,
+      context,
+      restoreContext,
+    });
+  }
+
+  const appliedDataSets = buildOperationsRestoreAppliedDataSets(
+    restoreContext.restore,
+  );
+  const report = {
+    appliedDataSets,
+    blockedReason: null,
+    currentBackup: restoreContext.currentBackup,
+    executed: true,
+    generatedAt: restoreContext.generatedAt,
+    guardrails: buildRestoreExecutionGuardrails({
+      currentBackup: restoreContext.currentBackup,
+      destructiveRestoreBlocked: false,
+      transactionRestoreSupported: true,
+    }),
+    mode: "EXECUTE",
+    restore: restoreContext.restore,
+    restoredRecordCount: appliedDataSets.reduce(
+      (total, dataSet) => total + dataSet.recordCount,
+      0,
+    ),
+    status: "COMPLETED",
+  } satisfies OperationsRestoreExecutionReport;
+
+  await executeOperationsRestoreTransaction({
+    backup: restoreContext.restoreBackup,
+    context,
+    currentBackup: restoreContext.currentBackupCandidate,
+    currentBackupCheck: restoreContext.currentBackup,
+    report,
+    restore: restoreContext.restore,
+    tenant: restoreContext.tenant,
+  });
+
+  return report;
 }
 
 async function blockOperationsRestoreExecution(
-  input: OperationsRestoreExecutionInput,
-  context: MutationContext,
+  input: {
+    blockedReason: string;
+    context: MutationContext;
+    restoreContext: Awaited<ReturnType<typeof buildOperationsRestoreContext>>;
+  },
 ): Promise<OperationsRestoreExecutionReport> {
-  const restoreContext = await buildOperationsRestoreContext(input, context);
   const report = {
-    blockedReason: getRestoreExecutionBlockedReason(
-      restoreContext.restore,
-      restoreContext.currentBackup,
-    ),
-    currentBackup: restoreContext.currentBackup,
+    blockedReason: input.blockedReason,
+    currentBackup: input.restoreContext.currentBackup,
     executed: false,
-    generatedAt: restoreContext.generatedAt,
-    guardrails: {
-      confirmationTokenAccepted: true,
-      currentBackupMatchesCurrentState:
-        restoreContext.currentBackup.matchesCurrentState,
-      currentBackupRequired: true,
+    generatedAt: input.restoreContext.generatedAt,
+    guardrails: buildRestoreExecutionGuardrails({
+      currentBackup: input.restoreContext.currentBackup,
       destructiveRestoreBlocked: true,
-      transactionRestoreSupported: false,
-    },
+      transactionRestoreSupported: true,
+    }),
     mode: "EXECUTE",
-    restore: restoreContext.restore,
+    restore: input.restoreContext.restore,
     status: "BLOCKED",
   } satisfies OperationsRestoreExecutionReport;
 
   await recordOperationsRestoreExecutionBlockedAudit({
-    context,
+    context: input.context,
     report,
-    tenantId: restoreContext.tenant.id,
+    tenantId: input.restoreContext.tenant.id,
   });
 
   return report;
@@ -157,9 +209,11 @@ async function buildOperationsRestoreContext(
   );
 
   return {
+    currentBackupCandidate: input.currentBackup,
     currentBackup: buildCurrentBackupCheck(currentBackupReport),
     generatedAt,
     restore,
+    restoreBackup: input.backup,
     tenant,
   };
 }
@@ -307,39 +361,6 @@ async function assertRestoreConfirmationToken(input: {
   }
 }
 
-function getRestoreExecutionBlockedReason(
-  restore: OperationsImportValidationReport,
-  currentBackup: OperationsRestoreCurrentBackupCheck,
-) {
-  if (!restore.restorePlan.canRestore) {
-    return (
-      restore.restorePlan.blockedReason ??
-      "復元計画にブロック項目があるため実復元を開始できません。"
-    );
-  }
-
-  if (
-    currentBackup.status === "BLOCKED" ||
-    !currentBackup.matchesCurrentState
-  ) {
-    return "現行バックアップが現在のデータ件数と一致しないため実復元を開始できません。";
-  }
-
-  const reviewStep = restore.restorePlan.steps.find(
-    (step) => step.status === "REVIEW_REQUIRED",
-  );
-
-  if (reviewStep) {
-    return `復元計画に確認が必要なステップがあります: ${reviewStep.label}`;
-  }
-
-  if (restore.restorePlan.destructive) {
-    return "既存データを変更する復元は transaction 実装が入るまで実行できません。";
-  }
-
-  return "実復元 transaction はまだ有効化されていません。次の実装でデータセット単位の反映処理を追加します。";
-}
-
 function createRestoreConfirmationToken(
   tenantCode: string,
   exportedAt: string | null,
@@ -357,6 +378,24 @@ function createRestoreConfirmationToken(
   const dateToken = exportedDate.toISOString().slice(0, 10).replaceAll("-", "");
 
   return `RESTORE:${tenantCode}:${dateToken}`;
+}
+
+function buildRestoreExecutionGuardrails(input: {
+  currentBackup: OperationsRestoreCurrentBackupCheck;
+  destructiveRestoreBlocked: boolean;
+  transactionRestoreSupported: boolean;
+}): OperationsRestoreExecutionGuardrails {
+  return {
+    confirmationTokenAccepted: true,
+    currentBackupMatchesCurrentState: input.currentBackup.matchesCurrentState,
+    currentBackupRequired: true,
+    destructiveRestoreBlocked: input.destructiveRestoreBlocked,
+    replaceActionsBlocked: true,
+    reviewRequiredBlocked: true,
+    supportedDataSets: [...supportedOperationsRestoreDataSetKeys],
+    transactionRestoreSupported: input.transactionRestoreSupported,
+    unsupportedDataSetsBlocked: true,
+  };
 }
 
 function buildCurrentBackupCheck(

@@ -270,7 +270,19 @@ export type OperationsRestoreDryRunReport = {
   };
 };
 
-export type OperationsRestoreExecutionReport = {
+export type OperationsRestoreExecutionGuardrails = {
+  confirmationTokenAccepted: true;
+  currentBackupRequired: true;
+  currentBackupMatchesCurrentState: boolean;
+  destructiveRestoreBlocked: boolean;
+  transactionRestoreSupported: boolean;
+  unsupportedDataSetsBlocked: true;
+  replaceActionsBlocked: true;
+  reviewRequiredBlocked: true;
+  supportedDataSets: OperationsBackupDataKey[];
+};
+
+export type OperationsRestoreExecutionBlockedReport = {
   mode: "EXECUTE";
   executed: false;
   generatedAt: string;
@@ -278,14 +290,29 @@ export type OperationsRestoreExecutionReport = {
   blockedReason: string;
   restore: OperationsImportValidationReport;
   currentBackup: OperationsRestoreCurrentBackupCheck;
-  guardrails: {
-    confirmationTokenAccepted: true;
-    currentBackupRequired: true;
-    currentBackupMatchesCurrentState: boolean;
-    destructiveRestoreBlocked: true;
-    transactionRestoreSupported: false;
-  };
+  guardrails: OperationsRestoreExecutionGuardrails;
 };
+
+export type OperationsRestoreExecutionCompletedReport = {
+  mode: "EXECUTE";
+  executed: true;
+  generatedAt: string;
+  status: "COMPLETED";
+  blockedReason: null;
+  restore: OperationsImportValidationReport;
+  currentBackup: OperationsRestoreCurrentBackupCheck;
+  appliedDataSets: {
+    key: OperationsBackupDataKey;
+    label: string;
+    recordCount: number;
+  }[];
+  restoredRecordCount: number;
+  guardrails: OperationsRestoreExecutionGuardrails;
+};
+
+export type OperationsRestoreExecutionReport =
+  | OperationsRestoreExecutionBlockedReport
+  | OperationsRestoreExecutionCompletedReport;
 
 export type OperationsRestoreReport =
   | OperationsRestoreDryRunReport
