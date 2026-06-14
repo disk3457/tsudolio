@@ -24,6 +24,7 @@ export const supportedOperationsRestoreDataSetKeys = [
   "roles",
   "rolePermissions",
   "facilities",
+  "notices",
 ] as const satisfies OperationsBackupDataKey[];
 
 type SupportedOperationsRestoreDataSetKey =
@@ -91,6 +92,19 @@ type FacilityRestoreRow = {
   status: FacilityStatus;
   capacity: number | null;
   location: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type NoticeRestoreRow = {
+  id: string;
+  tenantId: string;
+  organizationUnitId: string | null;
+  title: string;
+  body: string;
+  requiresAck: boolean;
+  publishedAt: Date;
+  expiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -207,6 +221,7 @@ export async function executeOperationsRestoreTransaction(
   const roles = readRoleRows(input.backup, input.tenant.id);
   const rolePermissions = readRolePermissionRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
+  const notices = readNoticeRows(input.backup, input.tenant.id);
 
   await prisma.$transaction(async (tx) => {
     await restorePermissions(tx, permissions);
@@ -214,6 +229,7 @@ export async function executeOperationsRestoreTransaction(
     await restoreRoles(tx, roles);
     await restoreRolePermissions(tx, rolePermissions);
     await restoreFacilities(tx, facilities);
+    await restoreNotices(tx, notices);
     await recordAuditEvent(tx, {
       tenantId: input.tenant.id,
       context: input.context,
@@ -262,6 +278,7 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   const roleIds = new Set(roles.map((role) => role.id));
   const rolePermissions = readRolePermissionRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
+  const notices = readNoticeRows(input.backup, input.tenant.id);
 
   for (const unit of organizationUnits) {
     if (unit.parentId && !organizationUnitIds.has(unit.parentId)) {
@@ -298,6 +315,18 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
       throw createInvalidRestoreRowError(
         "facilities",
         `data.facilities の organizationUnitId ${facility.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
+      );
+    }
+  }
+
+  for (const notice of notices) {
+    if (
+      notice.organizationUnitId &&
+      !organizationUnitIds.has(notice.organizationUnitId)
+    ) {
+      throw createInvalidRestoreRowError(
+        "notices",
+        `data.notices の organizationUnitId ${notice.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
       );
     }
   }
@@ -494,6 +523,40 @@ async function restoreFacilities(
   }
 }
 
+async function restoreNotices(
+  tx: Prisma.TransactionClient,
+  rows: NoticeRestoreRow[],
+) {
+  for (const row of rows) {
+    await tx.notice.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        tenantId: row.tenantId,
+        organizationUnitId: row.organizationUnitId,
+        title: row.title,
+        body: row.body,
+        requiresAck: row.requiresAck,
+        publishedAt: row.publishedAt,
+        expiresAt: row.expiresAt,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+      update: {
+        tenantId: row.tenantId,
+        organizationUnitId: row.organizationUnitId,
+        title: row.title,
+        body: row.body,
+        requiresAck: row.requiresAck,
+        publishedAt: row.publishedAt,
+        expiresAt: row.expiresAt,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+    });
+  }
+}
+
 function readOrganizationUnitRows(
   backup: OperationsImportCandidate,
   tenantId: string,
@@ -591,6 +654,34 @@ function readFacilityRows(
       location: readNullableString(row, "location", "facilities", index),
       createdAt: readDate(row, "createdAt", "facilities", index),
       updatedAt: readDate(row, "updatedAt", "facilities", index),
+    };
+  });
+}
+
+function readNoticeRows(
+  backup: OperationsImportCandidate,
+  tenantId: string,
+): NoticeRestoreRow[] {
+  return getRestoreRows(backup, "notices").map((row, index) => {
+    const rowTenantId = readRequiredString(row, "tenantId", "notices", index);
+    assertRowTenant(rowTenantId, tenantId, "notices", index);
+
+    return {
+      id: readRequiredString(row, "id", "notices", index),
+      tenantId: rowTenantId,
+      organizationUnitId: readNullableString(
+        row,
+        "organizationUnitId",
+        "notices",
+        index,
+      ),
+      title: readRequiredString(row, "title", "notices", index),
+      body: readRequiredString(row, "body", "notices", index),
+      requiresAck: readBoolean(row, "requiresAck", "notices", index),
+      publishedAt: readDate(row, "publishedAt", "notices", index),
+      expiresAt: readNullableDate(row, "expiresAt", "notices", index),
+      createdAt: readDate(row, "createdAt", "notices", index),
+      updatedAt: readDate(row, "updatedAt", "notices", index),
     };
   });
 }
@@ -719,6 +810,24 @@ function readNullableInteger(
   return value as number;
 }
 
+function readBoolean(
+  row: Record<string, unknown>,
+  field: string,
+  dataSet: SupportedOperationsRestoreDataSetKey,
+  index: number,
+) {
+  const value = row[field];
+
+  if (typeof value !== "boolean") {
+    throw createInvalidRestoreRowError(
+      dataSet,
+      `data.${dataSet}[${index}].${field} は真偽値である必要があります。`,
+    );
+  }
+
+  return value;
+}
+
 function readDate(
   row: Record<string, unknown>,
   field: string,
@@ -731,6 +840,37 @@ function readDate(
     throw createInvalidRestoreRowError(
       dataSet,
       `data.${dataSet}[${index}].${field} は日時文字列である必要があります。`,
+    );
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    throw createInvalidRestoreRowError(
+      dataSet,
+      `data.${dataSet}[${index}].${field} は有効な日時である必要があります。`,
+    );
+  }
+
+  return date;
+}
+
+function readNullableDate(
+  row: Record<string, unknown>,
+  field: string,
+  dataSet: SupportedOperationsRestoreDataSetKey,
+  index: number,
+) {
+  const value = row[field];
+
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value !== "string" && !(value instanceof Date)) {
+    throw createInvalidRestoreRowError(
+      dataSet,
+      `data.${dataSet}[${index}].${field} は日時文字列または null である必要があります。`,
     );
   }
 
