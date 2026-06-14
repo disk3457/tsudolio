@@ -1,0 +1,323 @@
+import { OperationsApplicationError } from "@/application/operations/errors";
+import { createInvalidRestoreRowError } from "@/infrastructure/prisma/operations/restore-executor/errors";
+import {
+  getDataSetLabel,
+  getRestoreStep,
+  isRestoreDataSetSupported,
+} from "@/infrastructure/prisma/operations/restore-executor/plan";
+import {
+  collectRestoreIdentityKeys,
+  readFacilityRows,
+  readMembershipRows,
+  readNoticeRows,
+  readOrganizationUnitRows,
+  readPermissionRows,
+  readRolePermissionRows,
+  readRoleRows,
+  readUserRows,
+  sortOrganizationUnitRows,
+} from "@/infrastructure/prisma/operations/restore-executor/row-readers";
+import {
+  supportedOperationsRestoreDataSetKeys,
+  type MembershipRestoreRow,
+  type RestoreExecutorInput,
+  type UserRestoreRow,
+} from "@/infrastructure/prisma/operations/restore-executor/types";
+
+export function getOperationsRestoreExecutorBlockedReason(
+  input: RestoreExecutorInput,
+) {
+  if (input.restore.status !== "READY") {
+    return "復元検証ステータスが READY ではないため実復元を開始できません。";
+  }
+
+  if (input.restore.restorePlan.status !== "READY") {
+    return "復元計画が READY ではないため実復元を開始できません。";
+  }
+
+  if (!input.restore.restorePlan.canRestore) {
+    return (
+      input.restore.restorePlan.blockedReason ??
+      "復元計画にブロック項目があるため実復元を開始できません。"
+    );
+  }
+
+  if (
+    input.currentBackupCheck.status !== "READY" ||
+    !input.currentBackupCheck.matchesCurrentState
+  ) {
+    return "現行バックアップが現在のデータ件数と一致しないため実復元を開始できません。";
+  }
+
+  const reviewStep = input.restore.restorePlan.steps.find(
+    (step) => step.status === "REVIEW_REQUIRED",
+  );
+
+  if (reviewStep) {
+    return `復元計画に確認が必要なステップがあります: ${reviewStep.label}`;
+  }
+
+  const replaceStep = input.restore.restorePlan.steps.find(
+    (step) => step.action === "REPLACE",
+  );
+
+  if (replaceStep) {
+    return `REPLACE が必要なデータセットはまだ実復元できません: ${replaceStep.label}`;
+  }
+
+  const unsupportedStep = input.restore.restorePlan.steps.find(
+    (step) =>
+      step.phase === "RESTORE" &&
+      step.tableKey !== null &&
+      !isRestoreDataSetSupported(step.tableKey) &&
+      step.action !== "SKIP",
+  );
+
+  if (unsupportedStep) {
+    return `対応済みデータセット外の復元はまだ実行できません: ${unsupportedStep.label}`;
+  }
+
+  try {
+    validateSupportedRestoreRows(input);
+    return getIdentitySetBlockedReason(input);
+  } catch (error) {
+    if (error instanceof OperationsApplicationError) {
+      return error.message;
+    }
+
+    throw error;
+  }
+}
+
+function validateSupportedRestoreRows(input: RestoreExecutorInput) {
+  const permissions = readPermissionRows(input.backup);
+  const permissionIds = new Set(permissions.map((permission) => permission.id));
+  const organizationUnits = readOrganizationUnitRows(
+    input.backup,
+    input.tenant.id,
+  );
+  const organizationUnitIds = new Set(
+    organizationUnits.map((unit) => unit.id),
+  );
+  const users = readUserRows(input.backup, input.tenant.id);
+  const userIds = new Set(users.map((user) => user.id));
+  const memberships = readMembershipRows(input.backup, input.tenant.id);
+  const roles = readRoleRows(input.backup, input.tenant.id);
+  const roleIds = new Set(roles.map((role) => role.id));
+  const rolePermissions = readRolePermissionRows(input.backup);
+  const facilities = readFacilityRows(input.backup, input.tenant.id);
+  const notices = readNoticeRows(input.backup, input.tenant.id);
+
+  for (const unit of organizationUnits) {
+    if (unit.parentId && !organizationUnitIds.has(unit.parentId)) {
+      throw createInvalidRestoreRowError(
+        "organizationUnits",
+        `data.organizationUnits の parentId ${unit.parentId} がバックアップ内の組織単位に存在しません。`,
+      );
+    }
+  }
+
+  sortOrganizationUnitRows(organizationUnits);
+  assertUniqueUserEmails(users);
+  assertAuthSensitiveUserFieldsUnchanged(input, users);
+  assertMembershipReferences(memberships, userIds, organizationUnitIds);
+  assertUniqueMembershipAssignments(memberships);
+  assertMembershipAssignmentsUnchanged(input, memberships);
+
+  for (const rolePermission of rolePermissions) {
+    if (!roleIds.has(rolePermission.roleId)) {
+      throw createInvalidRestoreRowError(
+        "rolePermissions",
+        `data.rolePermissions の roleId ${rolePermission.roleId} がバックアップ内のロールに存在しません。`,
+      );
+    }
+
+    if (!permissionIds.has(rolePermission.permissionId)) {
+      throw createInvalidRestoreRowError(
+        "rolePermissions",
+        `data.rolePermissions の permissionId ${rolePermission.permissionId} がバックアップ内の権限に存在しません。`,
+      );
+    }
+  }
+
+  for (const facility of facilities) {
+    if (
+      facility.organizationUnitId &&
+      !organizationUnitIds.has(facility.organizationUnitId)
+    ) {
+      throw createInvalidRestoreRowError(
+        "facilities",
+        `data.facilities の organizationUnitId ${facility.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
+      );
+    }
+  }
+
+  for (const notice of notices) {
+    if (
+      notice.organizationUnitId &&
+      !organizationUnitIds.has(notice.organizationUnitId)
+    ) {
+      throw createInvalidRestoreRowError(
+        "notices",
+        `data.notices の organizationUnitId ${notice.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
+      );
+    }
+  }
+}
+
+function getIdentitySetBlockedReason(input: RestoreExecutorInput) {
+  for (const key of supportedOperationsRestoreDataSetKeys) {
+    const step = getRestoreStep(input.restore, key);
+
+    if (!step || step.action !== "UPSERT" || step.recordCount === 0) {
+      continue;
+    }
+
+    const table = input.restore.tables.find((candidate) => candidate.key === key);
+
+    if (!table || table.currentCount === 0) {
+      continue;
+    }
+
+    const restoreKeys = collectRestoreIdentityKeys(input.backup, key);
+    const currentBackupKeys = collectRestoreIdentityKeys(input.currentBackup, key);
+
+    if (!hasSameIdentitySet(restoreKeys, currentBackupKeys)) {
+      return `${getDataSetLabel(
+        key,
+      )} は現行バックアップと復元バックアップのID集合が一致しないため、置換扱いとして拒否しました。`;
+    }
+  }
+
+  return null;
+}
+
+function hasSameIdentitySet(left: string[], right: string[]) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  const rightSet = new Set(right);
+
+  return left.every((key) => rightSet.has(key));
+}
+
+function assertUniqueUserEmails(rows: UserRestoreRow[]) {
+  const emails = new Set<string>();
+
+  for (const row of rows) {
+    const emailKey = row.email.toLowerCase();
+
+    if (emails.has(emailKey)) {
+      throw createInvalidRestoreRowError(
+        "users",
+        `data.users の email ${row.email} が重複しています。`,
+      );
+    }
+
+    emails.add(emailKey);
+  }
+}
+
+function assertAuthSensitiveUserFieldsUnchanged(
+  input: RestoreExecutorInput,
+  rows: UserRestoreRow[],
+) {
+  const currentUsers = new Map(
+    readUserRows(input.currentBackup, input.tenant.id).map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+
+  for (const row of rows) {
+    const currentUser = currentUsers.get(row.id);
+
+    if (!currentUser) {
+      continue;
+    }
+
+    if (currentUser.email !== row.email) {
+      throw createInvalidRestoreRowError(
+        "users",
+        `data.users の email は認証識別子のため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+
+    if (currentUser.isSystemAdmin !== row.isSystemAdmin) {
+      throw createInvalidRestoreRowError(
+        "users",
+        `data.users の isSystemAdmin は特権フラグのため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
+}
+
+function assertMembershipReferences(
+  rows: MembershipRestoreRow[],
+  userIds: Set<string>,
+  organizationUnitIds: Set<string>,
+) {
+  for (const row of rows) {
+    if (!userIds.has(row.userId)) {
+      throw createInvalidRestoreRowError(
+        "memberships",
+        `data.memberships の userId ${row.userId} がバックアップ内の利用者に存在しません。`,
+      );
+    }
+
+    if (!organizationUnitIds.has(row.organizationUnitId)) {
+      throw createInvalidRestoreRowError(
+        "memberships",
+        `data.memberships の organizationUnitId ${row.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
+      );
+    }
+  }
+}
+
+function assertUniqueMembershipAssignments(rows: MembershipRestoreRow[]) {
+  const assignments = new Set<string>();
+
+  for (const row of rows) {
+    const key = `${row.userId}:${row.organizationUnitId}`;
+
+    if (assignments.has(key)) {
+      throw createInvalidRestoreRowError(
+        "memberships",
+        `data.memberships の所属 ${row.userId}/${row.organizationUnitId} が重複しています。`,
+      );
+    }
+
+    assignments.add(key);
+  }
+}
+
+function assertMembershipAssignmentsUnchanged(
+  input: RestoreExecutorInput,
+  rows: MembershipRestoreRow[],
+) {
+  const currentMemberships = new Map(
+    readMembershipRows(input.currentBackup, input.tenant.id).map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+
+  for (const row of rows) {
+    const currentMembership = currentMemberships.get(row.id);
+
+    if (!currentMembership) {
+      continue;
+    }
+
+    if (
+      currentMembership.userId !== row.userId ||
+      currentMembership.organizationUnitId !== row.organizationUnitId
+    ) {
+      throw createInvalidRestoreRowError(
+        "memberships",
+        `data.memberships の userId / organizationUnitId 変更は所属移動になるため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
+}
