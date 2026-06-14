@@ -21,6 +21,7 @@ import {
 export const supportedOperationsRestoreDataSetKeys = [
   "permissions",
   "organizationUnits",
+  "users",
   "roles",
   "rolePermissions",
   "facilities",
@@ -57,6 +58,20 @@ type OrganizationUnitRestoreRow = {
   kind: OrganizationUnitKind;
   path: string;
   sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type UserRestoreRow = {
+  id: string;
+  tenantId: string;
+  email: string;
+  displayName: string;
+  kanaName: string | null;
+  title: string | null;
+  locale: string;
+  isSystemAdmin: boolean;
+  lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -218,6 +233,7 @@ export async function executeOperationsRestoreTransaction(
   const organizationUnits = sortOrganizationUnitRows(
     readOrganizationUnitRows(input.backup, input.tenant.id),
   );
+  const users = readUserRows(input.backup, input.tenant.id);
   const roles = readRoleRows(input.backup, input.tenant.id);
   const rolePermissions = readRolePermissionRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
@@ -226,6 +242,7 @@ export async function executeOperationsRestoreTransaction(
   await prisma.$transaction(async (tx) => {
     await restorePermissions(tx, permissions);
     await restoreOrganizationUnits(tx, organizationUnits);
+    await restoreUsers(tx, users);
     await restoreRoles(tx, roles);
     await restoreRolePermissions(tx, rolePermissions);
     await restoreFacilities(tx, facilities);
@@ -274,6 +291,7 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   const organizationUnitIds = new Set(
     organizationUnits.map((unit) => unit.id),
   );
+  const users = readUserRows(input.backup, input.tenant.id);
   const roles = readRoleRows(input.backup, input.tenant.id);
   const roleIds = new Set(roles.map((role) => role.id));
   const rolePermissions = readRolePermissionRows(input.backup);
@@ -290,6 +308,8 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   }
 
   sortOrganizationUnitRows(organizationUnits);
+  assertUniqueUserEmails(users);
+  assertAuthSensitiveUserFieldsUnchanged(input, users);
 
   for (const rolePermission of rolePermissions) {
     if (!roleIds.has(rolePermission.roleId)) {
@@ -433,6 +453,39 @@ async function restoreOrganizationUnits(
         kind: row.kind,
         path: row.path,
         sortOrder: row.sortOrder,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+    });
+  }
+}
+
+async function restoreUsers(tx: Prisma.TransactionClient, rows: UserRestoreRow[]) {
+  for (const row of rows) {
+    await tx.user.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        tenantId: row.tenantId,
+        email: row.email,
+        displayName: row.displayName,
+        kanaName: row.kanaName,
+        title: row.title,
+        locale: row.locale,
+        isSystemAdmin: row.isSystemAdmin,
+        lastLoginAt: row.lastLoginAt,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+      update: {
+        tenantId: row.tenantId,
+        email: row.email,
+        displayName: row.displayName,
+        kanaName: row.kanaName,
+        title: row.title,
+        locale: row.locale,
+        isSystemAdmin: row.isSystemAdmin,
+        lastLoginAt: row.lastLoginAt,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       },
@@ -605,6 +658,30 @@ function readRoleRows(
   });
 }
 
+function readUserRows(
+  backup: OperationsImportCandidate,
+  tenantId: string,
+): UserRestoreRow[] {
+  return getRestoreRows(backup, "users").map((row, index) => {
+    const rowTenantId = readRequiredString(row, "tenantId", "users", index);
+    assertRowTenant(rowTenantId, tenantId, "users", index);
+
+    return {
+      id: readRequiredString(row, "id", "users", index),
+      tenantId: rowTenantId,
+      email: readRequiredString(row, "email", "users", index),
+      displayName: readRequiredString(row, "displayName", "users", index),
+      kanaName: readNullableString(row, "kanaName", "users", index),
+      title: readNullableString(row, "title", "users", index),
+      locale: readRequiredString(row, "locale", "users", index),
+      isSystemAdmin: readBoolean(row, "isSystemAdmin", "users", index),
+      lastLoginAt: readNullableDate(row, "lastLoginAt", "users", index),
+      createdAt: readDate(row, "createdAt", "users", index),
+      updatedAt: readDate(row, "updatedAt", "users", index),
+    };
+  });
+}
+
 function readPermissionRows(
   backup: OperationsImportCandidate,
 ): PermissionRestoreRow[] {
@@ -712,6 +789,57 @@ function sortOrganizationUnitRows(rows: OrganizationUnitRestoreRow[]) {
   }
 
   return sorted;
+}
+
+function assertUniqueUserEmails(rows: UserRestoreRow[]) {
+  const emails = new Set<string>();
+
+  for (const row of rows) {
+    const emailKey = row.email.toLowerCase();
+
+    if (emails.has(emailKey)) {
+      throw createInvalidRestoreRowError(
+        "users",
+        `data.users の email ${row.email} が重複しています。`,
+      );
+    }
+
+    emails.add(emailKey);
+  }
+}
+
+function assertAuthSensitiveUserFieldsUnchanged(
+  input: RestoreExecutorInput,
+  rows: UserRestoreRow[],
+) {
+  const currentUsers = new Map(
+    readUserRows(input.currentBackup, input.tenant.id).map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+
+  for (const row of rows) {
+    const currentUser = currentUsers.get(row.id);
+
+    if (!currentUser) {
+      continue;
+    }
+
+    if (currentUser.email !== row.email) {
+      throw createInvalidRestoreRowError(
+        "users",
+        `data.users の email は認証識別子のため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+
+    if (currentUser.isSystemAdmin !== row.isSystemAdmin) {
+      throw createInvalidRestoreRowError(
+        "users",
+        `data.users の isSystemAdmin は特権フラグのため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
 }
 
 function getRestoreRows(
