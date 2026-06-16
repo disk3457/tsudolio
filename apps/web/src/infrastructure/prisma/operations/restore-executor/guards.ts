@@ -9,6 +9,7 @@ import {
   collectRestoreIdentityKeys,
   readFacilityRows,
   readMembershipRows,
+  readNoticeAcknowledgementRows,
   readNoticeRows,
   readOrganizationUnitRows,
   readPermissionRows,
@@ -21,6 +22,7 @@ import {
 import {
   supportedOperationsRestoreDataSetKeys,
   type MembershipRestoreRow,
+  type NoticeAcknowledgementRestoreRow,
   type RoleAssignmentRestoreRow,
   type RestoreExecutorInput,
   type UserRestoreRow,
@@ -111,6 +113,11 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   const roleAssignments = readRoleAssignmentRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
   const notices = readNoticeRows(input.backup, input.tenant.id);
+  const noticeIds = new Set(notices.map((notice) => notice.id));
+  const noticeAcknowledgements = readNoticeAcknowledgementRows(
+    input.backup,
+    input.tenant.id,
+  );
 
   for (const unit of organizationUnits) {
     if (unit.parentId && !organizationUnitIds.has(unit.parentId)) {
@@ -130,6 +137,13 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   assertRoleAssignmentReferences(roleAssignments, roleIds, membershipIds);
   assertUniqueRoleAssignments(roleAssignments);
   assertRoleAssignmentsUnchanged(input, roleAssignments);
+  assertNoticeAcknowledgementReferences(
+    noticeAcknowledgements,
+    noticeIds,
+    userIds,
+  );
+  assertUniqueNoticeAcknowledgements(noticeAcknowledgements);
+  assertNoticeAcknowledgementsUnchanged(input, noticeAcknowledgements);
 
   for (const rolePermission of rolePermissions) {
     if (!roleIds.has(rolePermission.roleId)) {
@@ -390,6 +404,76 @@ function assertRoleAssignmentsUnchanged(
       throw createInvalidRestoreRowError(
         "roleAssignments",
         `data.roleAssignments の roleId / membershipId 変更は権限割当の付け替えになるため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
+}
+
+function assertNoticeAcknowledgementReferences(
+  rows: NoticeAcknowledgementRestoreRow[],
+  noticeIds: Set<string>,
+  userIds: Set<string>,
+) {
+  for (const row of rows) {
+    if (!noticeIds.has(row.noticeId)) {
+      throw createInvalidRestoreRowError(
+        "noticeAcknowledgements",
+        `data.noticeAcknowledgements の noticeId ${row.noticeId} がバックアップ内の掲示に存在しません。`,
+      );
+    }
+
+    if (!userIds.has(row.userId)) {
+      throw createInvalidRestoreRowError(
+        "noticeAcknowledgements",
+        `data.noticeAcknowledgements の userId ${row.userId} がバックアップ内の利用者に存在しません。`,
+      );
+    }
+  }
+}
+
+function assertUniqueNoticeAcknowledgements(
+  rows: NoticeAcknowledgementRestoreRow[],
+) {
+  const acknowledgements = new Set<string>();
+
+  for (const row of rows) {
+    const key = `${row.noticeId}:${row.userId}`;
+
+    if (acknowledgements.has(key)) {
+      throw createInvalidRestoreRowError(
+        "noticeAcknowledgements",
+        `data.noticeAcknowledgements の既読確認 ${row.noticeId}/${row.userId} が重複しています。`,
+      );
+    }
+
+    acknowledgements.add(key);
+  }
+}
+
+function assertNoticeAcknowledgementsUnchanged(
+  input: RestoreExecutorInput,
+  rows: NoticeAcknowledgementRestoreRow[],
+) {
+  const currentNoticeAcknowledgements = new Map(
+    readNoticeAcknowledgementRows(input.currentBackup, input.tenant.id).map(
+      (row) => [row.id, row],
+    ),
+  );
+
+  for (const row of rows) {
+    const currentNoticeAcknowledgement = currentNoticeAcknowledgements.get(row.id);
+
+    if (!currentNoticeAcknowledgement) {
+      continue;
+    }
+
+    if (
+      currentNoticeAcknowledgement.noticeId !== row.noticeId ||
+      currentNoticeAcknowledgement.userId !== row.userId
+    ) {
+      throw createInvalidRestoreRowError(
+        "noticeAcknowledgements",
+        `data.noticeAcknowledgements の noticeId / userId 変更は既読確認の付け替えになるため、このPRでは変更できません: ${row.id}`,
       );
     }
   }

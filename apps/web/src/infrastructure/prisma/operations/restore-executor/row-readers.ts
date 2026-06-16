@@ -2,6 +2,7 @@ import type { OperationsImportCandidate } from "@/application/operations/types";
 import { createInvalidRestoreRowError } from "@/infrastructure/prisma/operations/restore-executor/errors";
 import type {
   FacilityRestoreRow,
+  NoticeAcknowledgementRestoreRow,
   MembershipRestoreRow,
   NoticeRestoreRow,
   OrganizationUnitRestoreRow,
@@ -228,6 +229,44 @@ export function readNoticeRows(
       expiresAt: readNullableDate(row, "expiresAt", "notices", index),
       createdAt: readDate(row, "createdAt", "notices", index),
       updatedAt: readDate(row, "updatedAt", "notices", index),
+    };
+  });
+}
+
+export function readNoticeAcknowledgementRows(
+  backup: OperationsImportCandidate,
+  tenantId: string,
+): NoticeAcknowledgementRestoreRow[] {
+  return getRestoreRows(backup, "noticeAcknowledgements").map((row, index) => {
+    const rowTenantId = readRequiredString(
+      row,
+      "tenantId",
+      "noticeAcknowledgements",
+      index,
+    );
+    assertRowTenant(rowTenantId, tenantId, "noticeAcknowledgements", index);
+
+    return {
+      id: readRequiredString(row, "id", "noticeAcknowledgements", index),
+      tenantId: rowTenantId,
+      noticeId: readRequiredString(
+        row,
+        "noticeId",
+        "noticeAcknowledgements",
+        index,
+      ),
+      userId: readRequiredString(
+        row,
+        "userId",
+        "noticeAcknowledgements",
+        index,
+      ),
+      acknowledgedAt: readDate(
+        row,
+        "acknowledgedAt",
+        "noticeAcknowledgements",
+        index,
+      ),
     };
   });
 }

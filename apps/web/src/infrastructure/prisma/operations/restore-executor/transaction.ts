@@ -2,6 +2,7 @@ import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository
 import {
   readFacilityRows,
   readMembershipRows,
+  readNoticeAcknowledgementRows,
   readNoticeRows,
   readOrganizationUnitRows,
   readPermissionRows,
@@ -15,6 +16,7 @@ import type {
   ExecuteRestoreTransactionInput,
   FacilityRestoreRow,
   MembershipRestoreRow,
+  NoticeAcknowledgementRestoreRow,
   NoticeRestoreRow,
   OrganizationUnitRestoreRow,
   PermissionRestoreRow,
@@ -41,6 +43,10 @@ export async function executeOperationsRestoreTransaction(
   const roleAssignments = readRoleAssignmentRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
   const notices = readNoticeRows(input.backup, input.tenant.id);
+  const noticeAcknowledgements = readNoticeAcknowledgementRows(
+    input.backup,
+    input.tenant.id,
+  );
 
   await prisma.$transaction(async (tx) => {
     await restorePermissions(tx, permissions);
@@ -52,6 +58,7 @@ export async function executeOperationsRestoreTransaction(
     await restoreRoleAssignments(tx, roleAssignments);
     await restoreFacilities(tx, facilities);
     await restoreNotices(tx, notices);
+    await restoreNoticeAcknowledgements(tx, noticeAcknowledgements);
     await recordAuditEvent(tx, {
       tenantId: input.tenant.id,
       context: input.context,
@@ -337,6 +344,30 @@ async function restoreNotices(
         expiresAt: row.expiresAt,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
+      },
+    });
+  }
+}
+
+async function restoreNoticeAcknowledgements(
+  tx: Prisma.TransactionClient,
+  rows: NoticeAcknowledgementRestoreRow[],
+) {
+  for (const row of rows) {
+    await tx.noticeAcknowledgement.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        tenantId: row.tenantId,
+        noticeId: row.noticeId,
+        userId: row.userId,
+        acknowledgedAt: row.acknowledgedAt,
+      },
+      update: {
+        tenantId: row.tenantId,
+        noticeId: row.noticeId,
+        userId: row.userId,
+        acknowledgedAt: row.acknowledgedAt,
       },
     });
   }

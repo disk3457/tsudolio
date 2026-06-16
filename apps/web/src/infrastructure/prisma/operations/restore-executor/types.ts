@@ -22,6 +22,7 @@ export const supportedOperationsRestoreDataSetKeys = [
   "roleAssignments",
   "facilities",
   "notices",
+  "noticeAcknowledgements",
 ] as const satisfies OperationsBackupDataKey[];
 
 export type SupportedOperationsRestoreDataSetKey =
@@ -135,4 +136,12 @@ export type NoticeRestoreRow = {
   expiresAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type NoticeAcknowledgementRestoreRow = {
+  id: string;
+  tenantId: string;
+  noticeId: string;
+  userId: string;
+  acknowledgedAt: Date;
 };
