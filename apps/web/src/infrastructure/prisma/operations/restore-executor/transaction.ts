@@ -1,5 +1,6 @@
 import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import {
+  readCalendarEventRows,
   readFacilityRows,
   readMembershipRows,
   readNoticeAcknowledgementRows,
@@ -13,6 +14,7 @@ import {
   sortOrganizationUnitRows,
 } from "@/infrastructure/prisma/operations/restore-executor/row-readers";
 import type {
+  CalendarEventRestoreRow,
   ExecuteRestoreTransactionInput,
   FacilityRestoreRow,
   MembershipRestoreRow,
@@ -42,6 +44,7 @@ export async function executeOperationsRestoreTransaction(
   const rolePermissions = readRolePermissionRows(input.backup);
   const roleAssignments = readRoleAssignmentRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
+  const calendarEvents = readCalendarEventRows(input.backup, input.tenant.id);
   const notices = readNoticeRows(input.backup, input.tenant.id);
   const noticeAcknowledgements = readNoticeAcknowledgementRows(
     input.backup,
@@ -57,6 +60,7 @@ export async function executeOperationsRestoreTransaction(
     await restoreRolePermissions(tx, rolePermissions);
     await restoreRoleAssignments(tx, roleAssignments);
     await restoreFacilities(tx, facilities);
+    await restoreCalendarEvents(tx, calendarEvents);
     await restoreNotices(tx, notices);
     await restoreNoticeAcknowledgements(tx, noticeAcknowledgements);
     await recordAuditEvent(tx, {
@@ -308,6 +312,44 @@ async function restoreFacilities(
         status: row.status,
         capacity: row.capacity,
         location: row.location,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+    });
+  }
+}
+
+async function restoreCalendarEvents(
+  tx: Prisma.TransactionClient,
+  rows: CalendarEventRestoreRow[],
+) {
+  for (const row of rows) {
+    await tx.calendarEvent.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        tenantId: row.tenantId,
+        organizationUnitId: row.organizationUnitId,
+        createdById: row.createdById,
+        title: row.title,
+        description: row.description,
+        startsAt: row.startsAt,
+        endsAt: row.endsAt,
+        location: row.location,
+        visibility: row.visibility,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+      update: {
+        tenantId: row.tenantId,
+        organizationUnitId: row.organizationUnitId,
+        createdById: row.createdById,
+        title: row.title,
+        description: row.description,
+        startsAt: row.startsAt,
+        endsAt: row.endsAt,
+        location: row.location,
+        visibility: row.visibility,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       },

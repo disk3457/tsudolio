@@ -7,6 +7,7 @@ import {
 } from "@/infrastructure/prisma/operations/restore-executor/plan";
 import {
   collectRestoreIdentityKeys,
+  readCalendarEventRows,
   readFacilityRows,
   readMembershipRows,
   readNoticeAcknowledgementRows,
@@ -21,6 +22,7 @@ import {
 } from "@/infrastructure/prisma/operations/restore-executor/row-readers";
 import {
   supportedOperationsRestoreDataSetKeys,
+  type CalendarEventRestoreRow,
   type MembershipRestoreRow,
   type NoticeAcknowledgementRestoreRow,
   type RoleAssignmentRestoreRow,
@@ -112,6 +114,7 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   const rolePermissions = readRolePermissionRows(input.backup);
   const roleAssignments = readRoleAssignmentRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
+  const calendarEvents = readCalendarEventRows(input.backup, input.tenant.id);
   const notices = readNoticeRows(input.backup, input.tenant.id);
   const noticeIds = new Set(notices.map((notice) => notice.id));
   const noticeAcknowledgements = readNoticeAcknowledgementRows(
@@ -137,6 +140,8 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   assertRoleAssignmentReferences(roleAssignments, roleIds, membershipIds);
   assertUniqueRoleAssignments(roleAssignments);
   assertRoleAssignmentsUnchanged(input, roleAssignments);
+  assertCalendarEventReferences(calendarEvents, userIds, organizationUnitIds);
+  assertCalendarEventCreatorsUnchanged(input, calendarEvents);
   assertNoticeAcknowledgementReferences(
     noticeAcknowledgements,
     noticeIds,
@@ -404,6 +409,58 @@ function assertRoleAssignmentsUnchanged(
       throw createInvalidRestoreRowError(
         "roleAssignments",
         `data.roleAssignments の roleId / membershipId 変更は権限割当の付け替えになるため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
+}
+
+function assertCalendarEventReferences(
+  rows: CalendarEventRestoreRow[],
+  userIds: Set<string>,
+  organizationUnitIds: Set<string>,
+) {
+  for (const row of rows) {
+    if (!userIds.has(row.createdById)) {
+      throw createInvalidRestoreRowError(
+        "calendarEvents",
+        `data.calendarEvents の createdById ${row.createdById} がバックアップ内の利用者に存在しません。`,
+      );
+    }
+
+    if (
+      row.organizationUnitId &&
+      !organizationUnitIds.has(row.organizationUnitId)
+    ) {
+      throw createInvalidRestoreRowError(
+        "calendarEvents",
+        `data.calendarEvents の organizationUnitId ${row.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
+      );
+    }
+  }
+}
+
+function assertCalendarEventCreatorsUnchanged(
+  input: RestoreExecutorInput,
+  rows: CalendarEventRestoreRow[],
+) {
+  const currentCalendarEvents = new Map(
+    readCalendarEventRows(input.currentBackup, input.tenant.id).map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+
+  for (const row of rows) {
+    const currentCalendarEvent = currentCalendarEvents.get(row.id);
+
+    if (!currentCalendarEvent) {
+      continue;
+    }
+
+    if (currentCalendarEvent.createdById !== row.createdById) {
+      throw createInvalidRestoreRowError(
+        "calendarEvents",
+        `data.calendarEvents の createdById 変更は予定作成者の付け替えになるため、このPRでは変更できません: ${row.id}`,
       );
     }
   }
