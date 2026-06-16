@@ -1,6 +1,7 @@
 import type { OperationsImportCandidate } from "@/application/operations/types";
 import { createInvalidRestoreRowError } from "@/infrastructure/prisma/operations/restore-executor/errors";
 import type {
+  CalendarEventRestoreRow,
   FacilityRestoreRow,
   NoticeAcknowledgementRestoreRow,
   MembershipRestoreRow,
@@ -14,6 +15,7 @@ import type {
   UserRestoreRow,
 } from "@/infrastructure/prisma/operations/restore-executor/types";
 import type {
+  EventVisibility,
   FacilityStatus,
   MembershipStatus,
   OrganizationUnitKind,
@@ -31,6 +33,11 @@ const facilityStatuses = new Set<FacilityStatus>([
   "IN_USE",
   "MAINTENANCE",
   "APPROVAL_REQUIRED",
+]);
+const eventVisibilities = new Set<EventVisibility>([
+  "PRIVATE",
+  "ORGANIZATION",
+  "TENANT",
 ]);
 const membershipStatuses = new Set<MembershipStatus>([
   "ACTIVE",
@@ -229,6 +236,51 @@ export function readNoticeRows(
       expiresAt: readNullableDate(row, "expiresAt", "notices", index),
       createdAt: readDate(row, "createdAt", "notices", index),
       updatedAt: readDate(row, "updatedAt", "notices", index),
+    };
+  });
+}
+
+export function readCalendarEventRows(
+  backup: OperationsImportCandidate,
+  tenantId: string,
+): CalendarEventRestoreRow[] {
+  return getRestoreRows(backup, "calendarEvents").map((row, index) => {
+    const rowTenantId = readRequiredString(
+      row,
+      "tenantId",
+      "calendarEvents",
+      index,
+    );
+    assertRowTenant(rowTenantId, tenantId, "calendarEvents", index);
+
+    return {
+      id: readRequiredString(row, "id", "calendarEvents", index),
+      tenantId: rowTenantId,
+      organizationUnitId: readNullableString(
+        row,
+        "organizationUnitId",
+        "calendarEvents",
+        index,
+      ),
+      createdById: readRequiredString(
+        row,
+        "createdById",
+        "calendarEvents",
+        index,
+      ),
+      title: readRequiredString(row, "title", "calendarEvents", index),
+      description: readNullableString(
+        row,
+        "description",
+        "calendarEvents",
+        index,
+      ),
+      startsAt: readDate(row, "startsAt", "calendarEvents", index),
+      endsAt: readDate(row, "endsAt", "calendarEvents", index),
+      location: readNullableString(row, "location", "calendarEvents", index),
+      visibility: readEventVisibility(row, index),
+      createdAt: readDate(row, "createdAt", "calendarEvents", index),
+      updatedAt: readDate(row, "updatedAt", "calendarEvents", index),
     };
   });
 }
@@ -519,6 +571,25 @@ function readFacilityStatus(
   }
 
   return value as FacilityStatus;
+}
+
+function readEventVisibility(
+  row: Record<string, unknown>,
+  index: number,
+): EventVisibility {
+  const value = row.visibility;
+
+  if (
+    typeof value !== "string" ||
+    !eventVisibilities.has(value as EventVisibility)
+  ) {
+    throw createInvalidRestoreRowError(
+      "calendarEvents",
+      `data.calendarEvents[${index}].visibility は対応している公開範囲である必要があります。`,
+    );
+  }
+
+  return value as EventVisibility;
 }
 
 function readMembershipStatus(

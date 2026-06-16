@@ -7,6 +7,7 @@ import type {
 } from "@/application/operations/types";
 import type { MutationContext } from "@/application/security/types";
 import type {
+  EventVisibility,
   FacilityStatus,
   MembershipStatus,
   OrganizationUnitKind,
@@ -21,6 +22,7 @@ export const supportedOperationsRestoreDataSetKeys = [
   "rolePermissions",
   "roleAssignments",
   "facilities",
+  "calendarEvents",
   "notices",
   "noticeAcknowledgements",
 ] as const satisfies OperationsBackupDataKey[];
@@ -121,6 +123,21 @@ export type FacilityRestoreRow = {
   status: FacilityStatus;
   capacity: number | null;
   location: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type CalendarEventRestoreRow = {
+  id: string;
+  tenantId: string;
+  organizationUnitId: string | null;
+  createdById: string;
+  title: string;
+  description: string | null;
+  startsAt: Date;
+  endsAt: Date;
+  location: string | null;
+  visibility: EventVisibility;
   createdAt: Date;
   updatedAt: Date;
 };
