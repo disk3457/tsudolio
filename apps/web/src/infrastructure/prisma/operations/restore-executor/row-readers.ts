@@ -6,6 +6,7 @@ import type {
   NoticeRestoreRow,
   OrganizationUnitRestoreRow,
   PermissionRestoreRow,
+  RoleAssignmentRestoreRow,
   RolePermissionRestoreRow,
   RoleRestoreRow,
   SupportedOperationsRestoreDataSetKey,
@@ -156,6 +157,22 @@ export function readRolePermissionRows(
       "rolePermissions",
       index,
     ),
+  }));
+}
+
+export function readRoleAssignmentRows(
+  backup: OperationsImportCandidate,
+): RoleAssignmentRestoreRow[] {
+  return getRestoreRows(backup, "roleAssignments").map((row, index) => ({
+    id: readRequiredString(row, "id", "roleAssignments", index),
+    roleId: readRequiredString(row, "roleId", "roleAssignments", index),
+    membershipId: readRequiredString(
+      row,
+      "membershipId",
+      "roleAssignments",
+      index,
+    ),
+    assignedAt: readDate(row, "assignedAt", "roleAssignments", index),
   }));
 }
 

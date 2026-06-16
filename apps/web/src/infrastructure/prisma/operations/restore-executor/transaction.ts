@@ -5,6 +5,7 @@ import {
   readNoticeRows,
   readOrganizationUnitRows,
   readPermissionRows,
+  readRoleAssignmentRows,
   readRolePermissionRows,
   readRoleRows,
   readUserRows,
@@ -17,6 +18,7 @@ import type {
   NoticeRestoreRow,
   OrganizationUnitRestoreRow,
   PermissionRestoreRow,
+  RoleAssignmentRestoreRow,
   RolePermissionRestoreRow,
   RoleRestoreRow,
   UserRestoreRow,
@@ -36,6 +38,7 @@ export async function executeOperationsRestoreTransaction(
   const memberships = readMembershipRows(input.backup, input.tenant.id);
   const roles = readRoleRows(input.backup, input.tenant.id);
   const rolePermissions = readRolePermissionRows(input.backup);
+  const roleAssignments = readRoleAssignmentRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
   const notices = readNoticeRows(input.backup, input.tenant.id);
 
@@ -46,6 +49,7 @@ export async function executeOperationsRestoreTransaction(
     await restoreMemberships(tx, memberships);
     await restoreRoles(tx, roles);
     await restoreRolePermissions(tx, rolePermissions);
+    await restoreRoleAssignments(tx, roleAssignments);
     await restoreFacilities(tx, facilities);
     await restoreNotices(tx, notices);
     await recordAuditEvent(tx, {
@@ -244,6 +248,28 @@ async function restoreRolePermissions(
         permissionId: row.permissionId,
       },
       update: {},
+    });
+  }
+}
+
+async function restoreRoleAssignments(
+  tx: Prisma.TransactionClient,
+  rows: RoleAssignmentRestoreRow[],
+) {
+  for (const row of rows) {
+    await tx.roleAssignment.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        roleId: row.roleId,
+        membershipId: row.membershipId,
+        assignedAt: row.assignedAt,
+      },
+      update: {
+        roleId: row.roleId,
+        membershipId: row.membershipId,
+        assignedAt: row.assignedAt,
+      },
     });
   }
 }

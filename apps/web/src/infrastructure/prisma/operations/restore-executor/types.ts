@@ -19,6 +19,7 @@ export const supportedOperationsRestoreDataSetKeys = [
   "memberships",
   "roles",
   "rolePermissions",
+  "roleAssignments",
   "facilities",
   "notices",
 ] as const satisfies OperationsBackupDataKey[];
@@ -101,6 +102,13 @@ export type PermissionRestoreRow = {
 export type RolePermissionRestoreRow = {
   roleId: string;
   permissionId: string;
+};
+
+export type RoleAssignmentRestoreRow = {
+  id: string;
+  roleId: string;
+  membershipId: string;
+  assignedAt: Date;
 };
 
 export type FacilityRestoreRow = {

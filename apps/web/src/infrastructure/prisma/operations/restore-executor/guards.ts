@@ -12,6 +12,7 @@ import {
   readNoticeRows,
   readOrganizationUnitRows,
   readPermissionRows,
+  readRoleAssignmentRows,
   readRolePermissionRows,
   readRoleRows,
   readUserRows,
@@ -20,6 +21,7 @@ import {
 import {
   supportedOperationsRestoreDataSetKeys,
   type MembershipRestoreRow,
+  type RoleAssignmentRestoreRow,
   type RestoreExecutorInput,
   type UserRestoreRow,
 } from "@/infrastructure/prisma/operations/restore-executor/types";
@@ -102,9 +104,11 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   const users = readUserRows(input.backup, input.tenant.id);
   const userIds = new Set(users.map((user) => user.id));
   const memberships = readMembershipRows(input.backup, input.tenant.id);
+  const membershipIds = new Set(memberships.map((membership) => membership.id));
   const roles = readRoleRows(input.backup, input.tenant.id);
   const roleIds = new Set(roles.map((role) => role.id));
   const rolePermissions = readRolePermissionRows(input.backup);
+  const roleAssignments = readRoleAssignmentRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
   const notices = readNoticeRows(input.backup, input.tenant.id);
 
@@ -123,6 +127,9 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   assertMembershipReferences(memberships, userIds, organizationUnitIds);
   assertUniqueMembershipAssignments(memberships);
   assertMembershipAssignmentsUnchanged(input, memberships);
+  assertRoleAssignmentReferences(roleAssignments, roleIds, membershipIds);
+  assertUniqueRoleAssignments(roleAssignments);
+  assertRoleAssignmentsUnchanged(input, roleAssignments);
 
   for (const rolePermission of rolePermissions) {
     if (!roleIds.has(rolePermission.roleId)) {
@@ -317,6 +324,72 @@ function assertMembershipAssignmentsUnchanged(
       throw createInvalidRestoreRowError(
         "memberships",
         `data.memberships の userId / organizationUnitId 変更は所属移動になるため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
+}
+
+function assertRoleAssignmentReferences(
+  rows: RoleAssignmentRestoreRow[],
+  roleIds: Set<string>,
+  membershipIds: Set<string>,
+) {
+  for (const row of rows) {
+    if (!roleIds.has(row.roleId)) {
+      throw createInvalidRestoreRowError(
+        "roleAssignments",
+        `data.roleAssignments の roleId ${row.roleId} がバックアップ内のロールに存在しません。`,
+      );
+    }
+
+    if (!membershipIds.has(row.membershipId)) {
+      throw createInvalidRestoreRowError(
+        "roleAssignments",
+        `data.roleAssignments の membershipId ${row.membershipId} がバックアップ内の所属に存在しません。`,
+      );
+    }
+  }
+}
+
+function assertUniqueRoleAssignments(rows: RoleAssignmentRestoreRow[]) {
+  const assignments = new Set<string>();
+
+  for (const row of rows) {
+    const key = `${row.roleId}:${row.membershipId}`;
+
+    if (assignments.has(key)) {
+      throw createInvalidRestoreRowError(
+        "roleAssignments",
+        `data.roleAssignments の割当 ${row.roleId}/${row.membershipId} が重複しています。`,
+      );
+    }
+
+    assignments.add(key);
+  }
+}
+
+function assertRoleAssignmentsUnchanged(
+  input: RestoreExecutorInput,
+  rows: RoleAssignmentRestoreRow[],
+) {
+  const currentRoleAssignments = new Map(
+    readRoleAssignmentRows(input.currentBackup).map((row) => [row.id, row]),
+  );
+
+  for (const row of rows) {
+    const currentRoleAssignment = currentRoleAssignments.get(row.id);
+
+    if (!currentRoleAssignment) {
+      continue;
+    }
+
+    if (
+      currentRoleAssignment.roleId !== row.roleId ||
+      currentRoleAssignment.membershipId !== row.membershipId
+    ) {
+      throw createInvalidRestoreRowError(
+        "roleAssignments",
+        `data.roleAssignments の roleId / membershipId 変更は権限割当の付け替えになるため、このPRでは変更できません: ${row.id}`,
       );
     }
   }
