@@ -11,6 +11,7 @@ import type {
   FacilityStatus,
   MembershipStatus,
   OrganizationUnitKind,
+  WorkflowStatus,
 } from "@generated/prisma/enums";
 
 export const supportedOperationsRestoreDataSetKeys = [
@@ -23,6 +24,7 @@ export const supportedOperationsRestoreDataSetKeys = [
   "roleAssignments",
   "facilities",
   "calendarEvents",
+  "facilityReservations",
   "notices",
   "noticeAcknowledgements",
 ] as const satisfies OperationsBackupDataKey[];
@@ -138,6 +140,19 @@ export type CalendarEventRestoreRow = {
   endsAt: Date;
   location: string | null;
   visibility: EventVisibility;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type FacilityReservationRestoreRow = {
+  id: string;
+  tenantId: string;
+  facilityId: string;
+  eventId: string | null;
+  startsAt: Date;
+  endsAt: Date;
+  purpose: string;
+  status: WorkflowStatus;
   createdAt: Date;
   updatedAt: Date;
 };

@@ -1,6 +1,7 @@
 import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import {
   readCalendarEventRows,
+  readFacilityReservationRows,
   readFacilityRows,
   readMembershipRows,
   readNoticeAcknowledgementRows,
@@ -16,6 +17,7 @@ import {
 import type {
   CalendarEventRestoreRow,
   ExecuteRestoreTransactionInput,
+  FacilityReservationRestoreRow,
   FacilityRestoreRow,
   MembershipRestoreRow,
   NoticeAcknowledgementRestoreRow,
@@ -45,6 +47,10 @@ export async function executeOperationsRestoreTransaction(
   const roleAssignments = readRoleAssignmentRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
   const calendarEvents = readCalendarEventRows(input.backup, input.tenant.id);
+  const facilityReservations = readFacilityReservationRows(
+    input.backup,
+    input.tenant.id,
+  );
   const notices = readNoticeRows(input.backup, input.tenant.id);
   const noticeAcknowledgements = readNoticeAcknowledgementRows(
     input.backup,
@@ -61,6 +67,7 @@ export async function executeOperationsRestoreTransaction(
     await restoreRoleAssignments(tx, roleAssignments);
     await restoreFacilities(tx, facilities);
     await restoreCalendarEvents(tx, calendarEvents);
+    await restoreFacilityReservations(tx, facilityReservations);
     await restoreNotices(tx, notices);
     await restoreNoticeAcknowledgements(tx, noticeAcknowledgements);
     await recordAuditEvent(tx, {
@@ -350,6 +357,40 @@ async function restoreCalendarEvents(
         endsAt: row.endsAt,
         location: row.location,
         visibility: row.visibility,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+    });
+  }
+}
+
+async function restoreFacilityReservations(
+  tx: Prisma.TransactionClient,
+  rows: FacilityReservationRestoreRow[],
+) {
+  for (const row of rows) {
+    await tx.facilityReservation.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        tenantId: row.tenantId,
+        facilityId: row.facilityId,
+        eventId: row.eventId,
+        startsAt: row.startsAt,
+        endsAt: row.endsAt,
+        purpose: row.purpose,
+        status: row.status,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+      update: {
+        tenantId: row.tenantId,
+        facilityId: row.facilityId,
+        eventId: row.eventId,
+        startsAt: row.startsAt,
+        endsAt: row.endsAt,
+        purpose: row.purpose,
+        status: row.status,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       },

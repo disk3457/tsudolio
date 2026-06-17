@@ -2,6 +2,7 @@ import type { OperationsImportCandidate } from "@/application/operations/types";
 import { createInvalidRestoreRowError } from "@/infrastructure/prisma/operations/restore-executor/errors";
 import type {
   CalendarEventRestoreRow,
+  FacilityReservationRestoreRow,
   FacilityRestoreRow,
   NoticeAcknowledgementRestoreRow,
   MembershipRestoreRow,
@@ -19,6 +20,7 @@ import type {
   FacilityStatus,
   MembershipStatus,
   OrganizationUnitKind,
+  WorkflowStatus,
 } from "@generated/prisma/enums";
 
 const organizationUnitKinds = new Set<OrganizationUnitKind>([
@@ -44,6 +46,14 @@ const membershipStatuses = new Set<MembershipStatus>([
   "INVITED",
   "SUSPENDED",
   "LEFT",
+]);
+const workflowStatuses = new Set<WorkflowStatus>([
+  "DRAFT",
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "RETURNED",
+  "CANCELED",
 ]);
 
 export function readPermissionRows(
@@ -281,6 +291,44 @@ export function readCalendarEventRows(
       visibility: readEventVisibility(row, index),
       createdAt: readDate(row, "createdAt", "calendarEvents", index),
       updatedAt: readDate(row, "updatedAt", "calendarEvents", index),
+    };
+  });
+}
+
+export function readFacilityReservationRows(
+  backup: OperationsImportCandidate,
+  tenantId: string,
+): FacilityReservationRestoreRow[] {
+  return getRestoreRows(backup, "facilityReservations").map((row, index) => {
+    const rowTenantId = readRequiredString(
+      row,
+      "tenantId",
+      "facilityReservations",
+      index,
+    );
+    assertRowTenant(rowTenantId, tenantId, "facilityReservations", index);
+
+    return {
+      id: readRequiredString(row, "id", "facilityReservations", index),
+      tenantId: rowTenantId,
+      facilityId: readRequiredString(
+        row,
+        "facilityId",
+        "facilityReservations",
+        index,
+      ),
+      eventId: readNullableString(
+        row,
+        "eventId",
+        "facilityReservations",
+        index,
+      ),
+      startsAt: readDate(row, "startsAt", "facilityReservations", index),
+      endsAt: readDate(row, "endsAt", "facilityReservations", index),
+      purpose: readRequiredString(row, "purpose", "facilityReservations", index),
+      status: readWorkflowStatus(row, index, "facilityReservations"),
+      createdAt: readDate(row, "createdAt", "facilityReservations", index),
+      updatedAt: readDate(row, "updatedAt", "facilityReservations", index),
     };
   });
 }
@@ -609,6 +657,23 @@ function readMembershipStatus(
   }
 
   return value as MembershipStatus;
+}
+
+function readWorkflowStatus(
+  row: Record<string, unknown>,
+  index: number,
+  dataSet: SupportedOperationsRestoreDataSetKey,
+): WorkflowStatus {
+  const value = row.status;
+
+  if (typeof value !== "string" || !workflowStatuses.has(value as WorkflowStatus)) {
+    throw createInvalidRestoreRowError(
+      dataSet,
+      `data.${dataSet}[${index}].status は対応しているワークフローステータスである必要があります。`,
+    );
+  }
+
+  return value as WorkflowStatus;
 }
 
 function assertRowTenant(
