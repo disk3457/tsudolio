@@ -31,6 +31,7 @@ export const supportedOperationsRestoreDataSetKeys = [
   "noticeAcknowledgements",
   "workflowRequests",
   "documents",
+  "documentVersions",
 ] as const satisfies OperationsBackupDataKey[];
 
 export type SupportedOperationsRestoreDataSetKey =
@@ -212,4 +213,20 @@ export type DocumentRestoreRow = {
   retentionUntil: Date | null;
   createdAt: Date;
   updatedAt: Date;
+};
+
+export type DocumentVersionRestoreRow = {
+  id: string;
+  tenantId: string;
+  documentId: string;
+  organizationUnitId: string | null;
+  createdById: string;
+  title: string;
+  category: string;
+  version: string;
+  status: DocumentStatus;
+  storageKey: string;
+  retentionUntil: Date | null;
+  changeNote: string | null;
+  createdAt: Date;
 };

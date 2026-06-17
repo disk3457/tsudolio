@@ -3,6 +3,7 @@ import { createInvalidRestoreRowError } from "@/infrastructure/prisma/operations
 import type {
   CalendarEventRestoreRow,
   DocumentRestoreRow,
+  DocumentVersionRestoreRow,
   FacilityReservationRestoreRow,
   FacilityRestoreRow,
   NoticeAcknowledgementRestoreRow,
@@ -470,6 +471,67 @@ export function readDocumentRows(
       ),
       createdAt: readDate(row, "createdAt", "documents", index),
       updatedAt: readDate(row, "updatedAt", "documents", index),
+    };
+  });
+}
+
+export function readDocumentVersionRows(
+  backup: OperationsImportCandidate,
+  tenantId: string,
+): DocumentVersionRestoreRow[] {
+  return getRestoreRows(backup, "documentVersions").map((row, index) => {
+    const rowTenantId = readRequiredString(
+      row,
+      "tenantId",
+      "documentVersions",
+      index,
+    );
+    assertRowTenant(rowTenantId, tenantId, "documentVersions", index);
+
+    return {
+      id: readRequiredString(row, "id", "documentVersions", index),
+      tenantId: rowTenantId,
+      documentId: readRequiredString(
+        row,
+        "documentId",
+        "documentVersions",
+        index,
+      ),
+      organizationUnitId: readNullableString(
+        row,
+        "organizationUnitId",
+        "documentVersions",
+        index,
+      ),
+      createdById: readRequiredString(
+        row,
+        "createdById",
+        "documentVersions",
+        index,
+      ),
+      title: readRequiredString(row, "title", "documentVersions", index),
+      category: readRequiredString(row, "category", "documentVersions", index),
+      version: readRequiredString(row, "version", "documentVersions", index),
+      status: readDocumentStatus(row, index, "documentVersions"),
+      storageKey: readRequiredString(
+        row,
+        "storageKey",
+        "documentVersions",
+        index,
+      ),
+      retentionUntil: readNullableDate(
+        row,
+        "retentionUntil",
+        "documentVersions",
+        index,
+      ),
+      changeNote: readNullableString(
+        row,
+        "changeNote",
+        "documentVersions",
+        index,
+      ),
+      createdAt: readDate(row, "createdAt", "documentVersions", index),
     };
   });
 }
