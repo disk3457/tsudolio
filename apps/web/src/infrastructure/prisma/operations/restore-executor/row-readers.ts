@@ -14,12 +14,14 @@ import type {
   RoleRestoreRow,
   SupportedOperationsRestoreDataSetKey,
   UserRestoreRow,
+  WorkflowRequestRestoreRow,
 } from "@/infrastructure/prisma/operations/restore-executor/types";
 import type {
   EventVisibility,
   FacilityStatus,
   MembershipStatus,
   OrganizationUnitKind,
+  WorkflowPriority,
   WorkflowStatus,
 } from "@generated/prisma/enums";
 
@@ -54,6 +56,12 @@ const workflowStatuses = new Set<WorkflowStatus>([
   "REJECTED",
   "RETURNED",
   "CANCELED",
+]);
+const workflowPriorities = new Set<WorkflowPriority>([
+  "LOW",
+  "NORMAL",
+  "HIGH",
+  "URGENT",
 ]);
 
 export function readPermissionRows(
@@ -371,6 +379,58 @@ export function readNoticeAcknowledgementRows(
   });
 }
 
+export function readWorkflowRequestRows(
+  backup: OperationsImportCandidate,
+  tenantId: string,
+): WorkflowRequestRestoreRow[] {
+  return getRestoreRows(backup, "workflowRequests").map((row, index) => {
+    const rowTenantId = readRequiredString(
+      row,
+      "tenantId",
+      "workflowRequests",
+      index,
+    );
+    assertRowTenant(rowTenantId, tenantId, "workflowRequests", index);
+
+    return {
+      id: readRequiredString(row, "id", "workflowRequests", index),
+      tenantId: rowTenantId,
+      organizationUnitId: readNullableString(
+        row,
+        "organizationUnitId",
+        "workflowRequests",
+        index,
+      ),
+      requesterId: readRequiredString(
+        row,
+        "requesterId",
+        "workflowRequests",
+        index,
+      ),
+      title: readRequiredString(row, "title", "workflowRequests", index),
+      category: readRequiredString(row, "category", "workflowRequests", index),
+      description: readNullableString(
+        row,
+        "description",
+        "workflowRequests",
+        index,
+      ),
+      status: readWorkflowStatus(row, index, "workflowRequests"),
+      priority: readWorkflowPriority(row, index),
+      dueAt: readNullableDate(row, "dueAt", "workflowRequests", index),
+      submittedAt: readNullableDate(
+        row,
+        "submittedAt",
+        "workflowRequests",
+        index,
+      ),
+      decidedAt: readNullableDate(row, "decidedAt", "workflowRequests", index),
+      createdAt: readDate(row, "createdAt", "workflowRequests", index),
+      updatedAt: readDate(row, "updatedAt", "workflowRequests", index),
+    };
+  });
+}
+
 export function sortOrganizationUnitRows(rows: OrganizationUnitRestoreRow[]) {
   const sorted: OrganizationUnitRestoreRow[] = [];
   const remaining = new Map(rows.map((row) => [row.id, row]));
@@ -674,6 +734,25 @@ function readWorkflowStatus(
   }
 
   return value as WorkflowStatus;
+}
+
+function readWorkflowPriority(
+  row: Record<string, unknown>,
+  index: number,
+): WorkflowPriority {
+  const value = row.priority;
+
+  if (
+    typeof value !== "string" ||
+    !workflowPriorities.has(value as WorkflowPriority)
+  ) {
+    throw createInvalidRestoreRowError(
+      "workflowRequests",
+      `data.workflowRequests[${index}].priority は対応している優先度である必要があります。`,
+    );
+  }
+
+  return value as WorkflowPriority;
 }
 
 function assertRowTenant(

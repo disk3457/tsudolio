@@ -12,6 +12,7 @@ import {
   readRolePermissionRows,
   readRoleRows,
   readUserRows,
+  readWorkflowRequestRows,
   sortOrganizationUnitRows,
 } from "@/infrastructure/prisma/operations/restore-executor/row-readers";
 import type {
@@ -28,6 +29,7 @@ import type {
   RolePermissionRestoreRow,
   RoleRestoreRow,
   UserRestoreRow,
+  WorkflowRequestRestoreRow,
 } from "@/infrastructure/prisma/operations/restore-executor/types";
 import { prisma } from "@/infrastructure/prisma/prisma-client";
 import type { Prisma } from "@generated/prisma/client";
@@ -56,6 +58,10 @@ export async function executeOperationsRestoreTransaction(
     input.backup,
     input.tenant.id,
   );
+  const workflowRequests = readWorkflowRequestRows(
+    input.backup,
+    input.tenant.id,
+  );
 
   await prisma.$transaction(async (tx) => {
     await restorePermissions(tx, permissions);
@@ -70,6 +76,7 @@ export async function executeOperationsRestoreTransaction(
     await restoreFacilityReservations(tx, facilityReservations);
     await restoreNotices(tx, notices);
     await restoreNoticeAcknowledgements(tx, noticeAcknowledgements);
+    await restoreWorkflowRequests(tx, workflowRequests);
     await recordAuditEvent(tx, {
       tenantId: input.tenant.id,
       context: input.context,
@@ -451,6 +458,48 @@ async function restoreNoticeAcknowledgements(
         noticeId: row.noticeId,
         userId: row.userId,
         acknowledgedAt: row.acknowledgedAt,
+      },
+    });
+  }
+}
+
+async function restoreWorkflowRequests(
+  tx: Prisma.TransactionClient,
+  rows: WorkflowRequestRestoreRow[],
+) {
+  for (const row of rows) {
+    await tx.workflowRequest.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        tenantId: row.tenantId,
+        organizationUnitId: row.organizationUnitId,
+        requesterId: row.requesterId,
+        title: row.title,
+        category: row.category,
+        description: row.description,
+        status: row.status,
+        priority: row.priority,
+        dueAt: row.dueAt,
+        submittedAt: row.submittedAt,
+        decidedAt: row.decidedAt,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+      update: {
+        tenantId: row.tenantId,
+        organizationUnitId: row.organizationUnitId,
+        requesterId: row.requesterId,
+        title: row.title,
+        category: row.category,
+        description: row.description,
+        status: row.status,
+        priority: row.priority,
+        dueAt: row.dueAt,
+        submittedAt: row.submittedAt,
+        decidedAt: row.decidedAt,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
       },
     });
   }
