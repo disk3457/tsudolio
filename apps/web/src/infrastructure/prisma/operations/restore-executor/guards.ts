@@ -8,6 +8,7 @@ import {
 import {
   collectRestoreIdentityKeys,
   readCalendarEventRows,
+  readFacilityReservationRows,
   readFacilityRows,
   readMembershipRows,
   readNoticeAcknowledgementRows,
@@ -23,6 +24,7 @@ import {
 import {
   supportedOperationsRestoreDataSetKeys,
   type CalendarEventRestoreRow,
+  type FacilityReservationRestoreRow,
   type MembershipRestoreRow,
   type NoticeAcknowledgementRestoreRow,
   type RoleAssignmentRestoreRow,
@@ -114,7 +116,13 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   const rolePermissions = readRolePermissionRows(input.backup);
   const roleAssignments = readRoleAssignmentRows(input.backup);
   const facilities = readFacilityRows(input.backup, input.tenant.id);
+  const facilityIds = new Set(facilities.map((facility) => facility.id));
   const calendarEvents = readCalendarEventRows(input.backup, input.tenant.id);
+  const calendarEventIds = new Set(calendarEvents.map((event) => event.id));
+  const facilityReservations = readFacilityReservationRows(
+    input.backup,
+    input.tenant.id,
+  );
   const notices = readNoticeRows(input.backup, input.tenant.id);
   const noticeIds = new Set(notices.map((notice) => notice.id));
   const noticeAcknowledgements = readNoticeAcknowledgementRows(
@@ -142,6 +150,13 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   assertRoleAssignmentsUnchanged(input, roleAssignments);
   assertCalendarEventReferences(calendarEvents, userIds, organizationUnitIds);
   assertCalendarEventCreatorsUnchanged(input, calendarEvents);
+  assertFacilityReservationReferences(
+    facilityReservations,
+    facilityIds,
+    calendarEventIds,
+  );
+  assertUniqueFacilityReservationEventLinks(facilityReservations);
+  assertFacilityReservationLinksUnchanged(input, facilityReservations);
   assertNoticeAcknowledgementReferences(
     noticeAcknowledgements,
     noticeIds,
@@ -461,6 +476,78 @@ function assertCalendarEventCreatorsUnchanged(
       throw createInvalidRestoreRowError(
         "calendarEvents",
         `data.calendarEvents の createdById 変更は予定作成者の付け替えになるため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
+}
+
+function assertFacilityReservationReferences(
+  rows: FacilityReservationRestoreRow[],
+  facilityIds: Set<string>,
+  calendarEventIds: Set<string>,
+) {
+  for (const row of rows) {
+    if (!facilityIds.has(row.facilityId)) {
+      throw createInvalidRestoreRowError(
+        "facilityReservations",
+        `data.facilityReservations の facilityId ${row.facilityId} がバックアップ内の施設に存在しません。`,
+      );
+    }
+
+    if (row.eventId && !calendarEventIds.has(row.eventId)) {
+      throw createInvalidRestoreRowError(
+        "facilityReservations",
+        `data.facilityReservations の eventId ${row.eventId} がバックアップ内の予定に存在しません。`,
+      );
+    }
+  }
+}
+
+function assertUniqueFacilityReservationEventLinks(
+  rows: FacilityReservationRestoreRow[],
+) {
+  const eventIds = new Set<string>();
+
+  for (const row of rows) {
+    if (!row.eventId) {
+      continue;
+    }
+
+    if (eventIds.has(row.eventId)) {
+      throw createInvalidRestoreRowError(
+        "facilityReservations",
+        `data.facilityReservations の eventId ${row.eventId} が重複しています。`,
+      );
+    }
+
+    eventIds.add(row.eventId);
+  }
+}
+
+function assertFacilityReservationLinksUnchanged(
+  input: RestoreExecutorInput,
+  rows: FacilityReservationRestoreRow[],
+) {
+  const currentFacilityReservations = new Map(
+    readFacilityReservationRows(input.currentBackup, input.tenant.id).map(
+      (row) => [row.id, row],
+    ),
+  );
+
+  for (const row of rows) {
+    const currentFacilityReservation = currentFacilityReservations.get(row.id);
+
+    if (!currentFacilityReservation) {
+      continue;
+    }
+
+    if (
+      currentFacilityReservation.facilityId !== row.facilityId ||
+      currentFacilityReservation.eventId !== row.eventId
+    ) {
+      throw createInvalidRestoreRowError(
+        "facilityReservations",
+        `data.facilityReservations の facilityId / eventId 変更は施設予約の付け替えになるため、このPRでは変更できません: ${row.id}`,
       );
     }
   }
