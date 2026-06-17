@@ -9,6 +9,7 @@ import {
   collectRestoreIdentityKeys,
   readCalendarEventRows,
   readDocumentRows,
+  readDocumentVersionRows,
   readFacilityReservationRows,
   readFacilityRows,
   readMembershipRows,
@@ -27,6 +28,7 @@ import {
   supportedOperationsRestoreDataSetKeys,
   type CalendarEventRestoreRow,
   type DocumentRestoreRow,
+  type DocumentVersionRestoreRow,
   type FacilityReservationRestoreRow,
   type MembershipRestoreRow,
   type NoticeAcknowledgementRestoreRow,
@@ -138,6 +140,11 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
     input.tenant.id,
   );
   const documents = readDocumentRows(input.backup, input.tenant.id);
+  const documentIds = new Set(documents.map((document) => document.id));
+  const documentVersions = readDocumentVersionRows(
+    input.backup,
+    input.tenant.id,
+  );
 
   for (const unit of organizationUnits) {
     if (unit.parentId && !organizationUnitIds.has(unit.parentId)) {
@@ -181,6 +188,13 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   assertWorkflowRequestRequestersUnchanged(input, workflowRequests);
   assertDocumentReferences(documents, userIds, organizationUnitIds);
   assertDocumentStorageAndUploadersUnchanged(input, documents);
+  assertDocumentVersionReferences(
+    documentVersions,
+    documentIds,
+    userIds,
+    organizationUnitIds,
+  );
+  assertDocumentVersionLinksAndStorageUnchanged(input, documentVersions);
 
   for (const rolePermission of rolePermissions) {
     if (!roleIds.has(rolePermission.roleId)) {
@@ -742,6 +756,70 @@ function assertDocumentStorageAndUploadersUnchanged(
       throw createInvalidRestoreRowError(
         "documents",
         `data.documents の uploadedById / storageKey 変更は文書保管先またはアップロード者の付け替えになるため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
+}
+
+function assertDocumentVersionReferences(
+  rows: DocumentVersionRestoreRow[],
+  documentIds: Set<string>,
+  userIds: Set<string>,
+  organizationUnitIds: Set<string>,
+) {
+  for (const row of rows) {
+    if (!documentIds.has(row.documentId)) {
+      throw createInvalidRestoreRowError(
+        "documentVersions",
+        `data.documentVersions の documentId ${row.documentId} がバックアップ内の文書に存在しません。`,
+      );
+    }
+
+    if (!userIds.has(row.createdById)) {
+      throw createInvalidRestoreRowError(
+        "documentVersions",
+        `data.documentVersions の createdById ${row.createdById} がバックアップ内の利用者に存在しません。`,
+      );
+    }
+
+    if (
+      row.organizationUnitId &&
+      !organizationUnitIds.has(row.organizationUnitId)
+    ) {
+      throw createInvalidRestoreRowError(
+        "documentVersions",
+        `data.documentVersions の organizationUnitId ${row.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
+      );
+    }
+  }
+}
+
+function assertDocumentVersionLinksAndStorageUnchanged(
+  input: RestoreExecutorInput,
+  rows: DocumentVersionRestoreRow[],
+) {
+  const currentDocumentVersions = new Map(
+    readDocumentVersionRows(input.currentBackup, input.tenant.id).map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+
+  for (const row of rows) {
+    const currentDocumentVersion = currentDocumentVersions.get(row.id);
+
+    if (!currentDocumentVersion) {
+      continue;
+    }
+
+    if (
+      currentDocumentVersion.documentId !== row.documentId ||
+      currentDocumentVersion.createdById !== row.createdById ||
+      currentDocumentVersion.storageKey !== row.storageKey
+    ) {
+      throw createInvalidRestoreRowError(
+        "documentVersions",
+        `data.documentVersions の documentId / createdById / storageKey 変更は文書版履歴の付け替えになるため、このPRでは変更できません: ${row.id}`,
       );
     }
   }

@@ -2,6 +2,7 @@ import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository
 import {
   readCalendarEventRows,
   readDocumentRows,
+  readDocumentVersionRows,
   readFacilityReservationRows,
   readFacilityRows,
   readMembershipRows,
@@ -19,6 +20,7 @@ import {
 import type {
   CalendarEventRestoreRow,
   DocumentRestoreRow,
+  DocumentVersionRestoreRow,
   ExecuteRestoreTransactionInput,
   FacilityReservationRestoreRow,
   FacilityRestoreRow,
@@ -65,6 +67,10 @@ export async function executeOperationsRestoreTransaction(
     input.tenant.id,
   );
   const documents = readDocumentRows(input.backup, input.tenant.id);
+  const documentVersions = readDocumentVersionRows(
+    input.backup,
+    input.tenant.id,
+  );
 
   await prisma.$transaction(async (tx) => {
     await restorePermissions(tx, permissions);
@@ -81,6 +87,7 @@ export async function executeOperationsRestoreTransaction(
     await restoreNoticeAcknowledgements(tx, noticeAcknowledgements);
     await restoreWorkflowRequests(tx, workflowRequests);
     await restoreDocuments(tx, documents);
+    await restoreDocumentVersions(tx, documentVersions);
     await recordAuditEvent(tx, {
       tenantId: input.tenant.id,
       context: input.context,
@@ -542,6 +549,46 @@ async function restoreDocuments(
         retentionUntil: row.retentionUntil,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
+      },
+    });
+  }
+}
+
+async function restoreDocumentVersions(
+  tx: Prisma.TransactionClient,
+  rows: DocumentVersionRestoreRow[],
+) {
+  for (const row of rows) {
+    await tx.documentVersion.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        tenantId: row.tenantId,
+        documentId: row.documentId,
+        organizationUnitId: row.organizationUnitId,
+        createdById: row.createdById,
+        title: row.title,
+        category: row.category,
+        version: row.version,
+        status: row.status,
+        storageKey: row.storageKey,
+        retentionUntil: row.retentionUntil,
+        changeNote: row.changeNote,
+        createdAt: row.createdAt,
+      },
+      update: {
+        tenantId: row.tenantId,
+        documentId: row.documentId,
+        organizationUnitId: row.organizationUnitId,
+        createdById: row.createdById,
+        title: row.title,
+        category: row.category,
+        version: row.version,
+        status: row.status,
+        storageKey: row.storageKey,
+        retentionUntil: row.retentionUntil,
+        changeNote: row.changeNote,
+        createdAt: row.createdAt,
       },
     });
   }
