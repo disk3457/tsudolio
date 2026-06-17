@@ -7,6 +7,7 @@ import type {
 } from "@/application/operations/types";
 import type { MutationContext } from "@/application/security/types";
 import type {
+  DocumentStatus,
   EventVisibility,
   FacilityStatus,
   MembershipStatus,
@@ -29,6 +30,7 @@ export const supportedOperationsRestoreDataSetKeys = [
   "notices",
   "noticeAcknowledgements",
   "workflowRequests",
+  "documents",
 ] as const satisfies OperationsBackupDataKey[];
 
 export type SupportedOperationsRestoreDataSetKey =
@@ -193,6 +195,21 @@ export type WorkflowRequestRestoreRow = {
   dueAt: Date | null;
   submittedAt: Date | null;
   decidedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type DocumentRestoreRow = {
+  id: string;
+  tenantId: string;
+  organizationUnitId: string | null;
+  uploadedById: string;
+  title: string;
+  category: string;
+  version: string;
+  status: DocumentStatus;
+  storageKey: string;
+  retentionUntil: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };

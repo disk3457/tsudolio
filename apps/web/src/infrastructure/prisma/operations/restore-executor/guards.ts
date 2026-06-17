@@ -8,6 +8,7 @@ import {
 import {
   collectRestoreIdentityKeys,
   readCalendarEventRows,
+  readDocumentRows,
   readFacilityReservationRows,
   readFacilityRows,
   readMembershipRows,
@@ -25,6 +26,7 @@ import {
 import {
   supportedOperationsRestoreDataSetKeys,
   type CalendarEventRestoreRow,
+  type DocumentRestoreRow,
   type FacilityReservationRestoreRow,
   type MembershipRestoreRow,
   type NoticeAcknowledgementRestoreRow,
@@ -135,6 +137,7 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
     input.backup,
     input.tenant.id,
   );
+  const documents = readDocumentRows(input.backup, input.tenant.id);
 
   for (const unit of organizationUnits) {
     if (unit.parentId && !organizationUnitIds.has(unit.parentId)) {
@@ -176,6 +179,8 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
     organizationUnitIds,
   );
   assertWorkflowRequestRequestersUnchanged(input, workflowRequests);
+  assertDocumentReferences(documents, userIds, organizationUnitIds);
+  assertDocumentStorageAndUploadersUnchanged(input, documents);
 
   for (const rolePermission of rolePermissions) {
     if (!roleIds.has(rolePermission.roleId)) {
@@ -682,6 +687,61 @@ function assertWorkflowRequestRequestersUnchanged(
       throw createInvalidRestoreRowError(
         "workflowRequests",
         `data.workflowRequests の requesterId 変更は申請者の付け替えになるため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
+}
+
+function assertDocumentReferences(
+  rows: DocumentRestoreRow[],
+  userIds: Set<string>,
+  organizationUnitIds: Set<string>,
+) {
+  for (const row of rows) {
+    if (!userIds.has(row.uploadedById)) {
+      throw createInvalidRestoreRowError(
+        "documents",
+        `data.documents の uploadedById ${row.uploadedById} がバックアップ内の利用者に存在しません。`,
+      );
+    }
+
+    if (
+      row.organizationUnitId &&
+      !organizationUnitIds.has(row.organizationUnitId)
+    ) {
+      throw createInvalidRestoreRowError(
+        "documents",
+        `data.documents の organizationUnitId ${row.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
+      );
+    }
+  }
+}
+
+function assertDocumentStorageAndUploadersUnchanged(
+  input: RestoreExecutorInput,
+  rows: DocumentRestoreRow[],
+) {
+  const currentDocuments = new Map(
+    readDocumentRows(input.currentBackup, input.tenant.id).map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+
+  for (const row of rows) {
+    const currentDocument = currentDocuments.get(row.id);
+
+    if (!currentDocument) {
+      continue;
+    }
+
+    if (
+      currentDocument.uploadedById !== row.uploadedById ||
+      currentDocument.storageKey !== row.storageKey
+    ) {
+      throw createInvalidRestoreRowError(
+        "documents",
+        `data.documents の uploadedById / storageKey 変更は文書保管先またはアップロード者の付け替えになるため、このPRでは変更できません: ${row.id}`,
       );
     }
   }

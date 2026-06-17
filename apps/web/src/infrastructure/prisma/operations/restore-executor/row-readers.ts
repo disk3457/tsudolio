@@ -2,6 +2,7 @@ import type { OperationsImportCandidate } from "@/application/operations/types";
 import { createInvalidRestoreRowError } from "@/infrastructure/prisma/operations/restore-executor/errors";
 import type {
   CalendarEventRestoreRow,
+  DocumentRestoreRow,
   FacilityReservationRestoreRow,
   FacilityRestoreRow,
   NoticeAcknowledgementRestoreRow,
@@ -17,6 +18,7 @@ import type {
   WorkflowRequestRestoreRow,
 } from "@/infrastructure/prisma/operations/restore-executor/types";
 import type {
+  DocumentStatus,
   EventVisibility,
   FacilityStatus,
   MembershipStatus,
@@ -62,6 +64,12 @@ const workflowPriorities = new Set<WorkflowPriority>([
   "NORMAL",
   "HIGH",
   "URGENT",
+]);
+const documentStatuses = new Set<DocumentStatus>([
+  "DRAFT",
+  "REVIEW",
+  "ACTIVE",
+  "ARCHIVED",
 ]);
 
 export function readPermissionRows(
@@ -431,6 +439,41 @@ export function readWorkflowRequestRows(
   });
 }
 
+export function readDocumentRows(
+  backup: OperationsImportCandidate,
+  tenantId: string,
+): DocumentRestoreRow[] {
+  return getRestoreRows(backup, "documents").map((row, index) => {
+    const rowTenantId = readRequiredString(row, "tenantId", "documents", index);
+    assertRowTenant(rowTenantId, tenantId, "documents", index);
+
+    return {
+      id: readRequiredString(row, "id", "documents", index),
+      tenantId: rowTenantId,
+      organizationUnitId: readNullableString(
+        row,
+        "organizationUnitId",
+        "documents",
+        index,
+      ),
+      uploadedById: readRequiredString(row, "uploadedById", "documents", index),
+      title: readRequiredString(row, "title", "documents", index),
+      category: readRequiredString(row, "category", "documents", index),
+      version: readRequiredString(row, "version", "documents", index),
+      status: readDocumentStatus(row, index, "documents"),
+      storageKey: readRequiredString(row, "storageKey", "documents", index),
+      retentionUntil: readNullableDate(
+        row,
+        "retentionUntil",
+        "documents",
+        index,
+      ),
+      createdAt: readDate(row, "createdAt", "documents", index),
+      updatedAt: readDate(row, "updatedAt", "documents", index),
+    };
+  });
+}
+
 export function sortOrganizationUnitRows(rows: OrganizationUnitRestoreRow[]) {
   const sorted: OrganizationUnitRestoreRow[] = [];
   const remaining = new Map(rows.map((row) => [row.id, row]));
@@ -753,6 +796,23 @@ function readWorkflowPriority(
   }
 
   return value as WorkflowPriority;
+}
+
+function readDocumentStatus(
+  row: Record<string, unknown>,
+  index: number,
+  dataSet: SupportedOperationsRestoreDataSetKey,
+): DocumentStatus {
+  const value = row.status;
+
+  if (typeof value !== "string" || !documentStatuses.has(value as DocumentStatus)) {
+    throw createInvalidRestoreRowError(
+      dataSet,
+      `data.${dataSet}[${index}].status は対応している文書ステータスである必要があります。`,
+    );
+  }
+
+  return value as DocumentStatus;
 }
 
 function assertRowTenant(

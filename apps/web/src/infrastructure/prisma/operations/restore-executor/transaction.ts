@@ -1,6 +1,7 @@
 import { recordAuditEvent } from "@/infrastructure/prisma/audit-event-repository";
 import {
   readCalendarEventRows,
+  readDocumentRows,
   readFacilityReservationRows,
   readFacilityRows,
   readMembershipRows,
@@ -17,6 +18,7 @@ import {
 } from "@/infrastructure/prisma/operations/restore-executor/row-readers";
 import type {
   CalendarEventRestoreRow,
+  DocumentRestoreRow,
   ExecuteRestoreTransactionInput,
   FacilityReservationRestoreRow,
   FacilityRestoreRow,
@@ -62,6 +64,7 @@ export async function executeOperationsRestoreTransaction(
     input.backup,
     input.tenant.id,
   );
+  const documents = readDocumentRows(input.backup, input.tenant.id);
 
   await prisma.$transaction(async (tx) => {
     await restorePermissions(tx, permissions);
@@ -77,6 +80,7 @@ export async function executeOperationsRestoreTransaction(
     await restoreNotices(tx, notices);
     await restoreNoticeAcknowledgements(tx, noticeAcknowledgements);
     await restoreWorkflowRequests(tx, workflowRequests);
+    await restoreDocuments(tx, documents);
     await recordAuditEvent(tx, {
       tenantId: input.tenant.id,
       context: input.context,
@@ -498,6 +502,44 @@ async function restoreWorkflowRequests(
         dueAt: row.dueAt,
         submittedAt: row.submittedAt,
         decidedAt: row.decidedAt,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+    });
+  }
+}
+
+async function restoreDocuments(
+  tx: Prisma.TransactionClient,
+  rows: DocumentRestoreRow[],
+) {
+  for (const row of rows) {
+    await tx.document.upsert({
+      where: { id: row.id },
+      create: {
+        id: row.id,
+        tenantId: row.tenantId,
+        organizationUnitId: row.organizationUnitId,
+        uploadedById: row.uploadedById,
+        title: row.title,
+        category: row.category,
+        version: row.version,
+        status: row.status,
+        storageKey: row.storageKey,
+        retentionUntil: row.retentionUntil,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      },
+      update: {
+        tenantId: row.tenantId,
+        organizationUnitId: row.organizationUnitId,
+        uploadedById: row.uploadedById,
+        title: row.title,
+        category: row.category,
+        version: row.version,
+        status: row.status,
+        storageKey: row.storageKey,
+        retentionUntil: row.retentionUntil,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       },
