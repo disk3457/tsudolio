@@ -11,6 +11,7 @@ import type {
   FacilityStatus,
   MembershipStatus,
   OrganizationUnitKind,
+  WorkflowPriority,
   WorkflowStatus,
 } from "@generated/prisma/enums";
 
@@ -27,6 +28,7 @@ export const supportedOperationsRestoreDataSetKeys = [
   "facilityReservations",
   "notices",
   "noticeAcknowledgements",
+  "workflowRequests",
 ] as const satisfies OperationsBackupDataKey[];
 
 export type SupportedOperationsRestoreDataSetKey =
@@ -176,4 +178,21 @@ export type NoticeAcknowledgementRestoreRow = {
   noticeId: string;
   userId: string;
   acknowledgedAt: Date;
+};
+
+export type WorkflowRequestRestoreRow = {
+  id: string;
+  tenantId: string;
+  organizationUnitId: string | null;
+  requesterId: string;
+  title: string;
+  category: string;
+  description: string | null;
+  status: WorkflowStatus;
+  priority: WorkflowPriority;
+  dueAt: Date | null;
+  submittedAt: Date | null;
+  decidedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 };

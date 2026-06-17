@@ -19,6 +19,7 @@ import {
   readRolePermissionRows,
   readRoleRows,
   readUserRows,
+  readWorkflowRequestRows,
   sortOrganizationUnitRows,
 } from "@/infrastructure/prisma/operations/restore-executor/row-readers";
 import {
@@ -30,6 +31,7 @@ import {
   type RoleAssignmentRestoreRow,
   type RestoreExecutorInput,
   type UserRestoreRow,
+  type WorkflowRequestRestoreRow,
 } from "@/infrastructure/prisma/operations/restore-executor/types";
 
 export function getOperationsRestoreExecutorBlockedReason(
@@ -129,6 +131,10 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
     input.backup,
     input.tenant.id,
   );
+  const workflowRequests = readWorkflowRequestRows(
+    input.backup,
+    input.tenant.id,
+  );
 
   for (const unit of organizationUnits) {
     if (unit.parentId && !organizationUnitIds.has(unit.parentId)) {
@@ -164,6 +170,12 @@ function validateSupportedRestoreRows(input: RestoreExecutorInput) {
   );
   assertUniqueNoticeAcknowledgements(noticeAcknowledgements);
   assertNoticeAcknowledgementsUnchanged(input, noticeAcknowledgements);
+  assertWorkflowRequestReferences(
+    workflowRequests,
+    userIds,
+    organizationUnitIds,
+  );
+  assertWorkflowRequestRequestersUnchanged(input, workflowRequests);
 
   for (const rolePermission of rolePermissions) {
     if (!roleIds.has(rolePermission.roleId)) {
@@ -618,6 +630,58 @@ function assertNoticeAcknowledgementsUnchanged(
       throw createInvalidRestoreRowError(
         "noticeAcknowledgements",
         `data.noticeAcknowledgements の noticeId / userId 変更は既読確認の付け替えになるため、このPRでは変更できません: ${row.id}`,
+      );
+    }
+  }
+}
+
+function assertWorkflowRequestReferences(
+  rows: WorkflowRequestRestoreRow[],
+  userIds: Set<string>,
+  organizationUnitIds: Set<string>,
+) {
+  for (const row of rows) {
+    if (!userIds.has(row.requesterId)) {
+      throw createInvalidRestoreRowError(
+        "workflowRequests",
+        `data.workflowRequests の requesterId ${row.requesterId} がバックアップ内の利用者に存在しません。`,
+      );
+    }
+
+    if (
+      row.organizationUnitId &&
+      !organizationUnitIds.has(row.organizationUnitId)
+    ) {
+      throw createInvalidRestoreRowError(
+        "workflowRequests",
+        `data.workflowRequests の organizationUnitId ${row.organizationUnitId} がバックアップ内の組織単位に存在しません。`,
+      );
+    }
+  }
+}
+
+function assertWorkflowRequestRequestersUnchanged(
+  input: RestoreExecutorInput,
+  rows: WorkflowRequestRestoreRow[],
+) {
+  const currentWorkflowRequests = new Map(
+    readWorkflowRequestRows(input.currentBackup, input.tenant.id).map((row) => [
+      row.id,
+      row,
+    ]),
+  );
+
+  for (const row of rows) {
+    const currentWorkflowRequest = currentWorkflowRequests.get(row.id);
+
+    if (!currentWorkflowRequest) {
+      continue;
+    }
+
+    if (currentWorkflowRequest.requesterId !== row.requesterId) {
+      throw createInvalidRestoreRowError(
+        "workflowRequests",
+        `data.workflowRequests の requesterId 変更は申請者の付け替えになるため、このPRでは変更できません: ${row.id}`,
       );
     }
   }
